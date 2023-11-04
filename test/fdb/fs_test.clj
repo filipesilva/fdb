@@ -27,7 +27,7 @@
                (sut/metadata-path->content-path "foo.txt"))))
 
 (deftest read-content
-  (with-temp-dir [dir]
+  (with-temp-dir [dir {}]
     (let [f (str dir "/f.txt")]
       (sut/spit-edn f "foo")
       (is (= {:file/modified (sut/modified f)
@@ -36,7 +36,7 @@
              (sut/read-content f))))))
 
 (deftest read-metadata
-  (with-temp-dir [dir]
+  (with-temp-dir [dir {}]
     (let [f   (str dir "/f.txt.fdb")
           edn {:bar "bar"}]
       (sut/spit-edn f edn)
