@@ -9,38 +9,6 @@
    [fdb.fs :as fs]
    [nextjournal.beholder :as beholder]))
 
-;; db
-
-(def rocksdb-cfg {:xtdb/index-store         {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                        :db-dir      (io/file "./tmp/rocksdb/index")}}
-                  :xtdb/document-store      {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                        :db-dir      (io/file "./tmp/rocksdb/document")}}
-                  :xtdb/tx-log              {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                        :db-dir      (io/file "./tmp/rocksdb/tx-log")}}
-                  :xtdb.lucene/lucene-store {:db-dir "./tmp/lucene"}})
-
-(defonce node (xt/start-node rocksdb-cfg))
-
-;; fs
-
-
-;; query
-
-(defn entity [id]
-  (xt/entity (xt/db node) id))
-
-(defn file
-  [id]
-  (-> id fs/metadata-path->content-path entity))
-
-(defn metadata
-  [id]
-  (-> id fs/content-path->metadata-path entity))
-
-(defn file+metadata
-  [id]
-  (merge (file id) (metadata id)))
-
 ;; watchers
 
 (defonce watchers (atom {}))
@@ -59,18 +27,18 @@
    (update-file kw dir path :modify))
   ([kw dir path type]
    (let [relative-path (str/replace-first path dir "")
-         id'           (id kw relative-path)
+         id            (fs/id kw relative-path)
          op            (case type
                          (:create :modify) (try
-                                             (when (modified? id' path)
-                                               [::xt/put (merge {:xt/id id'}
+                                             (when (modified? id path)
+                                               [::xt/put (merge {:xt/id id}
                                                                 (if (fs/metadata-path? path)
                                                                   (fs/read-metadata path)
                                                                   (fs/read-content path)))])
                                              #_(catch Exception _
                                                ;; File doesn't exist anymore.
-                                               [::xt/delete id']))
-                         :delete           [::xt/delete id']
+                                               [::xt/delete id]))
+                         :delete           [::xt/delete id]
                          :overflow         nil)]
      (when op
        (xt/submit-tx node #p [op])))))
