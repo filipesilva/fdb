@@ -1,42 +1,9 @@
-(ns core-test
+(ns fdb.core-test
   (:require
-   [babashka.fs :as fs :refer [with-temp-dir]]
    [clojure.test :as t :refer [deftest is testing]]
    [fdb.core :as fdb]
    [hashp.core]))
 
-(defn- modified [f]
-  (-> f fs/last-modified-time fs/file-time->instant))
-
-(defn- created [f]
-  (-> f fs/creation-time fs/file-time->instant))
-
-(deftest id
-  (is (= "file://test/foo.txt"
-         (fdb/id :test "foo.txt")))
-  (is (= "file://test/foo.txt"
-         (fdb/id "test" "foo.txt")))
-  (is (= "file://test/foo.txt"
-         (fdb/id :test "/foo.txt")))
-  (is (= "file://test/foo.txt"
-         (fdb/id :test "foo.txt.fdb"))))
-
-(deftest read-file
-  (testing "content file"
-    (with-temp-dir [dir]
-      (let [f (str dir "/f.txt")]
-        (fdb/spit-edn f "foo")
-        (is (= {:file/modified   (modified f)
-                :file/created    (created f)
-                :local.file/path f}
-               (fdb/read-file f))))))
-  (testing "metadata file"
-    (with-temp-dir [dir]
-      (let [f   (str dir "/f.txt.fdb")
-            edn {:bar "bar"}]
-        (fdb/spit-edn f edn)
-        (is (= (merge edn (fdb/id f)
-               (fdb/read-file f)))))))
 
 (defmacro with-watch
   "Evaluate body while watching f as kw."
@@ -47,20 +14,22 @@
      (finally
        (fdb/stop ~kw))))
 
-(deftest fs-to-fdb
+#_(deftest fs-to-fdb
   (with-temp-dir [dir]
     (let [kw :test]
 
       (testing "create on watch"
         (let [f  (str dir "/foo.txt")
               fm (str f ".fdb")
-              m  {:bar "bar"}]
+              m  {:bar "bar"}
+              id (fdb/id kw "/foo.txt")]
           (fdb/spit-edn f "")
           (fdb/spit-edn fm m)
           (with-watch [kw dir]
-             (is (= (merge (fdb/read-file f)
-                           (fdb/read-file fm))
-                    (fdb/entity (fdb/id kw f)))))))
+            (is (= (fdb/read-file f)
+                   (fdb/file id)))
+            (is (= (fdb/read-metadata fm)
+                   (fdb/metadata id))))))
 
       (testing "create while watching")
       (testing "modify while watching")

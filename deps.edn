@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "test"]
  :deps  {org.clojure/clojure {:mvn/version "1.11.1"}
          com.xtdb/xtdb-core {:mvn/version "1.24.0"}
          com.xtdb/xtdb-rocksdb {:mvn/version "1.24.0"}

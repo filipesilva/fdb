@@ -1,11 +1,12 @@
 (ns fdb.core
   (:require
+   [hashp.core]
    [xtdb.api :as xt]
    [clojure.java.io :as io]
    [clojure.pprint :as pp]
-   [clojure.edn :as edn]
-   [babashka.fs :as fs]
+   [babashka.fs :as bb-fs]
    [clojure.string :as str]
+   [fdb.fs :as fs]
    [nextjournal.beholder :as beholder]))
 
 ;; db
@@ -22,46 +23,57 @@
 
 ;; fs
 
-(defn spit-edn [f content]
-  (io/make-parents f)
-  (spit f content)
-  f)
-
-(defn slurp-edn [f]
-  (-> f
-      slurp
-      read-string))
-
-(defn id [ns path]
-  (str "file://"
-       (if (keyword? ns) (name ns) ns)
-       (when-not (str/starts-with? path "/") "/")
-       (first (fs/split-ext path {:ext "fdb"}))))
-
-(defn metadata-file? [f]
-  (-> f fs/extension (= "fdb")))
-
-(defn attrs [f]
-  (let [{:keys [lastModifiedTime creationTime]}
-        (fs/read-attributes f "basic:lastModifiedTime,creationTime")]
-    {:file/modified   (fs/file-time->instant lastModifiedTime)
-     :file/created    (fs/file-time->instant creationTime)
-     :local.file/path f}))
-
-(defn read-file
-  [f]
-  (if (metadata-file? f)
-    (-> f slurp edn/read-string)
-    (-> f attrs)))
 
 ;; query
 
 (defn entity [id]
   (xt/entity (xt/db node) id))
 
+(defn file
+  [id]
+  (-> id fs/metadata-path->content-path entity))
+
+(defn metadata
+  [id]
+  (-> id fs/content-path->metadata-path entity))
+
+(defn file+metadata
+  [id]
+  (merge (file id) (metadata id)))
+
 ;; watchers
 
 (defonce watchers (atom {}))
+
+(defn modified?
+  [id path]
+  (if-some [db-modified (get (entity id)
+                             (if (fs/metadata-path? path)
+                               :metadata/modified
+                               :file/modified))]
+    (> (fs/modified path) db-modified)
+    true))
+
+(defn update-file
+  ([kw dir path]
+   (update-file kw dir path :modify))
+  ([kw dir path type]
+   (let [relative-path (str/replace-first path dir "")
+         id'           (id kw relative-path)
+         op            (case type
+                         (:create :modify) (try
+                                             (when (modified? id' path)
+                                               [::xt/put (merge {:xt/id id'}
+                                                                (if (fs/metadata-path? path)
+                                                                  (fs/read-metadata path)
+                                                                  (fs/read-content path)))])
+                                             #_(catch Exception _
+                                               ;; File doesn't exist anymore.
+                                               [::xt/delete id']))
+                         :delete           [::xt/delete id']
+                         :overflow         nil)]
+     (when op
+       (xt/submit-tx node #p [op])))))
 
 (defn stop
   "Stop the watcher registered as kw."
@@ -72,35 +84,25 @@
              (beholder/stop watcher))
            (dissoc m kw))))
 
-(defn maybe-update-file-bad-name-😢
-  [{:keys [type path] :as aaa}]
-  (xt/submit-tx node [[::xt/put #p (read-file (str path))]]))
-
 (defn watch
   "Watch dir and add file metadata to kw host.
   Watching a different dir for kw will stop the previous watcher."
   [kw dir]
   (swap! watchers update kw
-         (fn [_]
+         (fn [watcher]
+           (when watcher
+             (beholder/stop watcher))
            ;; Start watching first, so we don't lose any changes.
-           (let [w (beholder/watch maybe-update-file-bad-name-😢 (str dir))]
+           (let [dir' (str dir)
+                 f    (partial update-file kw dir')
+                 w    (beholder/watch (fn [{:keys [path type]}]
+                                        (f path type))
+                                      (str dir'))]
              ;; Check if any of the files changed outside watch.
-             (run! #(maybe-update-file-bad-name-😢 #p {:type :modify :path %})
-                  #p (fs/list-dir (str dir) "**"))
-             w)
-           )))
-
-
-
-
-
-
-
-
-
+             (run! f (bb-fs/list-dir dir' "**"))
+             w))))
 
 (comment
-
 
   (defonce listeners (atom {}))
 
@@ -125,8 +127,7 @@
                          (.close listener))
                        {})))
 
-
-  ;; # debug
+;; # debug
 
   ;; (add-listener! node :pprint pp/pprint)
   ;; (remove-listener! node :pprint)
@@ -143,7 +144,7 @@
   ;; TODO: config host root on db too
   (def tmp-root "./tmp/fdb/debug-fs-host/")
 
-  (fs/mkdirs tmp-root)
+  (bb-fs/mkdirs tmp-root)
 
   (defn tx-report->fs
     [{:keys [committed? ::xt/tx-ops]}]
@@ -158,7 +159,6 @@
                        (io/make-parents path)
                        (spit path string))
             ::xt/delete (io/delete-file path true))))))
-
 
   (add-listener! node :fs tx-report->fs)
 
@@ -190,7 +190,7 @@
     (beholder/watch (comp (partial spit tmp-query-output-file)
                           (partial parse-and-query node)
                           slurp
-                          fs/absolute
+                          bb-fs/absolute
                           :path)
                     tmp-query-input-file)))
 
@@ -204,22 +204,24 @@
 
 ;; # obsidian ingestion
 
-;; # cronut watcher
+;; # cronut watcher (maybe not cronut, seems to need integrant, but lists alternatives)
+
+;; # server https://github.com/tonsky/clj-simple-router
+
+;; # docs https://github.com/clj-commons/meta/issues/76
 
 (comment
 
-(file-seq (io/file tmp-root))
-(fs/delete-dir tmp-root)
+  (file-seq (io/file tmp-root))
+  (bb-fs/delete-dir tmp-root)
 
-(file-seq (io/file "/Users/filipesilva/work/fdb/tmp/fdb"))
+  (file-seq (io/file "/Users/filipesilva/work/fdb/tmp/fdb"))
 
-(xt/submit-tx node [[::xt/put (rand-file-tx)]])
+  (xt/submit-tx node [[::xt/put (rand-file-tx)]])
 
-(spit tmp-query-input-file
-      (pr-str {:find [':file/string]
-               :where [':file/string "123"]}))
-
-
+  (spit tmp-query-input-file
+        (pr-str {:find [':file/string]
+                 :where [':file/string "123"]}))
 
 ;;
   )
