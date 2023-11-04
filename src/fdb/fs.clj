@@ -32,7 +32,9 @@
   (str "file://"
        (if (keyword? ns) (name ns) ns)
        (when-not (str/starts-with? path "/") "/")
-       path))
+       (if (metadata-path? path)
+         (metadata-path->content-path path)
+         path)))
 
 (defn created [f]
   (-> f bb-fs/creation-time bb-fs/file-time->instant))
@@ -53,13 +55,10 @@
 
 (defn read-content
   [path]
-  (merge
-   (-> path created+modified-map (ns-keys "file"))
-   {:local/path path}))
+  (-> path created+modified-map (ns-keys "content")))
 
 (defn read-metadata
   [path]
   (merge
-   {:local/path path}
    (-> path created+modified-map (ns-keys "metadata"))
    (-> path slurp edn/read-string)))

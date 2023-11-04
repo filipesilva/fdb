@@ -11,7 +11,7 @@
          (sut/id "test" "foo.txt")))
   (is (= "file://test/foo.txt"
          (sut/id :test "/foo.txt")))
-  (is (= "file://test/foo.txt.fdb"
+  (is (= "file://test/foo.txt"
          (sut/id :test "foo.txt.fdb"))))
 
 (deftest content-path->metadata-path
@@ -30,9 +30,8 @@
   (with-temp-dir [dir {}]
     (let [f (str dir "/f.txt")]
       (sut/spit-edn f "foo")
-      (is (= {:file/modified (sut/modified f)
-              :file/created  (sut/created f)
-              :local/path    f}
+      (is (= {:content/modified (sut/modified f)
+              :content/created  (sut/created f)}
              (sut/read-content f))))))
 
 (deftest read-metadata
@@ -42,6 +41,5 @@
       (sut/spit-edn f edn)
       (is (= (merge edn
                     {:metadata/modified (sut/modified f)
-                     :metadata/created  (sut/created f)
-                     :local/path        f})
+                     :metadata/created  (sut/created f)})
              (sut/read-metadata f))))))
