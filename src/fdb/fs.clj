@@ -36,29 +36,15 @@
          (metadata-path->content-path path)
          path)))
 
-(defn created [f]
-  (-> f bb-fs/creation-time bb-fs/file-time->instant))
-
 (defn modified [f]
   (-> f bb-fs/last-modified-time bb-fs/file-time->instant))
 
-(defn created+modified-map
-  [f]
-  (let [{:keys [lastModifiedTime creationTime]}
-        (bb-fs/read-attributes f "basic:lastModifiedTime,creationTime")]
-    {:modified (bb-fs/file-time->instant lastModifiedTime)
-     :created  (bb-fs/file-time->instant creationTime)}))
-
-(defn- ns-keys
-  [m ns]
-  (update-keys m #(keyword ns (name %))))
-
 (defn read-content
   [path]
-  (-> path created+modified-map (ns-keys "content")))
+  {:content/modified (modified path)})
 
 (defn read-metadata
   [path]
   (merge
-   (-> path created+modified-map (ns-keys "metadata"))
+   {:metadata/modified (modified path)}
    (-> path slurp edn/read-string)))

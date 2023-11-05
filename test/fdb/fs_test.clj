@@ -30,8 +30,7 @@
   (with-temp-dir [dir {}]
     (let [f (str dir "/f.txt")]
       (sut/spit-edn f "foo")
-      (is (= {:content/modified (sut/modified f)
-              :content/created  (sut/created f)}
+      (is (= {:content/modified (sut/modified f)}
              (sut/read-content f))))))
 
 (deftest read-metadata
@@ -40,6 +39,5 @@
           edn {:bar "bar"}]
       (sut/spit-edn f edn)
       (is (= (merge edn
-                    {:metadata/modified (sut/modified f)
-                     :metadata/created  (sut/created f)})
+                    {:metadata/modified (sut/modified f)})
              (sut/read-metadata f))))))
