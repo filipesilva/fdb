@@ -4,6 +4,8 @@
    [clojure.edn :as edn]
    [clojure.string :as str]))
 
+(def default-metadata-ext "fdb.edn")
+
 (defn spit-edn [f content]
   (-> f bb-fs/parent bb-fs/create-dirs)
   (spit f content)
@@ -15,17 +17,19 @@
       read-string))
 
 (defn metadata-path? [f]
-  (-> f bb-fs/extension (= "fdb")))
+  (-> f (bb-fs/split-ext {:ext default-metadata-ext}) second))
+
+(bb-fs/split-ext "file.txt.fdb.en" {:ext default-metadata-ext})
 
 (defn content-path->metadata-path
   [path]
   {:pre [(not (metadata-path? path))]}
-  (str path ".fdb"))
+  (str path "." default-metadata-ext))
 
 (defn metadata-path->content-path
   [path]
   {:pre [(metadata-path? path)]}
-  (first (bb-fs/split-ext path {:ext "fdb"})))
+  (first (bb-fs/split-ext path {:ext default-metadata-ext})))
 
 (defn id
   [ns path]

@@ -4,6 +4,10 @@
    [babashka.fs :refer [with-temp-dir]]
    [clojure.test :refer [deftest is]]))
 
+(defn- as-md
+  [s]
+  (str s "." sut/default-metadata-ext))
+
 (deftest id
   (is (= "file://test/foo.txt"
          (sut/id :test "foo.txt")))
@@ -12,17 +16,17 @@
   (is (= "file://test/foo.txt"
          (sut/id :test "/foo.txt")))
   (is (= "file://test/foo.txt"
-         (sut/id :test "foo.txt.fdb"))))
+         (sut/id :test (as-md "foo.txt")))))
 
 (deftest content-path->metadata-path
-  (is (= "foo.txt.fdb"
+  (is (= (as-md "foo.txt")
          (sut/content-path->metadata-path "foo.txt")))
   (is (thrown? AssertionError
-               (sut/content-path->metadata-path "foo.txt.fdb"))))
+               (sut/content-path->metadata-path (as-md "foo.txt")))))
 
 (deftest metadata-path->content-path
   (is (= "foo.txt"
-         (sut/metadata-path->content-path "foo.txt.fdb")))
+         (sut/metadata-path->content-path (as-md "foo.txt"))))
   (is (thrown? AssertionError
                (sut/metadata-path->content-path "foo.txt"))))
 
@@ -35,7 +39,7 @@
 
 (deftest read-metadata
   (with-temp-dir [dir {}]
-    (let [f   (str dir "/f.txt.fdb")
+    (let [f   (str dir "/" (as-md "f.txt"))
           edn {:bar "bar"}]
       (sut/spit-edn f edn)
       (is (= (merge edn
