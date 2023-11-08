@@ -2,16 +2,12 @@
   (:require
    [babashka.fs :refer [with-temp-dir] :as fs]
    [clojure.test :refer [deftest is]]
-   [fdb.metadata :as sut]))
+   [fdb.metadata :as sut]
+   [fdb.utils :as utils]))
 
 (defn- as-md
   [s]
   (str s "." sut/default-metadata-ext))
-
-(defn- pspit [f content]
-  (-> f fs/parent fs/create-dirs)
-  (spit f content)
-  f)
 
 (deftest id
   (is (= "file://test/foo.txt"
@@ -37,11 +33,9 @@
 
 (deftest read-metadata
   (with-temp-dir [dir {}]
-    (let [f   (str dir "/f.txt")
-          fmd (as-md f)
-          edn {:bar "bar"}]
-      (pspit f "foo")
-      (pspit fmd edn)
+    (let [f   (utils/spit dir "f.txt" "")
+          edn {:bar "bar"}
+          fmd (utils/spit (as-md f) edn)]
       (is (= (merge edn
                     {:content/modified (sut/modified f)
                      :metadata/modified (sut/modified fmd)})

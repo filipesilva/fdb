@@ -38,6 +38,7 @@
         (if (metadata-path? path)
           [(metadata-path->content-path path) path]
           [path (content-path->metadata-path path)])]
+    ;; TODO: what if files don't exist? test it
     (merge
      {:content/modified (modified content-path)
       :metadata/modified (modified metadata-path)}
