@@ -1,12 +1,17 @@
-(ns fdb.fs-test
+(ns fdb.metadata-test
   (:require
-   [fdb.fs :as sut]
-   [babashka.fs :refer [with-temp-dir]]
-   [clojure.test :refer [deftest is]]))
+   [babashka.fs :refer [with-temp-dir] :as fs]
+   [clojure.test :refer [deftest is]]
+   [fdb.metadata :as sut]))
 
 (defn- as-md
   [s]
   (str s "." sut/default-metadata-ext))
+
+(defn- pspit [f content]
+  (-> f fs/parent fs/create-dirs)
+  (spit f content)
+  f)
 
 (deftest id
   (is (= "file://test/foo.txt"
@@ -30,18 +35,15 @@
   (is (thrown? AssertionError
                (sut/metadata-path->content-path "foo.txt"))))
 
-(deftest read-content
-  (with-temp-dir [dir {}]
-    (let [f (str dir "/f.txt")]
-      (sut/spit-edn f "foo")
-      (is (= {:content/modified (sut/modified f)}
-             (sut/read-content f))))))
-
 (deftest read-metadata
   (with-temp-dir [dir {}]
-    (let [f   (str dir "/" (as-md "f.txt"))
+    (let [f   (str dir "/f.txt")
+          fmd (as-md f)
           edn {:bar "bar"}]
-      (sut/spit-edn f edn)
+      (pspit f "foo")
+      (pspit fmd edn)
       (is (= (merge edn
-                    {:metadata/modified (sut/modified f)})
-             (sut/read-metadata f))))))
+                    {:content/modified (sut/modified f)
+                     :metadata/modified (sut/modified fmd)})
+             (sut/read f)
+             (sut/read fmd))))))

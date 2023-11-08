@@ -1,18 +1,18 @@
 (ns fdb.db
   (:refer-clojure :exclude [get sync])
   (:require
-   [babashka.fs :as bb-fs]
+   [babashka.fs :as fs]
    [xtdb.api :as xt]))
 
-(defn start
+(defn node
   [db-path]
   (let [cfg {:xtdb/index-store         {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                   :db-dir      (bb-fs/file db-path "rocksdb/index")}}
+                                                   :db-dir      (fs/file db-path "rocksdb/index")}}
              :xtdb/document-store      {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                   :db-dir      (bb-fs/file db-path "rocksdb/document")}}
+                                                   :db-dir      (fs/file db-path "rocksdb/document")}}
              :xtdb/tx-log              {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
-                                                   :db-dir      (bb-fs/file db-path "rocksdb/tx-log")}}
-             :xtdb.lucene/lucene-store {:db-dir (bb-fs/file db-path "lucene")}}]
+                                                   :db-dir      (fs/file db-path "rocksdb/tx-log")}}
+             :xtdb.lucene/lucene-store {:db-dir (fs/file db-path "lucene")}}]
     (xt/start-node cfg)))
 
 (defn sync
