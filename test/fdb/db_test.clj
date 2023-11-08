@@ -6,7 +6,7 @@
 
 (deftest make-me-a-db
   (with-temp-dir [db-path {}]
-    (with-open [node (sut/start db-path)]
+    (with-open [node (sut/node db-path)]
       (sut/put node :foo {:bar "bar"})
       (sut/sync node)
       (is (= {:xt/id :foo :bar "bar"}
