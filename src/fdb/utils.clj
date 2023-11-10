@@ -1,7 +1,7 @@
 (ns fdb.utils
   (:refer-clojure :exclude [spit])
   (:require
-   [clojure.core.async :refer [go-loop timeout <!! >! <! chan pipe sliding-buffer close!]]
+   [clojure.core.async :refer [timeout alts!!]]
    [babashka.fs :as fs]))
 
 (defn spit
@@ -14,27 +14,16 @@
     (clojure.core/spit f content)
     (str f)))
 
-(defn pulse
-  "Put `true` into ch every `interval` ms until `ch` is closed. Returns `ch`."
-  [ch interval]
-  (go-loop []
-    (when (>! ch true)
-      (<! (timeout interval))
-      (recur)))
-  ch)
-
-(def ^:dynamic *eventually-timeout* 1000)
-(def ^:dynamic *eventually-interval* 10)
-
 (defn do-eventually
-  [f]
-  (let [ch (-> (timeout *eventually-timeout*)
-               ;; pipe timeout-ch into chan, closing chan when timeout-ch closes
-               (pipe (chan (sliding-buffer 1) (filter (fn [_] (f)))))
-               (pulse *eventually-interval*))
-        value (<!! ch)]
-    (close! ch)
-    value))
+  ([f]
+   (do-eventually f 1000 10))
+  ([f timeout-ms interval-ms]
+   (let [timeout-ch (timeout timeout-ms)]
+     (loop []
+       (or (f)
+           (case (alts!! [timeout-ch (timeout interval-ms)])
+             timeout-ch  nil
+             (recur)))))))
 
 (defmacro eventually
   [& body]
