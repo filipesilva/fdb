@@ -15,5 +15,6 @@ pom.xml.asc
 /.nrepl-port
 /.prepl-port
 /.cpcache
-/.clj-kondo/.cache
+/.clj-kondo/.*
+/.clj-kondo/inline-configs
 /tmp
