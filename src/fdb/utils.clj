@@ -26,7 +26,7 @@
 
 (defn closeable-seq
   [coll]
-  (closeable coll #(run! (fn [^java.io.Closeable x] (.close x)) %)))
+  (closeable coll #(run! (fn [x] (.close x)) %)))
 
 (defn do-eventually
   ([f]
