@@ -35,8 +35,9 @@
    (let [timeout-ch (timeout timeout-ms)]
      (loop []
        (or (f)
-           (case (alts!! [timeout-ch (timeout interval-ms)])
-             timeout-ch  nil
+           (when-not (-> (alts!! [timeout-ch (timeout interval-ms)])
+                         second
+                         (= timeout-ch))
              (recur)))))))
 
 (defmacro eventually
