@@ -30,7 +30,9 @@
          path)))
 
 (defn modified [f]
-  (-> f fs/last-modified-time fs/file-time->instant))
+  (try
+    (-> f fs/last-modified-time fs/file-time->instant)
+    (catch java.nio.file.NoSuchFileException _ nil)))
 
 (defn read
   [path]
@@ -38,8 +40,11 @@
         (if (metadata-path? path)
           [(metadata-path->content-path path) path]
           [path (content-path->metadata-path path)])]
-    ;; TODO: what if files don't exist? test it
     (merge
-     {:content/modified (modified content-path)
-      :metadata/modified (modified metadata-path)}
-     (-> metadata-path slurp edn/read-string))))
+     (when-some [m (modified content-path)]
+       {:content/modified m})
+     (when-some [m (modified metadata-path)]
+       {:metadata/modified m})
+     (try
+       (-> metadata-path slurp edn/read-string)
+       (catch java.io.FileNotFoundException _ nil)))))

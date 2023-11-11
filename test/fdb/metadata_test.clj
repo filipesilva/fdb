@@ -33,6 +33,7 @@
 
 (deftest read-metadata
   (with-temp-dir [dir {}]
+    (is (nil? (sut/read (str dir "/foo.txt"))))
     (let [f   (utils/spit dir "f.txt" "")
           edn {:bar "bar"}
           fmd (utils/spit (as-md f) edn)]
