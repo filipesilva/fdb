@@ -27,7 +27,7 @@
            (db/delete node id))))
      (fn [p]
        (when (t/> (metadata/modified host-path p)
-                  (->> (metadata/id host p) (db/pull node) :metadata/modified))
+                  (->> (metadata/id host p) (db/pull node) :fdb/modified))
          (log/info host "stale" p)
          true))]))
 

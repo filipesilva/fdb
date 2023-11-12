@@ -21,6 +21,13 @@
   {:pre [(metadata-path? path)]}
   (first (fs/split-ext path {:ext default-metadata-ext})))
 
+(defn content-and-metadata-paths
+  [& paths]
+  (let [path (str (apply fs/path paths))]
+    (if (metadata-path? path)
+      [(metadata-path->content-path path) path]
+      [path (content-path->metadata-path path)])))
+
 (defn id
   [host path]
   (str "file://"
@@ -36,17 +43,27 @@
     (catch java.nio.file.NoSuchFileException _ nil)))
 
 (defn read
-  [path]
-  (let [[content-path metadata-path]
-        (if (metadata-path? path)
-          [(metadata-path->content-path path) path]
-          [path (content-path->metadata-path path)])
-        modifieds
-        (remove nil? [(modified content-path)
-                      (modified metadata-path)])]
+  [& paths]
+  (let [[content-path metadata-path] (apply content-and-metadata-paths paths)
+        modifieds                    (remove nil? [(modified content-path)
+                                                   (modified metadata-path)])]
     (merge
      (when (seq modifieds)
-       {:metadata/modified (apply t/max modifieds)})
+       {:fdb/modified (apply t/max modifieds)})
      (try
        (-> metadata-path slurp edn/read-string)
        (catch java.io.FileNotFoundException _ nil)))))
+
+(defn modify
+  [& paths]
+  (try
+    (let [[content-path metadata-path] (apply content-and-metadata-paths paths)
+          ;; Prefer touching the metadata path if it exists
+          path                         (if (fs/exists? metadata-path)
+                                            metadata-path
+                                            content-path)]
+      (fs/set-last-modified-time path (t/now)))
+    (catch java.nio.file.NoSuchFileException _ nil)))
+
+#_(defn update!
+  [path f])

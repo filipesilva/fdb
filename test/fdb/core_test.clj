@@ -28,13 +28,13 @@
         (is (empty? (db/all node)))
         (testing "updates from content and metadata files separately"
           (u/spit f "")
-          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
-                                  :metadata/modified (metadata/modified f)}}
+          (is (u/eventually (= #{{:xt/id        "file://test/file.txt"
+                                  :fdb/modified (metadata/modified f)}}
                                (db/all node))))
           (u/spit fm {:foo "bar"})
-          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
-                                  :metadata/modified (metadata/modified fm)
-                                  :foo               "bar"}}
+          (is (u/eventually (= #{{:xt/id        "file://test/file.txt"
+                                  :fdb/modified (metadata/modified fm)
+                                  :foo          "bar"}}
                                (db/all node)))))
         (reset! snapshot (db/all node)))
 
@@ -46,9 +46,9 @@
 
         (testing "updates on partial delete"
           (fs/delete f)
-          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
-                                  :metadata/modified (metadata/modified fm)
-                                  :foo               "bar"}}
+          (is (u/eventually (= #{{:xt/id        "file://test/file.txt"
+                                  :fdb/modified (metadata/modified fm)
+                                  :foo          "bar"}}
                                (db/all node)))))
         (testing "deletes"
           (fs/delete fm)
