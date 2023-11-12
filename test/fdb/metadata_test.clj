@@ -3,7 +3,7 @@
    [babashka.fs :refer [with-temp-dir] :as fs]
    [clojure.test :refer [deftest is]]
    [fdb.metadata :as sut]
-   [fdb.utils :as utils]))
+   [fdb.utils :as u]))
 
 (defn- as-md
   [s]
@@ -34,9 +34,9 @@
 (deftest read-metadata
   (with-temp-dir [dir {}]
     (is (nil? (sut/read (str dir "/foo.txt"))))
-    (let [f   (utils/spit dir "f.txt" "")
+    (let [f   (u/spit dir "f.txt" "")
           edn {:bar "bar"}
-          fmd (utils/spit (as-md f) edn)]
+          fmd (u/spit (as-md f) edn)]
       (is (= (merge edn
                     {:content/modified (sut/modified f)
                      :metadata/modified (sut/modified fmd)})

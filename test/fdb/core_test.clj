@@ -5,7 +5,7 @@
    [fdb.core :as fdb]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.utils :as utils]
+   [fdb.utils :as u]
    [hashp.core]))
 
 (defmacro with-temp-fdb-config
@@ -15,8 +15,8 @@
      (let [~host     (str dir# "/host")
            ~config-path (str dir# "/fdb.edn")]
        (fs/create-dirs ~host)
-       (utils/spit ~config-path {:db-path (str dir# "/db")
-                                 :hosts   [[:test "./host"]]})
+       (u/spit ~config-path {:db-path (str dir# "/db")
+                             :hosts   [[:test "./host"]]})
        ~@body)))
 
 (deftest make-me-a-fdb
@@ -27,30 +27,30 @@
       (fdb/with-fdb [config-path node]
         (is (empty? (db/all node)))
         (testing "updates from content and metadata files separately"
-          (utils/spit f "")
-          (is (utils/eventually (= #{{:xt/id            "file://test/file.txt"
-                                      :content/modified (metadata/modified f)}}
-                                   (db/all node))))
-          (utils/spit fm {:foo "bar"})
-          (is (utils/eventually (= #{{:xt/id             "file://test/file.txt"
-                                      :content/modified  (metadata/modified f)
-                                      :metadata/modified (metadata/modified fm)
-                                      :foo               "bar"}}
-                                   (db/all node)))))
+          (u/spit f "")
+          (is (u/eventually (= #{{:xt/id            "file://test/file.txt"
+                                  :content/modified (metadata/modified f)}}
+                               (db/all node))))
+          (u/spit fm {:foo "bar"})
+          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
+                                  :content/modified  (metadata/modified f)
+                                  :metadata/modified (metadata/modified fm)
+                                  :foo               "bar"}}
+                               (db/all node)))))
         (reset! snapshot (db/all node)))
 
-      (utils/spit f "1")
+      (u/spit f "1")
 
       (fdb/with-fdb [config-path node]
         (testing "updates on stale data"
-          (is (utils/eventually (not= @snapshot (db/all node)))))
+          (is (u/eventually (not= @snapshot (db/all node)))))
 
         (testing "updates on partial delete"
           (fs/delete f)
-          (is (utils/eventually (= #{{:xt/id             "file://test/file.txt"
-                                      :metadata/modified (metadata/modified fm)
-                                      :foo               "bar"}}
-                                   (db/all node)))))
+          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
+                                  :metadata/modified (metadata/modified fm)
+                                  :foo               "bar"}}
+                               (db/all node)))))
         (testing "deletes"
           (fs/delete fm)
-          (is (utils/eventually (empty? (db/all node)))))))))
+          (is (u/eventually (empty? (db/all node)))))))))

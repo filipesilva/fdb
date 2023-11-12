@@ -6,7 +6,7 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.notifier :as notifier]
-   [fdb.utils :as utils]
+   [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [taoensso.timbre :as log]))
 
@@ -39,7 +39,7 @@
                 _hosts-watcher (->> hosts
                                     (mapv (partial host-watch-spec config-path node))
                                     watcher/watch-many
-                                    utils/closeable-seq)]
+                                    u/closeable-seq)]
       (f node))))
 
 (defmacro with-fdb
@@ -62,7 +62,7 @@
             (log/info "restarting with config" config-path)
             (recur (with-fdb [config-path _db]
                      (notifier/wait ntf))))))
-      (utils/closeable ntf (fn [_] (close))))))
+      (u/closeable ntf (fn [_] (close))))))
 
 (comment
   (require '[hashp.core]))
