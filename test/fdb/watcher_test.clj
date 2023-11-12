@@ -20,18 +20,24 @@
                                  "folder" true
                                  "folder/f3.txt" false)))]
       (with-open [_watcher (sut/watch (str db-path) update-fn delete-fn stale-fn)]
-        (is (u/eventually (spy/called-n-times? stale-fn 4)))
-        (is (u/eventually (spy/called-n-times? update-fn 3)))
+        (is (u/eventually (spy/called-n-times? stale-fn 4))
+            "calls stale for each file")
+        (is (u/eventually (spy/called-n-times? update-fn 3))
+            "calls update for each stale file")
         (u/spit f1 "1")
-        (is (u/eventually (spy/called-n-times? update-fn 3)))
+        (is (u/eventually (spy/called-n-times? update-fn 3))
+            "calls update for file changes")
         (u/spit f1 "11")
         (u/spit f2 "2")
         (u/spit f3 "3")
-        (is (u/eventually (spy/called-n-times? update-fn 6)))
+        (is (u/eventually (spy/called-n-times? update-fn 6))
+            "calls update multiple times")
         (fs/delete f1)
-        (is (u/eventually (spy/called-once? delete-fn)))
+        (is (u/eventually (spy/called-once? delete-fn))
+            "calls delete")
         (u/spit db-path "folder2/f4.txt" "")
-        (is (u/eventually (spy/called-n-times? update-fn 8)))))))
+        (is (u/eventually (spy/called-n-times? update-fn 8))
+            "calls update for new files and folders")))))
 
 (deftest watch-me-a-file
   (with-temp-dir [db-path {}]
