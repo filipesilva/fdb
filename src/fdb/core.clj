@@ -1,77 +1,74 @@
 (ns fdb.core
   (:require
    [babashka.fs :as fs]
-   [clojure.core.async :refer [<! go promise-chan put!]]
-   [fdb.closeable :as closeable]
+   [clojure.core.async :refer [go]]
+   [clojure.edn :as edn]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.watcher :as watcher]))
+   [fdb.notifier :as notifier]
+   [fdb.utils :as utils]
+   [fdb.watcher :as watcher]
+   [taoensso.timbre :as log]))
 
-(def ^:private servers (atom []))
+(defn- host-watch-spec
+  [config-path node [host dir]]
+  (let [host-path (-> config-path fs/parent (fs/path dir) str)]
+    [host-path
+     (fn [p]
+       (log/info host "updated" p)
+       (db/put node (metadata/id host p) (metadata/read (fs/file host-path p))))
+     (fn [p]
+       (log/info host "deleted" p)
+       (let [id   (metadata/id host p)
+             data (metadata/read (fs/file host-path p))]
+         (if data
+           (db/put node id data)
+           (db/delete node id))))
+     (fn [p]
+       (let [{m1 :content/modified m2 :metadata/modified} (db/get node (metadata/id host p))]
+         (when (> (inst-ms (metadata/modified host-path p))
+                  (max (inst-ms m1) (inst-ms m2)))
+           (log/info host "stale" p)
+           true)))]))
 
-(defn- host->watch-spec
-  [db [host dir]]
-  [dir
-   #(db/put db (metadata/id host %) (metadata/read (fs/file dir %)))
-   #(db/delete db (metadata/id host %))
-   #(let [{m1 :content/modified m2 :metadata/modified} (db/get db (metadata/id host %))]
-      (> (metadata/modified (fs/file dir %))
-         (max m1 m2)))])
-
-(defn do-with-fdb [{:keys [db-path hosts]} f]
-  (with-open [db             (db/node db-path)
-              ;; TODO: db listeners for reactive triggers (on-change and refs)
-              _host-watchers (->> hosts
-                                  (mapv (partial host->watch-spec db))
-                                  watcher/watch-many
-                                  closeable/closeable-seq)]
-    (f)))
+(defn do-with-fdb
+  [config-path f]
+  (let [{:keys [db-path hosts] :as _config} (-> config-path slurp edn/read-string)]
+    (with-open [node             (db/node db-path)
+                ;; TODO: node listeners for reactive triggers (on-change and refs)
+                _hosts-watcher (->> hosts
+                                    (mapv (partial host-watch-spec config-path node))
+                                    watcher/watch-many
+                                    utils/closeable-seq)]
+      (f node))))
 
 (defmacro with-fdb
-  [config & body]
-  `(do-with-fdb ~config (fn [] ~@body)))
+  {:clj-kondo/ignore [:unresolved-symbol]}
+  [[config-path node] & body]
+  `(do-with-fdb ~config-path (fn [~node] ~@body)))
 
-
-;; watch config file, restart server on change, stop on delete
-;; don't let server start if theres already one running for that
-;; config file, because xtdb is single master
-
-(defn server
-  [{:keys [hosts]}]
-
-  (let [wait-ch (promise-chan)]
-    (swap! servers conj wait-ch)
+(defn watch-config-path
+  [config-path]
+  (let [ntf     (notifier/create config-path)
+        refresh #(notifier/notify! ntf)
+        close   #(notifier/destroy! ntf)]
+    (when-not ntf
+      (throw (ex-info "Server already running" {:config-path config-path})))
     (go
-      (println "Start server")
-      (<! wait-ch)
-      (println "Shutdown server")
-      )
-
-    wait-ch
-    )
-
-
-  )
-
-(defn stop-server
-  [srv]
-  (put! srv :close))
-
-(defn- stop-all!
-  []
-  (pmap stop-server @servers))
-
+      (log/info "watching config" config-path)
+      (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
+        (loop [restart? (notifier/wait ntf)]
+          (when restart?
+            (log/info "restarting with config" config-path)
+            (recur (with-fdb [config-path _db]
+                     (notifier/wait ntf))))))
+      (utils/closeable ntf (fn [_] (close))))))
 
 (comment
-  (require '[hashp.core])
-
-  (server {})
-
-  (stop-all!)
-
-  )
+  (require '[hashp.core]))
 
 ;; Some usecases I want to try:
+;; - query file
 ;; - email ingestion
 ;; - web ingestion
 ;; - obsidian ingestion

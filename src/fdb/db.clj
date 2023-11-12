@@ -25,7 +25,7 @@
 
 (defn delete
   [node id]
-  (xt/submit-tx node [[:xt/delete id]]))
+  (xt/submit-tx node [[::xt/delete id]]))
 
 (defn get
   [node id]
@@ -34,3 +34,11 @@
 (defn query
   [node query & args]
   (apply xt/q (xt/db node) query args))
+
+(defn all
+  [node]
+  (->> (query node
+              '{:find [(pull e [*])]
+                :where [[e :xt/id]]})
+       (map first)
+       set))

@@ -1,61 +1,56 @@
 (ns fdb.core-test
   (:require
+   [babashka.fs :refer [with-temp-dir] :as fs]
    [clojure.test :as t :refer [deftest is testing]]
    [fdb.core :as fdb]
+   [fdb.db :as db]
+   [fdb.metadata :as metadata]
+   [fdb.utils :as utils]
    [hashp.core]))
 
+(defmacro with-temp-fdb-config
+  {:clj-kondo/ignore [:unresolved-symbol]}
+  [[config-path host] & body]
+  `(with-temp-dir [dir# {}]
+     (let [~host     (str dir# "/host")
+           ~config-path (str dir# "/fdb.edn")]
+       (fs/create-dirs ~host)
+       (utils/spit ~config-path {:db-path (str dir# "/db")
+                                 :hosts   [[:test "./host"]]})
+       ~@body)))
 
-(defmacro with-watch
-  "Evaluate body while watching f as kw."
-  [[kw f] & body]
-  `(try
-     (fdb/watch ~kw ~f)
-     ~@body
-     (finally
-       (fdb/stop ~kw))))
+(deftest make-me-a-fdb
+  (with-temp-fdb-config [config-path host]
+    (let [f        (fs/path host "file.txt")
+          fm       (fs/path host "file.txt.fdb.edn")
+          snapshot (atom nil)]
+      (fdb/with-fdb [config-path node]
+        (is (empty? (db/all node)))
+        (testing "updates from content and metadata files separately"
+          (utils/spit f "")
+          (is (utils/eventually (= #{{:xt/id            "file://test/file.txt"
+                                      :content/modified (metadata/modified f)}}
+                                   (db/all node))))
+          (utils/spit fm {:foo "bar"})
+          (is (utils/eventually (= #{{:xt/id             "file://test/file.txt"
+                                      :content/modified  (metadata/modified f)
+                                      :metadata/modified (metadata/modified fm)
+                                      :foo               "bar"}}
+                                   (db/all node)))))
+        (reset! snapshot (db/all node)))
 
-#_(deftest fs-to-fdb
-  (with-temp-dir [dir]
-    (let [kw :test]
+      (utils/spit f "1")
 
-      (testing "create on watch"
-        (let [f  (str dir "/foo.txt")
-              fm (str f ".fdb")
-              m  {:bar "bar"}
-              id (fdb/id kw "/foo.txt")]
-          (fdb/spit-edn f "")
-          (fdb/spit-edn fm m)
-          (with-watch [kw dir]
-            (is (= (fdb/read-file f)
-                   (fdb/file id)))
-            (is (= (fdb/read-metadata fm)
-                   (fdb/metadata id))))))
+      (fdb/with-fdb [config-path node]
+        (testing "updates on stale data"
+          (is (utils/eventually (not= @snapshot (db/all node)))))
 
-      (testing "create while watching")
-      (testing "modify while watching")
-      (testing "delete while watching")
-      (testing "modify on watch")
-      (testing "delete on watch")
-
-
-      #_#_#_@(fdb/watch :test dir)
-          (is (= (merge metadata
-                        {:xt/id         "file://test/foo.txt"
-                         :file/modified (modified f)
-                         :file/created  (created f)
-                         :file/path     f
-                         :file/type     "text/plain"})
-                 (fdb/entity "file://test/foo.txt")))
-
-        #p (slurp-edn f1)
-
-      #_#_#_#_#_#_#p (modified f1)
-                #p (created f1)
-              (spit-edn f2 "2")
-            #p (created f2)
-          (spit-edn f1 "3")
-        #p (modified f1))))
-
-(deftest fdb-to-fs)
-
-(deftest query-file)
+        (testing "updates on partial delete"
+          (fs/delete f)
+          (is (utils/eventually (= #{{:xt/id             "file://test/file.txt"
+                                      :metadata/modified (metadata/modified fm)
+                                      :foo               "bar"}}
+                                   (db/all node)))))
+        (testing "deletes"
+          (fs/delete fm)
+          (is (utils/eventually (empty? (db/all node)))))))))

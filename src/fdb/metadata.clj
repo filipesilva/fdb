@@ -29,9 +29,9 @@
          (metadata-path->content-path path)
          path)))
 
-(defn modified [f]
+(defn modified [& paths]
   (try
-    (-> f fs/last-modified-time fs/file-time->instant)
+    (-> (apply fs/path paths) fs/last-modified-time fs/file-time->instant)
     (catch java.nio.file.NoSuchFileException _ nil)))
 
 (defn read
