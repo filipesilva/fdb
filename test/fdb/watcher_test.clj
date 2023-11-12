@@ -29,7 +29,9 @@
         (u/spit f3 "3")
         (is (u/eventually (spy/called-n-times? update-fn 6)))
         (fs/delete f1)
-        (is (u/eventually (spy/called-once? delete-fn)))))))
+        (is (u/eventually (spy/called-once? delete-fn)))
+        (u/spit db-path "folder2/f4.txt" "")
+        (is (u/eventually (spy/called-n-times? update-fn 8)))))))
 
 (deftest watch-me-a-file
   (with-temp-dir [db-path {}]
