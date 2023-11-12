@@ -27,18 +27,18 @@
   [node id]
   (xt/submit-tx node [[::xt/delete id]]))
 
-(defn get
+(defn pull
   [node id]
-  (xt/entity (xt/db node) id))
+  (xt/pull (xt/db node) '[*] id))
 
-(defn query
+(defn q
   [node query & args]
   (apply xt/q (xt/db node) query args))
 
 (defn all
   [node]
-  (->> (query node
-              '{:find [(pull e [*])]
-                :where [[e :xt/id]]})
+  (->> (q node
+          '{:find [(pull e [*])]
+            :where [[e :xt/id]]})
        (map first)
        set))
