@@ -17,10 +17,11 @@
                                (case f
                                  "f1.txt" true
                                  "f2.txt" true
+                                 "folder" true
                                  "folder/f3.txt" false)))]
       (with-open [_watcher (sut/watch (str db-path) update-fn delete-fn stale-fn)]
-        (is (u/eventually (spy/called-n-times? stale-fn 3)))
-        (is (u/eventually (spy/called-n-times? update-fn 2)))
+        (is (u/eventually (spy/called-n-times? stale-fn 4)))
+        (is (u/eventually (spy/called-n-times? update-fn 3)))
         (u/spit f1 "1")
         (is (u/eventually (spy/called-n-times? update-fn 3)))
         (u/spit f1 "11")

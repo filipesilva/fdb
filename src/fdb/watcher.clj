@@ -20,7 +20,6 @@
                                       file-or-dir)]
     ;; don't do anything about files that were deleted while not watching
     (->> (fs/glob file-or-dir "**")
-         (filter (comp not fs/directory?))
          (map relative-path)
          (filter stale-fn)
          (map update-fn)
