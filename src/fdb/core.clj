@@ -69,9 +69,13 @@
 
 ;; Some usecases I want to try:
 ;; - query file
+;; - kindle highlights
 ;; - email ingestion
 ;; - web ingestion
 ;; - obsidian ingestion
+;; - only rerun tests for changed files in CI
+;; - preload clj libs on config and use them in edn call sexprs
+;; use:
 ;; - cronut watcher (maybe not cronut, seems to need integrant, but lists alternatives)
 ;; - server https://github.com/tonsky/clj-simple-router
 ;; - docs https://github.com/clj-commons/meta/issues/76
