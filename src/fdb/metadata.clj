@@ -6,7 +6,7 @@
    [clojure.string :as str]
    [tick.core :as t]))
 
-(def default-metadata-ext "fdb.edn")
+(def default-metadata-ext "metadata.edn")
 
 (defn metadata-path? [f]
   (-> f (fs/split-ext {:ext default-metadata-ext}) second))

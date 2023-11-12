@@ -13,7 +13,7 @@
   [[config-path host] & body]
   `(with-temp-dir [dir# {}]
      (let [~host     (str dir# "/host")
-           ~config-path (str dir# "/fdb.edn")]
+           ~config-path (str dir# "/metadata.edn")]
        (fs/create-dirs ~host)
        (u/spit ~config-path {:db-path (str dir# "/db")
                              :hosts   [[:test "./host"]]})
@@ -22,7 +22,7 @@
 (deftest make-me-a-fdb
   (with-temp-fdb-config [config-path host]
     (let [f        (fs/path host "file.txt")
-          fm       (fs/path host "file.txt.fdb.edn")
+          fm       (fs/path host "file.txt.metadata.edn")
           snapshot (atom nil)]
       (fdb/with-fdb [config-path node]
         (is (empty? (db/all node)))
