@@ -8,7 +8,8 @@
    [fdb.notifier :as notifier]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
-   [taoensso.timbre :as log]))
+   [taoensso.timbre :as log]
+   [tick.core :as t]))
 
 (defn- host-watch-spec
   [config-path node [host dir]]
@@ -25,11 +26,10 @@
            (db/put node id data)
            (db/delete node id))))
      (fn [p]
-       (let [{m1 :content/modified m2 :metadata/modified} (db/get node (metadata/id host p))]
-         (when (> (inst-ms (metadata/modified host-path p))
-                  (max (inst-ms m1) (inst-ms m2)))
-           (log/info host "stale" p)
-           true)))]))
+       (when (t/> (metadata/modified host-path p)
+                  (->> (metadata/id host p) (db/get node) :metadata/modified))
+         (log/info host "stale" p)
+         true))]))
 
 (defn do-with-fdb
   [config-path f]

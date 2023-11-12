@@ -37,8 +37,6 @@
     (let [f   (u/spit dir "f.txt" "")
           edn {:bar "bar"}
           fmd (u/spit (as-md f) edn)]
-      (is (= (merge edn
-                    {:content/modified (sut/modified f)
-                     :metadata/modified (sut/modified fmd)})
+      (is (= (merge {:metadata/modified (sut/modified fmd)} edn)
              (sut/read f)
              (sut/read fmd))))))

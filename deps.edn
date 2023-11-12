@@ -12,7 +12,7 @@
          babashka/cli             {:git/url "https://github.com/babashka/cli"
                                    :git/sha "d47ca14f1b0f4e85cb6dfc56c358c5642d335ee2"}
          com.taoensso/timbre      {:mvn/version "6.3.1"}
-         tick/tick                {:mvn/version "0.6.2"}
+         tick/tick                {:mvn/version "0.7.5"}
          tortue/spy               {:mvn/version "2.14.0"}}
  :aliases 
  {:neil {:project {:name fdb/fdb}}}}

@@ -1,7 +1,7 @@
 (ns fdb.core-test
   (:require
    [babashka.fs :refer [with-temp-dir] :as fs]
-   [clojure.test :as t :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing]]
    [fdb.core :as fdb]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
@@ -28,12 +28,11 @@
         (is (empty? (db/all node)))
         (testing "updates from content and metadata files separately"
           (u/spit f "")
-          (is (u/eventually (= #{{:xt/id            "file://test/file.txt"
-                                  :content/modified (metadata/modified f)}}
+          (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
+                                  :metadata/modified (metadata/modified f)}}
                                (db/all node))))
           (u/spit fm {:foo "bar"})
           (is (u/eventually (= #{{:xt/id             "file://test/file.txt"
-                                  :content/modified  (metadata/modified f)
                                   :metadata/modified (metadata/modified fm)
                                   :foo               "bar"}}
                                (db/all node)))))

@@ -3,7 +3,8 @@
   (:require
    [babashka.fs :as fs]
    [clojure.edn :as edn]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [tick.core :as t]))
 
 (def default-metadata-ext "fdb.edn")
 
@@ -39,12 +40,13 @@
   (let [[content-path metadata-path]
         (if (metadata-path? path)
           [(metadata-path->content-path path) path]
-          [path (content-path->metadata-path path)])]
+          [path (content-path->metadata-path path)])
+        modifieds
+        (remove nil? [(modified content-path)
+                      (modified metadata-path)])]
     (merge
-     (when-some [m (modified content-path)]
-       {:content/modified m})
-     (when-some [m (modified metadata-path)]
-       {:metadata/modified m})
+     (when (seq modifieds)
+       {:metadata/modified (apply t/max modifieds)})
      (try
        (-> metadata-path slurp edn/read-string)
        (catch java.io.FileNotFoundException _ nil)))))
