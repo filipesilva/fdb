@@ -42,3 +42,21 @@
             :where [[e :xt/id]]})
        (map first)
        set))
+
+(defn listen
+  [node f]
+  (xt/listen node
+             {::xt/event-type ::xt/indexed-tx
+              :with-tx-ops?   true}
+             f))
+
+(defn xtdb-id->xt-id
+  "Get :xt/id for the xtdb-id provided for :xtdb.api/delete operations in a tx.
+  From https://github.com/xtdb/xtdb/issues/1769."
+  [node eid]
+  (with-open [i (xt/open-entity-history (xt/db node)
+                                        eid
+                                        :asc
+                                        {:with-docs? true
+                                         :with-corrections? true})]
+    (:xt/id (some :xtdb.api/doc (iterator-seq i)))))

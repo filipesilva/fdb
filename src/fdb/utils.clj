@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [spit])
   (:require
    [clojure.core.async :refer [timeout alts!!]]
-   [babashka.fs :as fs]))
+   [babashka.fs :as fs]
+   [taoensso.timbre :as log]))
 
 (defn spit
   "Writes content to a file and returns file path, creating parent directories if necessary.
@@ -24,9 +25,13 @@
                    java.io.Closeable
                    (close [_] (close value)))))
 
+(defn close
+  [x]
+  (.close x))
+
 (defn closeable-seq
   [coll]
-  (closeable coll #(run! (fn [x] (.close x)) %)))
+  (closeable coll #(run! close %)))
 
 (defn do-eventually
   ([f]
@@ -43,3 +48,17 @@
 (defmacro eventually
   [& body]
   `(do-eventually (fn [] ~@body)))
+
+(defmacro catch-log
+  [expr]
+  `(try ~expr
+     (catch Exception e#
+       (log/error e#)
+       nil)))
+
+(defn ellipsis
+  ([s] (ellipsis s 60))
+  ([s max-len]
+   (if (> (count s) max-len)
+     (str (subs s 0 (- max-len 3)) "...")
+     s)))

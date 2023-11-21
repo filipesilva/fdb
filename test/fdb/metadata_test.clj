@@ -19,6 +19,16 @@
   (is (= "file://test/foo.txt"
          (sut/id :test (as-md "foo.txt")))))
 
+(deftest path
+  (let [config-path "/root/foo/"
+        config {:hosts [[:not-test "not-test"]
+                        [:test "test"]]}]
+    (is (= "/root/foo/test/folder/foo.txt"
+           (sut/path config-path config "file://test/folder/foo.txt")))
+    (is (nil? (sut/path config-path config "not-file://test/folder/foo.txt")))
+    (is (nil? (sut/path config-path config "file://just-host")))
+    (is (nil? (sut/path config-path config "file://missing-host/foo.txt")))))
+
 (deftest content-path->metadata-path
   (is (= (as-md "foo.txt")
          (sut/content-path->metadata-path "foo.txt")))
