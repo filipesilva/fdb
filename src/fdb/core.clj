@@ -67,15 +67,24 @@
 (comment
   (require '[hashp.core]))
 
-;; Some usecases I want to try:
-;; - query file
-;; - kindle highlights
-;; - email ingestion
-;; - web ingestion
-;; - obsidian ingestion
-;; - only rerun tests for changed files in CI
+;; TODO:
+;; - fdb.on/startup and fdb.on/shutdown triggers, good for servers and repl
 ;; - preload clj libs on config and use them in edn call sexprs
+;; - store data (like config secrets/items/whatever) in config to look up in fns
+;; - run mode instead of watch, does initial stale check and calls all triggers
+;;   - to use in repos might need a git mode where it replays commits, don't think we
+;;     can save xtdb db in git and expect it to work with merges
+;;   - really helps if we don't reactively touch files as part of normal operation,
+;;     that way one-shot runs do everything in one pass
+;; - parse existing ignore files, at least gitignore
+;; - cli to call code in on config (running or not), probably just a one-shot repl call
+;;   - works really well with run mode, you can choose when to update and run scripts anytime
+;; - expose fdb/id or keep xt/id?
+;; - hicckup files with scripts as a inside-out web-app, kinda like php, code driven by template
+;; - feed preprocessor, fetch rss/atom, filter, cache, tag metadata, re-serve locally
+;; - feed server supporting rss cloud, serve anything as a feed (e.g. local file changestream, scrapped sites)
+;; - webserver with rss for changes to any of its files
 ;; use:
-;; - cronut watcher (maybe not cronut, seems to need integrant, but lists alternatives)
+;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
 ;; - docs https://github.com/clj-commons/meta/issues/76

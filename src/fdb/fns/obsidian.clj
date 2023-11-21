@@ -1,0 +1,2 @@
+(ns fdb.fns.obsidian)
+
