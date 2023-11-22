@@ -8,6 +8,7 @@
    [fdb.notifier :as notifier]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
+   [hashp.core]
    [taoensso.timbre :as log]
    [tick.core :as t]))
 

@@ -1,6 +1,7 @@
 {:paths ["src" "test"]
  :deps  {org.clojure/clojure      {:mvn/version "1.11.1"}
          org.clojure/core.async   {:mvn/version "1.6.681"}
+         hashp/hashp              {:mvn/version "0.2.2"}
          com.xtdb/xtdb-core       {:mvn/version "1.24.0"}
          com.xtdb/xtdb-rocksdb    {:mvn/version "1.24.0"}
          com.xtdb/xtdb-lucene     {:mvn/version "1.24.0"}
