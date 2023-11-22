@@ -1,5 +1,6 @@
 (ns fdb.core
   (:require
+   [hashp.core]
    [babashka.fs :as fs]
    [clojure.core.async :refer [go]]
    [clojure.edn :as edn]
@@ -9,7 +10,6 @@
    [fdb.reactive :as reactive]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
-   [hashp.core]
    [taoensso.timbre :as log]
    [tick.core :as t]))
 
@@ -40,7 +40,7 @@
     (with-open [node           (db/node db-path)
                 _              (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
                 _              (u/closeable (reactive/start-all-schedules config-path config node))
-                _tx-listener   (db/listen node (partial reactive/on-tx node config-path node))
+                _tx-listener   (db/listen node (partial reactive/on-tx config-path config node))
                 _host-watchers (->> hosts
                                     (mapv (partial host-watch-spec config-path node))
                                     watcher/watch-many
@@ -73,6 +73,8 @@
       (u/closeable ntf u/close))))
 
 ;; TODO:
+;; - handle renames, if possible, moving metadata files with them
+;; - watch for query.fdb.edn, auto-make metadata with on-modify trigger that works like on-query
 ;; - fdb.on/startup and fdb.on/shutdown triggers, good for servers and repl
 ;; - preload clj libs on config and use them in edn call sexprs
 ;; - store data (like config secrets/items/whatever) in config to look up in fns

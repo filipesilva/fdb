@@ -6,6 +6,7 @@
    [fdb.db-test :as db-test]
    [fdb.metadata :as metadata]
    [fdb.reactive :as sut]
+   [fdb.utils :as u]
    [spy.core :as spy]
    [xtdb.api :as xt]))
 
@@ -75,14 +76,14 @@
   (is (not (sut/matches-glob? "/root/folder/foo.txt" "**.log"))))
 
 (deftest query-results-changed?-test
-  (let [config-path "/root/one/two"
+  (let [config-path "/root/one/two/config.edn"
         config      {:hosts [[:test "test"]]}
         id          "/test/folder/foo.txt"]
-    (with-redefs [xt/q  (spy/spy (fn [_ q] (if (= q :gimme-new)
-                                             {:v 2}
-                                             {:v 1})))
-                  slurp (spy/stub "{:v 1}")
-                  spit  (spy/spy)]
+    (with-redefs [xt/q        (spy/spy (fn [_ q] (if (= q :gimme-new)
+                                                   {:v 2}
+                                                   {:v 1})))
+                  u/slurp-edn (spy/stub {:v 1})
+                  spit        (spy/spy)]
       (is (= {:results {:v 2}}
              (sut/query-results-changed? config-path config nil id
                                          {:q    :gimme-new

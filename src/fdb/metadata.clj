@@ -2,8 +2,8 @@
   (:refer-clojure :exclude [read])
   (:require
    [babashka.fs :as fs]
-   [clojure.edn :as edn]
    [clojure.string :as str]
+   [fdb.utils :as u]
    [tick.core :as t]))
 
 (def default-metadata-ext "metadata.edn")
@@ -44,7 +44,7 @@
                             (when (= id-host (name config-host))
                               dir))
                           hosts)]
-      (str (fs/file config-path dir path)))))
+      (str (fs/normalize (fs/file (fs/parent config-path) dir path))))))
 
 (defn modified [& paths]
   (try
@@ -59,6 +59,4 @@
     (merge
      (when (seq modifieds)
        {:fdb/modified (apply t/max modifieds)})
-     (try
-       (-> metadata-path slurp edn/read-string)
-       (catch java.io.FileNotFoundException _ nil)))))
+     (u/slurp-edn metadata-path))))

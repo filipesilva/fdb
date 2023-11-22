@@ -2,7 +2,6 @@
   (:require
    [babashka.fs :as fs]
    [chime.core :as chime]
-   [clojure.edn :as edn]
    [cronstar.core :as cron]
    [fdb.call :as call]
    [fdb.db :as db]
@@ -43,7 +42,7 @@
    (call-all-triggers call-arg doc self on-k (constantly true)))
   ([{:keys [config-path config] :as call-arg} doc self on-k should-trigger?]
    (run! (fn [trigger]
-           (when-let [maybe-map (should-trigger? trigger)]
+           (when-let [maybe-map (u/catch-log (should-trigger? trigger))]
              (call self on-k trigger call-arg
                    (when doc
                      {:doc      doc
@@ -88,21 +87,25 @@
            (run! u/close (get-in schedules [config-path id]))
            (if (= op ::xt/delete)
              ;; Remove schedule.
-             (update schedules config-path dissoc id)
+             (do
+               (log/info "removing schedules for" id)
+               (update schedules config-path dissoc id))
              (if-some [on-schedule (:fdb.on/schedule doc)]
                ;; Add new schedules.
-               (assoc-in schedules [config-path id]
-                         (map (fn [{:keys [cron millis call] :as trigger}]
-                                (when-some [time-seq (u/catch-log
-                                                      (cond
-                                                        cron   (cron/times cron)
-                                                        millis (chime/periodic-seq
-                                                                (t/now) (t/of-millis 1000))))]
-                                  (chime/chime-at time-seq
-                                                  (fn [timestamp]
-                                                    (call doc :fdb.on/schedule trigger call-arg
-                                                          {:timestamp (str timestamp)})))))
-                              on-schedule))
+               (do
+                 (log/info "adding schedules for" id)
+                 (assoc-in schedules [config-path id]
+                           (map (fn [{:keys [cron millis] :as trigger}]
+                                  (when-some [time-seq (u/catch-log
+                                                        (cond
+                                                          cron   (cron/times cron)
+                                                          millis (chime/periodic-seq
+                                                                  (t/now) (t/of-millis millis))))]
+                                    (chime/chime-at time-seq
+                                                    (fn [timestamp]
+                                                      (call doc :fdb.on/schedule trigger call-arg
+                                                            {:timestamp (str timestamp)})))))
+                                on-schedule)))
                ;; There's no schedules for this doc, nothing to do.
                schedules)))))
 
@@ -189,12 +192,12 @@
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
   [config-path config db id {:keys [q path]}]
-  (let [doc-path (metadata/path config-path config id)
+  (let [doc-path     (metadata/path config-path config id)
         results-path (str (fs/file (fs/parent doc-path) path))]
     (if (= doc-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
       (let [new-results (u/catch-log (xt/q db q))
-            old-results (u/catch-log (edn/read-string (slurp results-path)))]
+            old-results (u/catch-log (u/slurp-edn results-path))]
         (when (not= new-results old-results)
           (spit results-path (pr-str new-results))
           {:results new-results})))))

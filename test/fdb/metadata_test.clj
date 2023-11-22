@@ -20,9 +20,9 @@
          (sut/id :test (as-md "foo.txt")))))
 
 (deftest path
-  (let [config-path "/root/foo/"
-        config {:hosts [[:not-test "not-test"]
-                        [:test "test"]]}]
+  (let [config-path "/root/foo/config.edn"
+        config {:hosts [[:not-test "./not-test"]
+                        [:test "./test"]]}]
     (is (= "/root/foo/test/folder/foo.txt"
            (sut/path config-path config "/test/folder/foo.txt")))
     (is (nil? (sut/path config-path config "not-/test/folder/foo.txt")))

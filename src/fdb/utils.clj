@@ -1,8 +1,9 @@
 (ns fdb.utils
   (:refer-clojure :exclude [spit])
   (:require
-   [clojure.core.async :refer [timeout alts!! <!!]]
    [babashka.fs :as fs]
+   [clojure.core.async :refer [timeout alts!! <!!]]
+   [clojure.edn :as edn]
    [taoensso.timbre :as log]))
 
 (defn spit
@@ -36,7 +37,9 @@
 
 (defn do-eventually
   ([f]
-   (do-eventually f 1000 10))
+   (do-eventually f 1000 50))
+  ([f timeout-ms]
+   (do-eventually f timeout-ms 50))
   ([f timeout-ms interval-ms]
    (let [timeout-ch (timeout timeout-ms)]
      (loop []
@@ -67,3 +70,12 @@
 (defn sleep
   [ms]
   (<!! (timeout ms)))
+
+(defn slurp-edn
+  [& paths]
+  (try
+    (-> (apply fs/path paths)
+        str
+        slurp
+        edn/read-string)
+    (catch Exception _)))
