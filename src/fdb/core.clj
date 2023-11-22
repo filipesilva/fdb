@@ -27,10 +27,11 @@
            (db/put node id data)
            (db/delete node id))))
      (fn [p]
-       (when (t/> (metadata/modified host-path p)
-                  (->> (metadata/id host p) (db/pull node) :fdb/modified))
-         (log/info host "stale" p)
-         true))]))
+       (let [db-modified (->> (metadata/id host p) (db/pull node) :fdb/modified)]
+         (when (or (not db-modified)
+                   (t/> (metadata/modified host-path p) db-modified))
+           (log/info host "stale" p)
+           true)))]))
 
 (defn do-with-fdb
   [config-path f]
