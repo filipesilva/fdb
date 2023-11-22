@@ -1,7 +1,7 @@
 (ns fdb.utils
   (:refer-clojure :exclude [spit])
   (:require
-   [clojure.core.async :refer [timeout alts!!]]
+   [clojure.core.async :refer [timeout alts!! <!!]]
    [babashka.fs :as fs]
    [taoensso.timbre :as log]))
 
@@ -27,7 +27,8 @@
 
 (defn close
   [x]
-  (.close x))
+  (when x
+    (.close x)))
 
 (defn closeable-seq
   [coll]
@@ -62,3 +63,7 @@
    (if (> (count s) max-len)
      (str (subs s 0 (- max-len 3)) "...")
      s)))
+
+(defn sleep
+  [ms]
+  (<!! (timeout ms)))

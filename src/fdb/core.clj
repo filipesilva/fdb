@@ -64,10 +64,7 @@
             (log/info "restarting with config" config-path)
             (recur (with-fdb [config-path _db]
                      (notifier/wait ntf))))))
-      (u/closeable ntf (fn [_] (close))))))
-
-(comment
-  (require '[hashp.core]))
+      (u/closeable ntf u/close))))
 
 ;; TODO:
 ;; - fdb.on/startup and fdb.on/shutdown triggers, good for servers and repl

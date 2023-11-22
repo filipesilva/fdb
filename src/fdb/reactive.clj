@@ -19,17 +19,22 @@
   "Call trigger with call-arg.
   Merges call-arg with {:self self, :on-k on-k} and any extra args."
   [self on-k trigger {:keys [config-path config] :as call-arg} & more]
-  (log/info "calling" (:xt/id self) on-k (u/ellipsis trigger))
-  (u/catch-log
-   ((call/to-fn (if (map? trigger)
-                  (:call trigger)
-                  trigger))
-    (apply merge
-           call-arg
-           {:self      self
-            :self-path (metadata/path config-path config (:xt/id self))
-            :on        [on-k trigger]}
-           more))))
+  (let [call-spec (if (map? trigger)
+                    (:call trigger)
+                    trigger)
+        call-arg' (apply merge
+                         call-arg
+                         {:self      self
+                          :self-path (metadata/path config-path config (:xt/id self))
+                          :on        [on-k trigger]}
+                         more)]
+
+    (log/info "calling" (:xt/id self) on-k (u/ellipsis (str trigger))
+              (if-some [doc-id (-> call-arg' :doc :xt/id)]
+                (str "over " doc-id)
+                ""))
+    (u/catch-log
+     ((call/to-fn call-spec) call-arg'))))
 
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
@@ -38,7 +43,7 @@
    (call-all-triggers call-arg doc self on-k (constantly true)))
   ([{:keys [config-path config] :as call-arg} doc self on-k should-trigger?]
    (run! (fn [trigger]
-           (when-some [maybe-map (should-trigger? trigger)]
+           (when-let [maybe-map (should-trigger? trigger)]
              (call self on-k trigger call-arg
                    (when doc
                      {:doc      doc
@@ -116,7 +121,7 @@
   [config-path]
   (swap! *schedules
          (fn [schedules]
-           (run! u/close (-> schedules (get config-path) vals))
+           (run! u/close (-> schedules (get config-path) vals flatten))
            (dissoc schedules config-path))))
 
 (defn stop-all-schedules
@@ -146,9 +151,10 @@
                           ;; Unbounded recursion
                           '...}]
                         id)]
-    (->> pulled
+    (->> (dissoc pulled :xt/id) ;; don't include the root doc
          (tree-seq map? k)
          (map :xt/id)
+         (remove nil?)
          (into #{})
          (xt/pull-many db '[*]))))
 
@@ -156,7 +162,7 @@
   "Call all :fdb.on/refs triggers in docs that have doc in :fdb.on/refs."
   [{:keys [db] :as call-arg} [_op _id doc]]
   (run! #(call-all-triggers call-arg doc % :fdb.on/refs)
-        (recursive-pull-k db (:xt/id doc) :fdb.on/_refs)))
+        (recursive-pull-k db (:xt/id doc) :fdb/_refs)))
 
 (defn matches-glob?
   "Returns true if id matches glob."
@@ -241,14 +247,15 @@
    :doc-path    on-disk path for doc, if any
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"
-  [config-path config node {::xt/keys [tx-ops committed?] :as tx}]
-  (when committed?
+  [config-path config node tx]
+  (log/info "processing tx" (::xt/tx-id tx))
+  (when (:committed? tx)
     (let [call-arg {:config-path config-path
                     :config      config
                     :node        node
                     :db          (xt/db node {::xt/tx tx})
                     :tx          tx}
-          ops      (massage-ops node tx-ops)]
+          ops      (massage-ops node (::xt/tx-ops tx))]
 
       ;; Update schedules
       (run! (partial update-schedules call-arg) ops)

@@ -62,17 +62,3 @@
      (try
        (-> metadata-path slurp edn/read-string)
        (catch java.io.FileNotFoundException _ nil)))))
-
-(defn modify
-  [& paths]
-  (try
-    (let [[content-path metadata-path] (apply content-and-metadata-paths paths)
-          ;; Prefer touching the metadata path if it exists
-          path                         (if (fs/exists? metadata-path)
-                                            metadata-path
-                                            content-path)]
-      (fs/set-last-modified-time path (t/now)))
-    (catch java.nio.file.NoSuchFileException _ nil)))
-
-#_(defn update!
-  [path f])
