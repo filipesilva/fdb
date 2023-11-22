@@ -1,4 +1,7 @@
 (ns fdb.notifier
+  "Basic notifier registry based on core.async.
+  Lets you register a notifier under a key, notify it, wait for it.
+  You can also destroy a notifier, or destroy all notifiers."
   (:require [clojure.core.async :refer [close! chan sliding-buffer >!! <!!]]))
 
 (def ^:private *notifiers (atom {}))
@@ -17,7 +20,8 @@
                       (run! (comp close! second) notifiers)
                       {})))
 
-(defn create
+(defn get-or-create
+  "Returns a notifier registered under k. Will create if not present."
   [k]
   (let [ntf    (chan (sliding-buffer 1))
         added? (-> (swap! *notifiers (fn [notifiers]
@@ -31,9 +35,11 @@
       (close! ntf))))
 
 (defn notify!
+  "Notify ntf."
   [ntf]
   (>!! ntf true))
 
 (defn wait
+  "Wait for a notification from ntf."
   [ntf]
   (<!! ntf))
