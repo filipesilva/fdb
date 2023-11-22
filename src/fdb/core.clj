@@ -6,6 +6,7 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.notifier :as notifier]
+   [fdb.reactive :as reactive]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [hashp.core]
@@ -35,14 +36,19 @@
 
 (defn do-with-fdb
   [config-path f]
-  (let [{:keys [db-path hosts] :as _config} (-> config-path slurp edn/read-string)]
-    (with-open [node             (db/node db-path)
-                ;; TODO: node listeners for reactive triggers (on-change and refs)
-                _hosts-watcher (->> hosts
+  (let [{:keys [db-path hosts] :as config} (-> config-path slurp edn/read-string)]
+    (with-open [node           (db/node db-path)
+                _              (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
+                _              (u/closeable (reactive/start-all-schedules config-path config node))
+                _tx-listener   (db/listen node (partial reactive/on-tx node config-path node))
+                _host-watchers (->> hosts
                                     (mapv (partial host-watch-spec config-path node))
                                     watcher/watch-many
                                     u/closeable-seq)]
-      (f node))))
+      (f node)
+      (reactive/stop-config-path-schedules config-path)
+      (reactive/call-all-k config-path config node :fdb.on/shutdown)
+      nil)))
 
 (defmacro with-fdb
   {:clj-kondo/ignore [:unresolved-symbol]}
