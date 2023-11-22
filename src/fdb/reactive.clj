@@ -9,10 +9,11 @@
    [fdb.metadata :as metadata]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
+   [tick.core :as t]
    [xtdb.api :as xt])
   (:import [java.nio.file FileSystems]))
 
-(def ^:private *schedules (atom {}))
+;; Helpers
 
 (defn call
   "Call trigger with call-arg.
@@ -29,44 +30,6 @@
             :self-path (metadata/path config-path config (:xt/id self))
             :on        [on-k trigger]}
            more))))
-
-(defn update-schedules
-  "Updates schedules for doc, scoped under config-path."
-  [{:keys [config-path] :as call-arg} [op id doc]]
-  (swap! *schedules
-         (fn [schedules]
-           ;; Stop all schedules for this id.
-           (run! u/close (get-in schedules [config-path id]))
-           (if (= op ::xt/delete)
-             ;; Remove schedule.
-             (update schedules config-path dissoc id)
-             (if-some [on-schedule (:fdb.on/schedule doc)]
-               ;; Add new schedules.
-               (assoc-in schedules [config-path id]
-                         (map (fn [{:keys [cron call] :as trigger}]
-                                (when-some [time-seq (u/catch-log (cron/times cron))]
-                                  (chime/chime-at time-seq
-                                                  (fn [timestamp]
-                                                    (call doc :fdb.on/schedule trigger call-arg
-                                                          {:timestamp (str timestamp)})))))
-                              on-schedule))
-               ;; There's no schedules for this doc, nothing to do.
-               schedules)))))
-
-(defn stop-config-path-schedules
-  "Stop schedules for config-path."
-  [config-path]
-  (swap! *schedules
-         (fn [schedules]
-           (run! u/close (-> schedules (get config-path) vals))
-           (dissoc schedules config-path))))
-
-(defn stop-all-schedules
-  "Stop all schedules."
-  []
-  (swap! *schedules (fn [schedules]
-                      (run! u/close (mapcat #(vals %) (vals schedules)))
-                      {})))
 
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
@@ -93,6 +56,78 @@
         :where [['?e k]]}
        (xt/q db)
        (map first)))
+
+(defn call-all-k
+  "Call all existing k triggers.
+  Mainly for :fdb.on/startup and :fdb.on/shutdown."
+  [config-path config node k]
+  (let [db       (xt/db node)
+        call-arg {:config-path config-path
+                  :config      config
+                  :node        node
+                  :db          db}]
+    (run! #(call-all-triggers call-arg % % k)
+          (docs-with-k db k))))
+
+
+;; Schedules
+
+(def ^:private *schedules (atom {}))
+
+(defn update-schedules
+  "Updates schedules for doc, scoped under config-path."
+  [{:keys [config-path] :as call-arg} [op id doc]]
+  (swap! *schedules
+         (fn [schedules]
+           ;; Stop all schedules for this id.
+           (run! u/close (get-in schedules [config-path id]))
+           (if (= op ::xt/delete)
+             ;; Remove schedule.
+             (update schedules config-path dissoc id)
+             (if-some [on-schedule (:fdb.on/schedule doc)]
+               ;; Add new schedules.
+               (assoc-in schedules [config-path id]
+                         (map (fn [{:keys [cron millis call] :as trigger}]
+                                (when-some [time-seq (u/catch-log
+                                                      (cond
+                                                        cron   (cron/times cron)
+                                                        millis (chime/periodic-seq
+                                                                (t/now) (t/of-millis 1000))))]
+                                  (chime/chime-at time-seq
+                                                  (fn [timestamp]
+                                                    (call doc :fdb.on/schedule trigger call-arg
+                                                          {:timestamp (str timestamp)})))))
+                              on-schedule))
+               ;; There's no schedules for this doc, nothing to do.
+               schedules)))))
+
+(defn start-all-schedules
+  [config-path config node]
+  (let [db       (xt/db node)
+        call-arg {:config-path config-path
+                  :config      config
+                  :node        node
+                  :db          db}]
+    (run! #(update-schedules call-arg [nil (:xt/id %) %])
+          (docs-with-k db :fdb.on/schedule))))
+
+(defn stop-config-path-schedules
+  "Stop schedules for config-path."
+  [config-path]
+  (swap! *schedules
+         (fn [schedules]
+           (run! u/close (-> schedules (get config-path) vals))
+           (dissoc schedules config-path))))
+
+(defn stop-all-schedules
+  "Stop all schedules."
+  []
+  (swap! *schedules (fn [schedules]
+                      (run! u/close (mapcat #(vals %) (vals schedules)))
+                      {})))
+
+
+;; Triggers
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
@@ -136,7 +171,7 @@
   (run! #(call-all-triggers call-arg doc % :fdb.on/pattern
                             (fn [trigger]
                               (matches-glob? id (:glob trigger))))
-        (docs-with-k db :fdb/pattern)))
+        (docs-with-k db :fdb.on/pattern)))
 
 (defn call-on-startup
   "Call all :fdb.on/startup triggers in doc.
@@ -148,14 +183,15 @@
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
   [config-path config db id {:keys [q path]}]
-  ;; if changed, write new, return true
   (let [doc-path (metadata/path config-path config id)
-        results-path (str (fs/file (fs/parent doc-path) path))
-        new-results (u/catch-log (xt/q db q))
-        old-results (u/catch-log (edn/read-string (slurp results-path)))]
-    (when (not= new-results old-results)
-      (spit results-path (pr-str new-results))
-      {:results new-results})))
+        results-path (str (fs/file (fs/parent doc-path) path))]
+    (if (= doc-path results-path)
+      (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
+      (let [new-results (u/catch-log (xt/q db q))
+            old-results (u/catch-log (edn/read-string (slurp results-path)))]
+        (when (not= new-results old-results)
+          (spit results-path (pr-str new-results))
+          {:results new-results})))))
 
 (defn call-all-on-query
   "Call all existing :fdb.on/query triggers, updating their results if changed."
@@ -163,25 +199,13 @@
   (run! #(call-all-triggers call-arg nil % :fdb.on/query
                             (partial query-results-changed?
                                      config-path config db (:xt/id %)))
-        (docs-with-k db :fdb/query)))
+        (docs-with-k db :fdb.on/query)))
 
 (defn call-all-on-tx
   "Call all existing :fdb.on/tx triggers."
   [{:keys [db] :as call-arg}]
   (run! #(call-all-triggers call-arg nil % :fdb.on/tx)
-        (docs-with-k db :fdb/tx)))
-
-(defn call-all-k
-  "Call all existing k triggers.
-  Mainly for :fdb.on/startup and :fdb.on/shutdown."
-  [config-path config node k]
-  (let [db       (xt/db node)
-        call-arg {:config-path config-path
-                  :config      config
-                  :node        node
-                  :db          db}]
-    (run! #(call-on-startup call-arg [nil nil %])
-          (docs-with-k db k))))
+        (docs-with-k db :fdb.on/tx)))
 
 (defn massage-ops
   "Process ops to pass in to call handlers.
@@ -198,6 +222,9 @@
               (if (= ::xt/delete op)
                 [op (db/xtdb-id->xt-id node id-or-doc)]
                 [op (:xt/id id-or-doc) id-or-doc])))))
+
+
+;; tx listener
 
 (defn on-tx
   "Call all applicable triggers over tx.
@@ -251,7 +278,8 @@
                       :path "./query-results.edn"
                       :call 'println}]
    :fdb.on/tx       ['println]
-   :fdb.on/schedule [{:cron "0 0 0 * * ?"
+   :fdb.on/schedule [{:cron "0 0 0 * * ?" ;; https://crontab.guru/
+                      ;; or :millis 1000
                       :call 'println}]
    :fdb.on/startup  ['println]
    :fdb.on/shutdown ['println]}
