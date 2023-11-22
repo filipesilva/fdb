@@ -10,13 +10,13 @@
   (str s "." sut/default-metadata-ext))
 
 (deftest id
-  (is (= "file://test/foo.txt"
+  (is (= "/test/foo.txt"
          (sut/id :test "foo.txt")))
-  (is (= "file://test/foo.txt"
+  (is (= "/test/foo.txt"
          (sut/id "test" "foo.txt")))
-  (is (= "file://test/foo.txt"
+  (is (= "/test/foo.txt"
          (sut/id :test "/foo.txt")))
-  (is (= "file://test/foo.txt"
+  (is (= "/test/foo.txt"
          (sut/id :test (as-md "foo.txt")))))
 
 (deftest path
@@ -24,10 +24,10 @@
         config {:hosts [[:not-test "not-test"]
                         [:test "test"]]}]
     (is (= "/root/foo/test/folder/foo.txt"
-           (sut/path config-path config "file://test/folder/foo.txt")))
-    (is (nil? (sut/path config-path config "not-file://test/folder/foo.txt")))
-    (is (nil? (sut/path config-path config "file://just-host")))
-    (is (nil? (sut/path config-path config "file://missing-host/foo.txt")))))
+           (sut/path config-path config "/test/folder/foo.txt")))
+    (is (nil? (sut/path config-path config "not-/test/folder/foo.txt")))
+    (is (nil? (sut/path config-path config "/just-host")))
+    (is (nil? (sut/path config-path config "/missing-host/foo.txt")))))
 
 (deftest content-path->metadata-path
   (is (= (as-md "foo.txt")

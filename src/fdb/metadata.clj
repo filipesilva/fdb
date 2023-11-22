@@ -30,7 +30,7 @@
 
 (defn id
   [host path]
-  (str "file://"
+  (str "/"
        (if (keyword? host) (name host) host)
        (when-not (str/starts-with? path "/") "/")
        (if (metadata-path? path)
@@ -39,7 +39,7 @@
 
 (defn path
   [config-path {:keys [hosts]} id]
-  (when-some [[_ id-host path] (re-find #"^file://([^/]+)/(.*)$" id)]
+  (when-some [[_ id-host path] (re-find #"^/([^/]+)/(.*)$" id)]
     (when-some [dir (some (fn [[config-host dir]]
                             (when (= id-host (name config-host))
                               dir))

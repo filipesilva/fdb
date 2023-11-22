@@ -272,14 +272,14 @@
 
 (comment
   ;; example doc
-  {:xt/id           "file://host/one.txt"
+  {:xt/id           "/host/one.txt"
    :fdb/modified    "2021-03-21T20:00:00.000-00:00"
-   :fdb/refs        #{"file://host/two.txt"
-                      "file://host/three.txt"
-                      "file://host/folder"}
+   :fdb/refs        #{"/host/two.txt"
+                      "/host/three.txt"
+                      "/host/folder"}
    :fdb.on/modify   ['println] ;; same as {:call 'println}, can pass some extra props and pick up on call-arg :on
    :fdb.on/refs     ['println]
-   :fdb.on/pattern  [{:glob "file://host/*.txt"
+   :fdb.on/pattern  [{:glob "/host/*.txt"
                       :call 'println}]
    :fdb.on/query    [{:q    '[:find ?e :where [?e :file/modified ?m]]
                       :path "./query-results.edn"

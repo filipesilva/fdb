@@ -77,30 +77,29 @@
 (deftest query-results-changed?-test
   (let [config-path "/root/one/two"
         config      {:hosts [[:test "test"]]}
-        id          "file://test/folder/foo.txt"]
-    (with-redefs [xt/q (spy/spy (fn [_ q] (if (= q :gimme-new)
-                                            {:v 2}
-                                            {:v 1})))
+        id          "/test/folder/foo.txt"]
+    (with-redefs [xt/q  (spy/spy (fn [_ q] (if (= q :gimme-new)
+                                             {:v 2}
+                                             {:v 1})))
                   slurp (spy/stub "{:v 1}")
                   spit  (spy/spy)]
       (is (= {:results {:v 2}}
              (sut/query-results-changed? config-path config nil id
-                                         {:q :gimme-new
+                                         {:q    :gimme-new
                                           :path "results.edn"})))
       (is (nil? (sut/query-results-changed? config-path config nil id
-                                            {:q :foo
+                                            {:q    :foo
                                              :path "results.edn"})))
-
 
       (is (= [["/root/one/two/test/folder/results.edn" "{:v 2}"]]
              (spy/calls spit))))))
 
 (deftest massage-ops-test
-  (with-redefs [db/xtdb-id->xt-id (spy/stub "file://host/deleted.txt")]
-    (is (= [[:xtdb.api/put "file://host/one.txt" {:foo 1, :xt/id "file://host/one.txt"}]
-            [:xtdb.api/delete "file://host/deleted.txt"]]
-           (sut/massage-ops nil [[:xtdb.api/put {:foo 1, :xt/id "file://host/one.txt"}]
+  (with-redefs [db/xtdb-id->xt-id (spy/stub "/host/deleted.txt")]
+    (is (= [[:xtdb.api/put "/host/one.txt" {:foo 1, :xt/id "/host/one.txt"}]
+            [:xtdb.api/delete "/host/deleted.txt"]]
+           (sut/massage-ops nil [[:xtdb.api/put {:foo 1, :xt/id "/host/one.txt"}]
                                  ;; that thing is actually a #xtdb/id
                                  [:xtdb.api/delete 'c8d0e9aa0ad6ad1b22c4b232a822615a263d8099]
-                                 [:xtdb.api/put {:foo 2, :xt/id "file://host/one.txt"}
+                                 [:xtdb.api/put {:foo 2, :xt/id "/host/one.txt"}
                                   #inst "1115-02-13T18:00:00.000-00:00"]])))))
