@@ -23,16 +23,15 @@
 (defn get-or-create
   "Returns a notifier registered under k. Will create if not present."
   [k]
-  (let [ntf    (chan (sliding-buffer 1))
-        added? (-> (swap! *notifiers (fn [notifiers]
-                                       (if (contains? notifiers k)
-                                         notifiers
-                                         (assoc notifiers k ntf))))
-                   (get k)
-                   (= ntf))]
-    (if added?
-      ntf
-      (close! ntf))))
+  (let [ntf       (chan (sliding-buffer 1))
+        saved-ntf (-> (swap! *notifiers (fn [notifiers]
+                                          (if (contains? notifiers k)
+                                            notifiers
+                                            (assoc notifiers k ntf))))
+                      (get k))]
+    (when-not (= ntf saved-ntf)
+      (close! ntf))
+    saved-ntf))
 
 (defn notify!
   "Notify ntf."
