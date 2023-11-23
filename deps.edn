@@ -7,11 +7,9 @@
          com.xtdb/xtdb-lucene     {:mvn/version "1.24.0"}
          com.nextjournal/beholder {:mvn/version "1.0.2"}
          babashka/fs              {:mvn/version "0.4.19"}
-         babashka/http-client     {:git/url "https://github.com/babashka/http-client"
-                                   :git/sha "0afe123d7166825f4cba11ab3e3e4930a45749b6"}
          babashka/process         {:mvn/version "0.5.21"}
-         babashka/cli             {:git/url "https://github.com/babashka/cli"
-                                   :git/sha "d47ca14f1b0f4e85cb6dfc56c358c5642d335ee2"}
+         org.babashka/http-client {:mvn/version "0.4.15"}
+         org.babashka/cli         {:mvn/version "0.4.39"}
          com.taoensso/timbre      {:mvn/version "6.3.1"}
          tick/tick                {:mvn/version "0.7.5"}
          tortue/spy               {:mvn/version "2.14.0"}
@@ -19,4 +17,7 @@
          jarohen/chime            {:mvn/version "0.3.3"}}
 
  :aliases 
- {:neil {:project {:name fdb/fdb}}}}
+ {:neil {:project {:name fdb/fdb}}
+  ;; clj -M:cli --help
+  ;; or install as fdb with `bbin install ./`
+  :cli  {:main-opts ["-m" "babashka.cli.exec" "fdb.cli" "main"]}}}
