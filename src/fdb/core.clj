@@ -16,7 +16,7 @@
 (defn- host-watch-spec
   "Returns watcher/watch args for host."
   [config-path node [host dir]]
-  (let [host-path (-> config-path fs/parent (fs/path dir) str)]
+  (let [host-path (u/sibling-path config-path dir)]
     [host-path
      (fn [p]
        (log/info host "updated" p)
@@ -39,7 +39,7 @@
   "Call f with a running fdb configured with config-path."
   [config-path f]
   (let [{:keys [db-path hosts] :as config} (-> config-path slurp edn/read-string)]
-    (with-open [node           (db/node db-path)
+    (with-open [node           (db/node (u/sibling-path config-path db-path))
                 _              (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
                 _              (u/closeable (reactive/start-all-schedules config-path config node))
                 _tx-listener   (db/listen node (partial reactive/on-tx config-path config node))

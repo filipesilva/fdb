@@ -17,7 +17,7 @@
      (let [~host     (str dir# "/host")
            ~config-path (str dir# "/metadata.edn")]
        (fs/create-dirs ~host)
-       (u/spit ~config-path {:db-path (str dir# "/db")
+       (u/spit ~config-path {:db-path "./db"
                              :hosts   [[:test "./host"]]})
        ~@body)))
 

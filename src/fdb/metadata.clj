@@ -44,7 +44,7 @@
                             (when (= id-host (name config-host))
                               dir))
                           hosts)]
-      (str (fs/normalize (fs/file (fs/parent config-path) dir path))))))
+      (u/sibling-path config-path (fs/path dir path)))))
 
 (defn modified [& paths]
   (try

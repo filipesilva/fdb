@@ -193,7 +193,7 @@
   "Returns {:results ...} if query results changed compared to file at path."
   [config-path config db id {:keys [q path]}]
   (let [doc-path     (metadata/path config-path config id)
-        results-path (str (fs/file (fs/parent doc-path) path))]
+        results-path (u/sibling-path doc-path path)]
     (if (= doc-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
       (let [new-results (u/catch-log (xt/q db q))

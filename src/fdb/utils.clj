@@ -27,6 +27,11 @@
         edn/read-string)
     (catch Exception _)))
 
+(defn sibling-path
+  "Returns normalized sibling-path relative to file-paths parent."
+  [file-path sibling-path]
+  (-> file-path fs/parent (fs/file sibling-path) fs/normalize str))
+
 (defn closeable
   "From https://medium.com/@maciekszajna/reloaded-workflow-out-of-the-box-be6b5f38ea98
   Used to manage state using with-open, for values that do not implement closeable."
