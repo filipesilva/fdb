@@ -88,6 +88,7 @@
 ;;     can save xtdb db in git and expect it to work with merges
 ;;   - really helps if we don't reactively touch files as part of normal operation,
 ;;     that way one-shot runs do everything in one pass
+;;   - sync mode is good name
 ;; - parse existing ignore files, at least gitignore
 ;; - cli to call code in on config (running or not), probably just a one-shot repl call
 ;;   - works really well with run mode, you can choose when to update and run scripts anytime
@@ -97,6 +98,12 @@
 ;; - feed preprocessor, fetch rss/atom, filter, cache, tag metadata, re-serve locally
 ;; - feed server supporting rss cloud, serve anything as a feed (e.g. local file changestream, scrapped sites)
 ;; - webserver with rss for changes to any of its files
+;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
+;; - make schedules play nice with sync
+;;   - millis runs once immediately
+;;   - cron saves last execution and runs immediately if missed
+;;   - need to make sure to wait on all listeners before exiting
+;;   - would make tests much easier
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
