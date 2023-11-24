@@ -1,0 +1,13 @@
+#!/usr/bin/env bb
+
+(require
+ '[babashka.deps :as deps]
+ '[babashka.fs :as fs])
+
+(def fdb-root (-> *file* fs/parent fs/normalize str))
+(def deps {:deps {'filipesilva/fdb {:local/root fdb-root}}})
+(def clojure-args (list* "-Sdeps" deps "-M" "-m" "fdb.cli" *command-line-args*))
+
+(if-let [proc (deps/clojure clojure-args)]
+  (-> @proc :exit (System/exit))
+  (System/exit 0))

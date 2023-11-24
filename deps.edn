@@ -20,4 +20,4 @@
  {:neil {:project {:name fdb/fdb}}
   ;; clj -M:cli --help
   ;; or install as fdb with `bbin install ./`
-  :cli  {:main-opts ["-m" "babashka.cli.exec" "fdb.cli" "main"]}}}
+  :cli  {:main-opts ["-m" "fdb.cli"]}}}

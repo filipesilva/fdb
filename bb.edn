@@ -1,4 +1,4 @@
 {;; https://github.com/babashka/bbin
  ;; bbin install ./
  ;; fdb --help
- :bbin/bin {fdb {:main-opts ["clojure" "-M:cli"]}}}
+ :bbin/bin {fdb {:main-opts ["-f" "fdb"]}}}
