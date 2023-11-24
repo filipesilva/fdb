@@ -64,10 +64,13 @@
 (defn watch-config-path
   "Watch config-path and restart fdb on changes. Returns a closeable that stops watching."
   [config-path]
-  (let [ntf     (notifier/get-or-create config-path)
+  (let [ntf     (notifier/create config-path)
         refresh #(notifier/notify! ntf)
         close   #(notifier/destroy! ntf)]
     (when-not ntf
+      ;; xtdb doesn't support multiple master.
+      ;; This doesn't help when multiple processes are watching the same though.
+      ;; TODO: Need a mechanism for that too.
       (throw (ex-info "Server already running" {:config-path config-path})))
     (go
       (log/info "watching config" config-path)
@@ -104,6 +107,7 @@
 ;;   - cron saves last execution and runs immediately if missed
 ;;   - need to make sure to wait on all listeners before exiting
 ;;   - would make tests much easier
+;; - leave a log in config-path
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
