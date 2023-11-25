@@ -271,28 +271,30 @@
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"
   [config-path config node tx]
-  (log/info "processing tx" (::xt/tx-id tx))
   (when (:committed? tx)
-    (let [call-arg {:config-path config-path
-                    :config      config
-                    :node        node
-                    :db          (xt/db node {::xt/tx tx})
-                    :tx          tx}
-          ops      (massage-ops node (::xt/tx-ops tx))]
+    (u/with-time [time-ms]
+      (log/info "processing tx" (::xt/tx-id tx))
+      (let [call-arg {:config-path config-path
+                      :config      config
+                      :node        node
+                      :db          (xt/db node {::xt/tx tx})
+                      :tx          tx}
+            ops      (massage-ops node (::xt/tx-ops tx))]
 
-      ;; Update schedules
-      (run! (partial update-schedules call-arg) ops)
+        ;; Update schedules
+        (run! (partial update-schedules call-arg) ops)
 
-      ;; Call triggers in order of "closeness"
-      (run! (partial call-on-query-file call-arg) ops) ;; content
-      (run! (partial call-on-modify call-arg) ops)     ;; self metadata
-      (run! (partial call-on-refs call-arg) ops)       ;; direct ref
-      (run! (partial call-on-pattern call-arg) ops)    ;; pattern
-      (run! (partial call-on-startup call-arg) ops)    ;; application lifecycle
+        ;; Call triggers in order of "closeness"
+        (run! (partial call-on-query-file call-arg) ops) ;; content
+        (run! (partial call-on-modify call-arg) ops)     ;; self metadata
+        (run! (partial call-on-refs call-arg) ops)       ;; direct ref
+        (run! (partial call-on-pattern call-arg) ops)    ;; pattern
+        (run! (partial call-on-startup call-arg) ops) ;; application lifecycle
 
-      ;; Don't need ops, just needs to be called after every tx
-      (call-all-on-query call-arg)
-      (call-all-on-tx call-arg))))
+        ;; Don't need ops, just needs to be called after every tx
+        (call-all-on-query call-arg)
+        (call-all-on-tx call-arg))
+      (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms"))))
 
 (comment
   ;; example doc

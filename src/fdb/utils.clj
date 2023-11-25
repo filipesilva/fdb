@@ -109,3 +109,11 @@
   "Sleeps for ms milliseconds."
   [ms]
   (<!! (timeout ms)))
+
+(defmacro with-time
+  "Binds time-ms to a fn that returns the number of elapsed ms."
+  {:clj-kondo/ignore [:unresolved-symbol]}
+  [[time-ms] & body]
+  `(let [start#   (System/nanoTime)
+         ~time-ms #(/ (- (System/nanoTime) start#) 1e6) ]
+     ~@body))
