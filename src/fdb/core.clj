@@ -3,7 +3,7 @@
   (:require
    [hashp.core]
    [babashka.fs :as fs]
-   [clojure.core.async :refer [go]]
+   [clojure.core.async :refer [go <!!]]
    [clojure.edn :as edn]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
@@ -51,10 +51,10 @@
                                     (mapv (partial host-watch-spec config-path node))
                                     watcher/watch-many
                                     u/closeable-seq)]
-      (f node)
-      (reactive/stop-config-path-schedules config-path)
-      (reactive/call-all-k config-path config node :fdb.on/shutdown)
-      nil)))
+      (let [return (f node)]
+        (reactive/stop-config-path-schedules config-path)
+        (reactive/call-all-k config-path config node :fdb.on/shutdown)
+        return))))
 
 (defmacro with-fdb
   "Call body with a running fdb configured with config-path."
@@ -63,25 +63,33 @@
   `(do-with-fdb ~config-path (fn [~node] ~@body)))
 
 (defn watch-config-path
-  "Watch config-path and restart fdb on changes. Returns a closeable that stops watching."
+  "Watch config-path and restart fdb on changes. Returns a closeable that stops watching on close.
+  Use ((-> config-watcher deref :wait)) to wait on the watcher."
   [config-path]
   (let [ntf     (notifier/create config-path)
-        refresh #(notifier/notify! ntf)
-        close   #(notifier/destroy! ntf)]
+        refresh (fn [_]
+                  (log/info "restarting with new config")
+                  (notifier/notify! ntf))
+        close   (fn [_]
+                  (log/info "shutting down")
+                  (notifier/destroy! config-path))]
     (when-not ntf
       ;; xtdb doesn't support multiple master.
       ;; This doesn't help when multiple processes are watching the same though.
-      ;; TODO: Need a mechanism for that too.
+      ;; TODO: Need a mechanism for that too, maybe lock file
+      ;; via https://stackoverflow.com/a/11713345 or https://stackoverflow.com/a/6405721
       (throw (ex-info "Server already running" {:config-path config-path})))
-    (go
-      (log/info "watching config" config-path)
-      (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
-        (loop [restart? (notifier/wait ntf)]
-          (when restart?
-            (log/info "restarting with config" config-path)
-            (recur (with-fdb [config-path _db]
-                     (notifier/wait ntf))))))
-      (u/closeable ntf u/close))))
+    (when-not (fs/exists? config-path)
+      (throw (ex-info "Config file not found" {:config-path config-path})))
+    (let [ch (go
+               (log/info "watching config" config-path)
+               (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
+                 (loop [restart? (notifier/wait ntf)]
+                   (when restart?
+                     (recur (with-fdb [config-path _db]
+                              (notifier/wait ntf))))))
+               (log/info "shutdown"))]
+      (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
 ;; - watch for query.fdb.edn, auto-make metadata with on-modify trigger that works like on-query

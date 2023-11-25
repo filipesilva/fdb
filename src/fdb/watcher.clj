@@ -12,20 +12,21 @@
   File move shows up as delete-fn and update-fn call pairs, in no deterministic order.
   Returns a closeable that stops watching when closed."
   [file-or-dir update-fn delete-fn stale-fn]
-  (let [relative-path #(-> (if (fs/directory? file-or-dir)
-                             file-or-dir
-                             (fs/parent file-or-dir))
-                           (fs/relativize %)
-                           str)
-        watcher       (beholder/watch (fn [{:keys [path type] :as aaa}]
-
-                                        (let [path' (str (relative-path path))]
-                                          (case type
-                                            (:create :modify) (update-fn path')
-                                            :delete           (delete-fn path')
-                                            :overflow         nil)))
-                                      file-or-dir)]
-    (->> (fs/glob file-or-dir "**")
+  (let [[file dir]     (if (fs/directory? file-or-dir)
+                         [nil file-or-dir]
+                         [file-or-dir (fs/parent file-or-dir)])
+        relative-path  #(-> dir (fs/relativize %) str)
+        watcher        (beholder/watch (fn [{:keys [path type]}]
+                                         (let [path' (str (relative-path path))]
+                                           (case type
+                                             (:create :modify) (update-fn path')
+                                             :delete           (delete-fn path')
+                                             :overflow         nil)))
+                                       file-or-dir)
+        existing-files (if file
+                         [file]
+                         (fs/glob dir "**"))]
+    (->> existing-files
          (map relative-path)
          (filter stale-fn)
          (map update-fn)

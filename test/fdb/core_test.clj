@@ -14,7 +14,7 @@
   {:clj-kondo/ignore [:unresolved-symbol]}
   [[config-path host] & body]
   `(with-temp-dir [dir# {}]
-     (let [~host     (str dir# "/host")
+     (let [~host        (str dir# "/host")
            ~config-path (str dir# "/metadata.edn")]
        (fs/create-dirs ~host)
        (u/spit ~config-path {:db-path "./db"
