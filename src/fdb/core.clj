@@ -93,7 +93,6 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
-;; - watch for query.fdb.edn, auto-make metadata with on-modify trigger that works like on-query
 ;; - preload clj libs on config and use them in edn call sexprs
 ;; - store data (like config secrets/items/whatever) in config to look up in fns
 ;; - run mode instead of watch, does initial stale check and calls all triggers

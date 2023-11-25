@@ -48,6 +48,13 @@
             {:xt/id :four :bar 4}]
            (sut/docs-with-k (xt/db node) :bar)))))
 
+(deftest result-file-test
+  (is (= "results.fdb.edn"
+         (sut/results-file "/test/folder/query.fdb.edn")))
+  (is (= "foo-results.fdb.edn"
+         (sut/results-file "/test/folder/foo-query.fdb.edn")))
+  (is (nil? (sut/results-file "/test/folder/foo.fdb.edn"))))
+
 (deftest recursive-pull-k
   (db-test/with-db [node]
     (db/put node :1 {:foo 1 :fdb/refs #{:4}})

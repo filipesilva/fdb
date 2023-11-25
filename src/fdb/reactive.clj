@@ -1,5 +1,6 @@
 (ns fdb.reactive
   (:require
+   [clojure.pprint :as pprint]
    [babashka.fs :as fs]
    [chime.core :as chime]
    [cronstar.core :as cron]
@@ -73,6 +74,22 @@
     (run! #(call-all-triggers call-arg % % k)
           (docs-with-k db k))))
 
+(defn massage-ops
+  "Process ops to pass in to call handlers.
+  Drop ops at a time, drop anything but puts and deletes,
+  put :xt/id on second element for puts, and convert xtdb-id to xt-id for deletes."
+  [node tx-ops]
+  (->> tx-ops
+       ;; Ignore ops with valid-time
+       (filter #(-> % count (= 2)))
+       ;; We only care about puts and deletes
+       (filter #(-> % first #{::xt/put ::xt/delete}))
+       ;; Convert xtdb-id to xt-id for deletes, and pull out id
+       (map (fn [[op id-or-doc]]
+              (if (= ::xt/delete op)
+                [op (db/xtdb-id->xt-id node id-or-doc)]
+                [op (:xt/id id-or-doc) id-or-doc])))))
+
 
 ;; Schedules
 
@@ -136,6 +153,25 @@
 
 
 ;; Triggers
+
+(defn results-file
+  [id]
+  (when-some[[_ prefix] (re-matches #".*/([^/]*)query\.fdb\.edn$" id)]
+    (str prefix "results.fdb.edn")))
+
+(defn call-on-query-file
+  "If id matches in /*query.fdb.edn, query with content and output
+  results to sibling /*query-result.fdb.edn file."
+  [{:keys [db config-path config]} [op id]]
+  (when (= op ::xt/put)
+    (when-some [results-file' (results-file id)]
+      (log/info "querying" id "to" results-file')
+      (let [query-path   (metadata/path config-path config id)
+            results-path (u/sibling-path query-path results-file')
+            results      (try (xt/q db (u/slurp-edn query-path))
+                              (catch Exception e
+                                {:error (ex-message e)}))]
+        (spit results-path (with-out-str (pprint/pprint results)))))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
@@ -216,22 +252,6 @@
   (run! #(call-all-triggers call-arg nil % :fdb.on/tx)
         (docs-with-k db :fdb.on/tx)))
 
-(defn massage-ops
-  "Process ops to pass in to call handlers.
-  Drop ops at a time, drop anything but puts and deletes,
-  put :xt/id on second element for puts, and convert xtdb-id to xt-id for deletes."
-  [node tx-ops]
-  (->> tx-ops
-       ;; Ignore ops with valid-time
-       (filter #(-> % count (= 2)))
-       ;; We only care about puts and deletes
-       (filter #(-> % first #{::xt/put ::xt/delete}))
-       ;; Convert xtdb-id to xt-id for deletes, and pull out id
-       (map (fn [[op id-or-doc]]
-              (if (= ::xt/delete op)
-                [op (db/xtdb-id->xt-id node id-or-doc)]
-                [op (:xt/id id-or-doc) id-or-doc])))))
-
 
 ;; tx listener
 
@@ -264,10 +284,11 @@
       (run! (partial update-schedules call-arg) ops)
 
       ;; Call triggers in order of "closeness"
-      (run! (partial call-on-modify call-arg) ops)  ;; self
-      (run! (partial call-on-refs call-arg) ops)    ;; direct ref
-      (run! (partial call-on-pattern call-arg) ops) ;; pattern
-      (run! (partial call-on-startup call-arg) ops) ;; application lifecycle
+      (run! (partial call-on-query-file call-arg) ops) ;; content
+      (run! (partial call-on-modify call-arg) ops)     ;; self metadata
+      (run! (partial call-on-refs call-arg) ops)       ;; direct ref
+      (run! (partial call-on-pattern call-arg) ops)    ;; pattern
+      (run! (partial call-on-startup call-arg) ops)    ;; application lifecycle
 
       ;; Don't need ops, just needs to be called after every tx
       (call-all-on-query call-arg)

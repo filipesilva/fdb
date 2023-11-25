@@ -112,6 +112,27 @@
                frequencies
                (update :fdb.on/schedule #(when % true)))))))
 
+(deftest make-me-a-fdb-query
+  (with-temp-fdb-config [config-path mount]
+    (fdb/with-fdb [config-path node]
+      (u/spit mount "one.txt" "")
+      (u/spit mount "folder/two.txt" "")
+      (u/spit mount "all-modified-query.fdb.edn"
+              '[:find ?e ?modified
+                :where [?e :fdb/modified ?modified]])
+      (u/eventually (u/slurp mount "all-modified-results.fdb.edn"))
+      (is (= #{"/test/one.txt"
+               "/test/folder"
+               "/test/folder/two.txt"
+               "/test/all-modified-query.fdb.edn"}
+             (->> (u/slurp-edn mount "all-modified-results.fdb.edn")
+                  (map first)
+                  set)))
+      (u/spit mount "all-modified-query.fdb.edn" "foo")
+      (u/eventually (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))
+      (is (= "Query didn't match expected structure"
+             (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))))))
+
 (comment
   (def node (db/node "/tmp/fdb-test"))
 

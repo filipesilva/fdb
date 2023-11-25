@@ -1,11 +1,25 @@
 (ns fdb.utils
   "Grab bag of utilities."
-  (:refer-clojure :exclude [spit])
+  (:refer-clojure :exclude [spit slurp])
   (:require
    [babashka.fs :as fs]
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
    [taoensso.timbre :as log]))
+
+(defmacro catch-log
+  "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
+  [expr]
+  `(try ~expr
+     (catch Exception e#
+       (log/error (ex-message e#))
+       nil)))
+
+(defmacro catch-nil
+  "Wraps expr in a try/catch that returns nil on err."
+  [expr]
+  `(try ~expr
+     (catch Exception _#)))
 
 (defn spit
   "Writes content to a file and returns file path, creating parent directories if necessary.
@@ -17,15 +31,23 @@
     (clojure.core/spit f content)
     (str f)))
 
-(defn slurp-edn
-  "Reads content from a file and returns it as edn. Returns nil instead of erroring out."
+(defn slurp
+  "Reads content from a file and returns it as a string. Returns nil instead of erroring out.
+  Accepts any number of path fragments."
   [& paths]
-  (try
-    (-> (apply fs/path paths)
-        str
-        slurp
-        edn/read-string)
-    (catch Exception _)))
+  (catch-nil
+   (-> (apply fs/path paths)
+       str
+       clojure.core/slurp)))
+
+(defn slurp-edn
+  "Reads content from a file and returns it as edn. Returns nil instead of erroring out.
+  Accepts any number of path fragments, and uses current *data-readers*."
+  [& paths]
+  (catch-nil
+   (->> (apply slurp paths)
+        ;; xt has a bunch of readers, especially around time.
+        (edn/read-string {:readers *data-readers*}))))
 
 (defn sibling-path
   "Returns normalized sibling-path relative to file-paths parent."
@@ -74,14 +96,6 @@
   See do-eventually for defaults."
   [& body]
   `(do-eventually (fn [] ~@body)))
-
-(defmacro catch-log
-  "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
-  [expr]
-  `(try ~expr
-     (catch Exception e#
-       (log/error (ex-message e#))
-       nil)))
 
 (defn ellipsis
   "Truncates a string to max-len (default 60), adding ellipsis if necessary."
