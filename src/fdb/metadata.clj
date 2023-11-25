@@ -29,22 +29,20 @@
       [path (content-path->metadata-path path)])))
 
 (defn id
-  [host path]
+  [mount-id path]
   (str "/"
-       (if (keyword? host) (name host) host)
+       (if (keyword? mount-id) (name mount-id) mount-id)
        (when-not (str/starts-with? path "/") "/")
        (if (metadata-path? path)
          (metadata-path->content-path path)
          path)))
 
 (defn path
-  [config-path {:keys [hosts]} id]
-  (when-some [[_ id-host path] (re-find #"^/([^/]+)/(.*)$" id)]
-    (when-some [dir (some (fn [[config-host dir]]
-                            (when (= id-host (name config-host))
-                              dir))
-                          hosts)]
-      (u/sibling-path config-path (fs/path dir path)))))
+  [config-path {:keys [mount]} id]
+  (when-some [[_ mount-id path] (re-find #"^/([^/]+)/(.*)$" id)]
+    (when-some [mount-from (or (get mount mount-id)
+                               (get mount (keyword mount-id)))]
+      (u/sibling-path config-path (fs/path mount-from path)))))
 
 (defn modified [& paths]
   (try

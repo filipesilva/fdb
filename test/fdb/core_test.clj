@@ -12,19 +12,19 @@
 
 (defmacro with-temp-fdb-config
   {:clj-kondo/ignore [:unresolved-symbol]}
-  [[config-path host] & body]
+  [[config-path mount] & body]
   `(with-temp-dir [dir# {}]
-     (let [~host        (str dir# "/host")
+     (let [~mount        (str dir# "/test")
            ~config-path (str dir# "/metadata.edn")]
-       (fs/create-dirs ~host)
+       (fs/create-dirs ~mount)
        (u/spit ~config-path {:db-path "./db"
-                             :hosts   [[:test "./host"]]})
+                             :mount   {:test "./test"}})
        ~@body)))
 
 (deftest make-me-a-fdb
-  (with-temp-fdb-config [config-path host]
-    (let [f        (fs/path host "file.txt")
-          fm       (fs/path host "file.txt.metadata.edn")
+  (with-temp-fdb-config [config-path mount]
+    (let [f        (fs/path mount "file.txt")
+          fm       (fs/path mount "file.txt.metadata.edn")
           snapshot (atom nil)]
       (fdb/with-fdb [config-path node]
         (is (empty? (db/all node)))
@@ -63,10 +63,10 @@
   (swap! calls conj (-> call-arg :on first)))
 
 (deftest make-me-a-reactive-fdb
-  (with-temp-fdb-config [config-path host]
+  (with-temp-fdb-config [config-path mount]
     (reset! calls [])
     (fdb/with-fdb [config-path node]
-      (u/spit host "file.txt.metadata.edn"
+      (u/spit mount "file.txt.metadata.edn"
               {:fdb/refs        #{"/test/one.md"
                                   "/test/folder/two.md"}
                :fdb.on/modify   ['fdb.core-test/log-call]
@@ -83,8 +83,8 @@
                :fdb.on/shutdown ['fdb.core-test/log-call]})
       (is (u/eventually (db/pull node "/test/file.txt")))
       (db/pull node "/test/file.txt")
-      (u/spit host "one.md" "")
-      (u/spit host "folder/two.md" "")
+      (u/spit mount "one.md" "")
+      (u/spit mount "folder/two.md" "")
       (is (u/eventually (db/pull node "/test/folder/two.md")))
       ;; Check query ran by waiting for query result.
       (is (u/eventually (= #{["/test/file.txt"]
@@ -92,7 +92,7 @@
                              ["/test/folder/two.md"]
                              ["/test/one.md"]
                              ["/test/query-results.edn"]}
-                           (u/slurp-edn host "query-results.edn"))))
+                           (u/slurp-edn mount "query-results.edn"))))
       ;; Can take a bit, maybe because of the atom, or maybe it runs in the same process?
       (is (u/eventually (:fdb.on/schedule @calls) 3000)))
 

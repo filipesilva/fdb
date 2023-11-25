@@ -1,3 +1,0 @@
-{:db-path "./fdb"
- :hosts [[:foo "./foo"]
-         [:bar "./bar"]]}

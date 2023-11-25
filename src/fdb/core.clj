@@ -1,5 +1,5 @@
 (ns fdb.core
-  "File database with reactive metadata."
+  "Reactive file metadata database."
   (:require
    [hashp.core]
    [babashka.fs :as fs]
@@ -14,43 +14,43 @@
    [taoensso.timbre :as log]
    [tick.core :as t]))
 
-(defn- host-watch-spec
-  "Returns watcher/watch args for host."
-  [config-path node [host dir]]
-  (let [host-path (u/sibling-path config-path dir)]
-    [host-path
+(defn- mount-watch-spec
+  "Returns watcher/watch args for mounts."
+  [config-path node [mount-id mount-from]]
+  (let [mount-path (u/sibling-path config-path mount-from)]
+    [mount-path
      (fn [p]
-       (log/info host "updated" p)
-       (db/put node (metadata/id host p) (metadata/read (fs/file host-path p))))
+       (log/info mount-id "updated" p)
+       (db/put node (metadata/id mount-id p) (metadata/read (fs/file mount-path p))))
      (fn [p]
-       (log/info host "deleted" p)
-       (let [id   (metadata/id host p)
-             data (metadata/read (fs/file host-path p))]
+       (log/info mount-id "deleted" p)
+       (let [id   (metadata/id mount-id p)
+             data (metadata/read (fs/file mount-path p))]
          (if data
            (db/put node id data)
            (db/delete node id))))
      (fn [p]
-       (let [db-modified (->> (metadata/id host p) (db/pull node) :fdb/modified)]
+       (let [db-modified (->> (metadata/id mount-id p) (db/pull node) :fdb/modified)]
          (when (or (not db-modified)
-                   (t/> (metadata/modified host-path p) db-modified))
-           (log/info host "stale" p)
+                   (t/> (metadata/modified mount-path p) db-modified))
+           (log/info mount-id "stale" p)
            true)))]))
 
 (defn do-with-fdb
   "Call f with a running fdb configured with config-path."
   [config-path f]
-  (let [{:keys [db-path hosts] :as config} (-> config-path slurp edn/read-string)]
-    (with-open [node           (db/node (u/sibling-path config-path db-path))
-                _              (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
-                _              (u/closeable (reactive/start-all-schedules config-path config node))
-                _tx-listener   (db/listen node (partial reactive/on-tx config-path config node))
+  (let [{:keys [db-path mount] :as config} (-> config-path slurp edn/read-string)]
+    (with-open [node            (db/node (u/sibling-path config-path db-path))
+                _               (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
+                _               (u/closeable (reactive/start-all-schedules config-path config node))
+                _tx-listener    (db/listen node (partial reactive/on-tx config-path config node))
                 ;; Don't do anything about files that were deleted while not watching.
                 ;; Might need some sort of purge functionality later.
                 ;; We also don't handle renames because they are actually delete+update pairs.
-                _host-watchers (->> hosts
-                                    (mapv (partial host-watch-spec config-path node))
-                                    watcher/watch-many
-                                    u/closeable-seq)]
+                _mount-watchers (->> mount
+                                     (mapv (partial mount-watch-spec config-path node))
+                                     watcher/watch-many
+                                     u/closeable-seq)]
       (let [return (f node)]
         (reactive/stop-config-path-schedules config-path)
         (reactive/call-all-k config-path config node :fdb.on/shutdown)
@@ -118,9 +118,7 @@
 ;;   - need to make sure to wait on all listeners before exiting
 ;;   - would make tests much easier
 ;; - leave a log in config-path
-;; - use name mounts instead of hosts
-;;   - more like a virtual fs
-;;   - only allow kw mount names, no slashes
+;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
 ;; use:
 ;; - cli, process, http-client from babashka
