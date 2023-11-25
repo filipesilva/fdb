@@ -1,13 +1,12 @@
-#!/usr/bin/env bb
+#!/bin/bash
 
-(require
- '[babashka.deps :as deps]
- '[babashka.fs :as fs])
+# symlink this file to /usr/local/bin/fdb to be able to run it from anywhere
+#  ln -s "$(pwd)/fdb" /usr/local/bin/fdb
 
-(def fdb-root (-> *file* fs/parent fs/normalize str))
-(def deps {:deps {'filipesilva/fdb {:local/root fdb-root}}})
-(def clojure-args (list* "-Sdeps" deps "-M" "-m" "fdb.cli" *command-line-args*))
+# Absolute path to this script, e.g. /home/user/bin/foo.sh
+SCRIPT=$(readlink -f "$0")
+# Absolute path this script is in, thus /home/user/bin
+SCRIPTPATH=$(dirname "$SCRIPT")
 
-(if-let [proc (deps/clojure clojure-args)]
-  (-> @proc :exit (System/exit))
-  (System/exit 0))
+# Run the fdb.cli/-main function with the local fdb dep
+clojure -Sdeps "{:deps {filipesilva/fdb {:local/root \"$SCRIPTPATH\"}}}" -M -m fdb.cli "$@"

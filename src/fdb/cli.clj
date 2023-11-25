@@ -16,15 +16,10 @@
         wait              (-> config-watcher deref :wait)]
     (setup-shutdown-hook! (fn []
                             (.close config-watcher)
-                            ;; really have to wait here otherwise xtdb rocksdb gets
-                            ;; messed up due to its lock file
-                            ;; TODO: with clj waiting works, but with bb -f it doesn't, ask in slack maybe?
-                            ;; also noticed that with bb -f it will log ^C but not with clj
+                            ;; really have to wait here otherwise xtdb rocksdb gets bork
                             (wait)
                             ;; If we don't wait a little bit, errors don't get logged
-                            ;; TODO: don't wait 15000, wait just 500ms, I just put a big number
-                            ;; to debug bb not waiting
-                            (Thread/sleep 15000)))
+                            (Thread/sleep 500)))
     (wait)
     ;; TODO: don't print on exit, how?
     :watch-exit))

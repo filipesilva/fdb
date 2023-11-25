@@ -19,7 +19,4 @@
          org.slf4j/slf4j-nop      {:mvn/version "2.0.9"}}
 
  :aliases 
- {:neil {:project {:name fdb/fdb}}
-  ;; clj -M:cli --help
-  ;; or install as fdb with `bbin install ./`
-  :cli  {:main-opts ["-m" "fdb.cli"]}}}
+ {:neil {:project {:name fdb/fdb}}}}
