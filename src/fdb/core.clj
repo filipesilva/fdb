@@ -68,7 +68,7 @@
   [config-path]
   (let [ntf     (notifier/create config-path)
         refresh (fn [_]
-                  (log/info "restarting with new config")
+                  (log/info "loading config")
                   (notifier/notify! ntf))
         close   (fn [_]
                   (log/info "shutting down")
@@ -87,6 +87,7 @@
                  (loop [restart? (notifier/wait ntf)]
                    (when restart?
                      (recur (with-fdb [config-path _db]
+                              (log/info "fdb running")
                               (notifier/wait ntf))))))
                (log/info "shutdown"))]
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))

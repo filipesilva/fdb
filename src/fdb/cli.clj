@@ -2,13 +2,15 @@
   (:refer-clojure :exclude [sync])
   (:require
    [babashka.cli :as cli]
-   [babashka.fs :as fs]))
+   [babashka.fs :as fs]
+   [taoensso.timbre :as log]))
 
 (defn- setup-shutdown-hook!
   [f]
   (.addShutdownHook (Runtime/getRuntime) (Thread. f)))
 
 (defn watch [m]
+  (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
   (let [config-path       (-> m :opts :config fs/absolutize str)
         watch-config-path (requiring-resolve 'fdb.core/watch-config-path)
