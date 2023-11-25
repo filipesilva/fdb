@@ -1,4 +1,5 @@
 (ns fdb.core
+  "File database with reactive metadata."
   (:require
    [hashp.core]
    [babashka.fs :as fs]
@@ -108,6 +109,10 @@
 ;;   - need to make sure to wait on all listeners before exiting
 ;;   - would make tests much easier
 ;; - leave a log in config-path
+;; - use name mounts instead of hosts
+;;   - more like a virtual fs
+;;   - only allow kw mount names, no slashes
+;;   - special :/ ns gets mounted at /, doesn't watch folders in it
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
