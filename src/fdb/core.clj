@@ -94,7 +94,6 @@
 
 ;; TODO:
 ;; - preload clj libs on config and use them in edn call sexprs
-;; - store data (like config secrets/items/whatever) in config to look up in fns
 ;; - run mode instead of watch, does initial stale check and calls all triggers
 ;;   - to use in repos might need a git mode where it replays commits, don't think we
 ;;     can save xtdb db in git and expect it to work with merges
@@ -119,7 +118,15 @@
 ;; - leave a log in config-path
 ;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
+;; - naming hard
+;;   - "main" file is content, or is it data? makes sense with metadata
+;;   - metadata or properties?
+;; - file atom, lock file to ensure single access, then swap! to update
+;; - namespace config paths, and then let rest of it as user keys
+;; - fdb reference, cli command that prints a reference metadata file, can pipe it to a real file
+;; - spit-edn in utils, pprints etc
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
 ;; - docs https://github.com/clj-commons/meta/issues/76
+;; - status bar https://github.com/tonsky/AnyBar
