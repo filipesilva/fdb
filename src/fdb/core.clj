@@ -12,6 +12,7 @@
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [taoensso.timbre :as log]
+   [taoensso.timbre.appenders.core :as appenders]
    [tick.core :as t]))
 
 (defn- mount-watch-spec
@@ -82,14 +83,16 @@
     (when-not (fs/exists? config-path)
       (throw (ex-info "Config file not found" {:config-path config-path})))
     (let [ch (go
-               (log/info "watching config" config-path)
-               (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
-                 (loop [restart? (notifier/wait ntf)]
-                   (when restart?
-                     (recur (with-fdb [config-path _db]
-                              (log/info "fdb running")
-                              (notifier/wait ntf))))))
-               (log/info "shutdown"))]
+               (log/with-merged-config
+                 {:appenders {:spit (appenders/spit-appender {:fname (u/sibling-path config-path "fdb.log")})}}
+                 (log/info "watching config" config-path)
+                 (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
+                   (loop [restart? (notifier/wait ntf)]
+                     (when restart?
+                       (recur (with-fdb [config-path _db]
+                                (log/info "fdb running")
+                                (notifier/wait ntf))))))
+                 (log/info "shutdown")))]
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
@@ -115,7 +118,6 @@
 ;;   - cron saves last execution and runs immediately if missed
 ;;   - need to make sure to wait on all listeners before exiting
 ;;   - would make tests much easier
-;; - leave a log in config-path
 ;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
 ;; - naming hard
