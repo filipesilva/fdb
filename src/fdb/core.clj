@@ -125,6 +125,8 @@
 ;; - namespace config paths, and then let rest of it as user keys
 ;; - fdb reference, cli command that prints a reference metadata file, can pipe it to a real file
 ;; - spit-edn in utils, pprints etc
+;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
+;; - allow config to auto-evict based on age, but start with forever
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
