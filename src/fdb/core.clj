@@ -123,7 +123,6 @@
 ;;   - metadata or properties?
 ;; - file atom, lock file to ensure single access, then swap! to update
 ;; - namespace config paths, and then let rest of it as user keys
-;; - fdb reference, cli command that prints a reference metadata file, can pipe it to a real file
 ;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
 ;; use:

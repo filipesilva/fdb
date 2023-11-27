@@ -297,7 +297,7 @@
 
 (comment
   ;; example doc
-  {:xt/id           "/test/one.txt"
+  {:xt/id           "/example/doc.txt"
    :fdb/modified    "2021-03-21T20:00:00.000-00:00"
    :fdb/refs        #{"/test/two.txt"
                       "/test/three.txt"

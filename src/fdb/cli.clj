@@ -26,6 +26,27 @@
     ;; TODO: don't print on exit, how?
     :watch-exit))
 
+(defn reference [_]
+  (println
+"{:xt/id           \"/example/doc.txt\"
+ :fdb/modified    \"2021-03-21T20:00:00.000-00:00\"
+ :fdb/refs        #{\"/test/two.txt\"
+                    \"/test/three.txt\"
+                    \"/test/folder\"}
+ :fdb.on/modify   ['println] ;; same as {:call 'println}
+ :fdb.on/refs     ['println]
+ :fdb.on/pattern  [{:glob \"/test/*.txt\"
+                    :call 'println}] ;; you can pass in extra properties on this map
+ :fdb.on/query    [{:q    '[:find ?e :where [?e :file/modified ?m]]
+                    :path \"./query-results.edn\"
+                    :call 'println}]
+ :fdb.on/tx       ['println]
+ :fdb.on/schedule [{:cron \"0 0 0 * * ?\" ;; https://crontab.guru/
+                    ;; or :millis 1000
+                    :call 'println}]
+ :fdb.on/startup  ['println]
+ :fdb.on/shutdown ['println]}"))
+
 (defn sync [m]
   (assoc m :fn :sync))
 
@@ -40,7 +61,8 @@
   (println "help!"))
 
 (def table
-  [{:cmds ["watch"]  :fn watch}
+  [{:cmds ["watch"]      :fn watch}
+   {:cmds ["reference"]  :fn reference}
    ;; {:cmds ["sync"]   :fn sync}
    ;; {:cmds ["call"]   :fn call}
    ;; {:cmds ["repl"]   :fn repl}
