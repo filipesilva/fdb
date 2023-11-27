@@ -40,7 +40,7 @@
 (defn do-with-fdb
   "Call f with a running fdb configured with config-path."
   [config-path f]
-  (let [{:keys [db-path mount] :as config} (-> config-path slurp edn/read-string)]
+  (let [{:fdb/keys [db-path mount] :as config} (-> config-path slurp edn/read-string)]
     (with-open [node            (db/node (u/sibling-path config-path db-path))
                 _               (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
                 _               (u/closeable (reactive/start-all-schedules config-path config node))
@@ -124,7 +124,6 @@
 ;;   - "main" file is content, or is it data? makes sense with metadata
 ;;   - metadata or properties?
 ;; - file atom, lock file to ensure single access, then swap! to update
-;; - namespace config paths, and then let rest of it as user keys
 ;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
 ;; use:

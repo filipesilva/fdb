@@ -38,7 +38,7 @@
          path)))
 
 (defn path
-  [config-path {:keys [mount]} id]
+  [config-path {:fdb/keys [mount]} id]
   (when-some [[_ mount-id path] (re-find #"^/([^/]+)/(.*)$" id)]
     (when-some [mount-from (or (get mount mount-id)
                                (get mount (keyword mount-id)))]
