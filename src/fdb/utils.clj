@@ -5,6 +5,7 @@
    [babashka.fs :as fs]
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
+   [clojure.pprint :as pprint]
    [taoensso.timbre :as log]))
 
 (defmacro catch-log
@@ -31,6 +32,11 @@
     (clojure.core/spit f content)
     (str f)))
 
+(defn spit-edn
+  "Same as spit but writes it pretty printed as edn."
+  [& args]
+  (apply spit (concat (butlast args) (list (with-out-str (pprint/pprint (last args)))))))
+
 (defn slurp
   "Reads content from a file and returns it as a string. Returns nil instead of erroring out.
   Accepts any number of path fragments."
@@ -41,8 +47,7 @@
        clojure.core/slurp)))
 
 (defn slurp-edn
-  "Reads content from a file and returns it as edn. Returns nil instead of erroring out.
-  Accepts any number of path fragments, and uses current *data-readers*."
+  "Same as slurp but reads it as edn, using current *data-readers*."
   [& paths]
   (catch-nil
    (->> (apply slurp paths)

@@ -1,6 +1,5 @@
 (ns fdb.reactive
   (:require
-   [clojure.pprint :as pprint]
    [babashka.fs :as fs]
    [chime.core :as chime]
    [cronstar.core :as cron]
@@ -171,7 +170,7 @@
             results      (try (xt/q db (u/slurp-edn query-path))
                               (catch Exception e
                                 {:error (ex-message e)}))]
-        (spit results-path (with-out-str (pprint/pprint results)))))))
+        (u/spit-edn results-path results)))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
