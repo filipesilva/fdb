@@ -5,6 +5,7 @@
    [babashka.fs :as fs]
    [clojure.core.async :refer [go <!!]]
    [clojure.edn :as edn]
+   #_[clojure.repl.deps :as deps]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.notifier :as notifier]
@@ -40,7 +41,11 @@
 (defn do-with-fdb
   "Call f with a running fdb configured with config-path."
   [config-path f]
-  (let [{:fdb/keys [db-path mount] :as config} (-> config-path slurp edn/read-string)]
+  (let [{:fdb/keys [db-path mount _extra-deps] :as config} (-> config-path slurp edn/read-string)]
+    ;; TODO: should just work when clojure 1.12 is released and installed globally
+    #_(binding [clojure.core/*repl* true]
+      (when extra-deps
+        (deps/add-libs extra-deps)))
     (with-open [node            (db/node (u/sibling-path config-path db-path))
                 _               (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
                 _               (u/closeable (reactive/start-all-schedules config-path config node))
@@ -96,7 +101,7 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
-;; - preload clj libs on config and use them in edn call sexprs
+;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
 ;; - run mode instead of watch, does initial stale check and calls all triggers
 ;;   - to use in repos might need a git mode where it replays commits, don't think we
 ;;     can save xtdb db in git and expect it to work with merges
