@@ -131,6 +131,7 @@
 ;; - file atom, lock file to ensure single access, then swap! to update
 ;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
+;; - mtg database, but not in core project
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
