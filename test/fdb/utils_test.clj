@@ -1,5 +1,6 @@
 (ns fdb.utils-test
   (:require
+   [babashka.fs :refer [with-temp-dir] :as fs]
    [fdb.utils :as sut]
    [clojure.test :refer [deftest is]]))
 
@@ -23,7 +24,25 @@
 (deftest eventually-never
   (let [foo (atom 0)
         foo-fn (fn []
-                 (let [v (swap! foo inc)]
+                 (let [_v (swap! foo inc)]
                    false))]
     (sut/eventually (foo-fn))
     (is (>= 100 @foo))))
+
+(deftest lockfile-test
+  (with-temp-dir [dir {}]
+    (with-open [lock (sut/lockfile dir "lockfile-test")
+                lock2 (sut/lockfile dir "lockfile-test")]
+      (is @lock)
+      (is (nil? @lock2)))
+    (let [lock3 (sut/lockfile dir "lockfile-test")]
+      (is @lock3)
+      (.close lock3))))
+
+(deftest swap-edn-file-test
+  (with-temp-dir [dir {}]
+    (let [f (fs/file dir "foo.edn")]
+      (is (thrown? Exception (sut/swap-edn-file! f :foo inc)))
+      (sut/spit-edn f {:foo 1})
+      (sut/swap-edn-file! f update :foo inc)
+      (is (= {:foo 2} (sut/slurp-edn f))))))

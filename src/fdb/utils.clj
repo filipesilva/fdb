@@ -6,7 +6,10 @@
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
    [clojure.pprint :as pprint]
-   [taoensso.timbre :as log]))
+   [taoensso.timbre :as log])
+  (:import
+   (java.io RandomAccessFile )
+   (java.nio.channels OverlappingFileLockException)))
 
 (defmacro catch-log
   "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
@@ -122,3 +125,25 @@
   `(let [start#   (System/nanoTime)
          ~time-ms #(/ (- (System/nanoTime) start#) 1e6) ]
      ~@body))
+
+(defn lockfile
+  "Returns a closeable that attempts to lock the file at paths.
+  Deref'ing the closeable returns the lock if acquired or nil."
+  [& paths]
+  (let [file    (apply fs/file paths)
+        channel (.getChannel (RandomAccessFile. file "rw"))]
+    (closeable
+     (catch-nil (.tryLock channel))
+     (fn [_] (.close channel)))))
+
+(defn swap-edn-file!
+  "Like swap! over an edn file, but does not ensure atomicity by itself.
+  Use with lockfile for exclusive access, and with eventually for retries.
+  Throws if file does not exist. "
+  [path f & args]
+  (if-not (fs/exists? path)
+    (throw (ex-info "File not found" {:path path}))
+    (let [edn (slurp-edn path)
+          ret (apply f edn args)]
+      (spit-edn path ret)
+      ret)))
