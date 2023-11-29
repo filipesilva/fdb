@@ -16,6 +16,10 @@
   {:pre [(not (metadata-path? path))]}
   (str path "." default-metadata-ext))
 
+(defn metadata-path
+  [id]
+  (content-path->metadata-path id))
+
 (defn metadata-path->content-path
   [path]
   {:pre [(metadata-path? path)]}

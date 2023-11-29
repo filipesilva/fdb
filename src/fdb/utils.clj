@@ -147,3 +147,8 @@
           ret (apply f edn args)]
       (spit-edn path ret)
       ret)))
+
+(defn update-on
+  "Updates the config on entry."
+  [config [k trigger] f & args]
+  (update config k (partial mapv #(if (= trigger %) (apply f % args) %))))

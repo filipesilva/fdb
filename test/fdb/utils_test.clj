@@ -46,3 +46,11 @@
       (sut/spit-edn f {:foo 1})
       (sut/swap-edn-file! f update :foo inc)
       (is (= {:foo 2} (sut/slurp-edn f))))))
+
+(deftest update-on-test
+  (let [config {:fdb.on/modify [{:call 'foobar}
+                                {:call 'foo.baz}]}]
+    (is (= {:fdb.on/modify [{:call 'foobar}
+                             {:call 'foo.baz
+                              :bar   1}]}
+           (sut/update-on config [:fdb.on/modify {:call 'foo.baz}] assoc :bar 1)))))
