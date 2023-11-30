@@ -113,10 +113,15 @@
 ;;   - works really well with run mode, you can choose when to update and run scripts anytime
 ;;   - probably needs always-on repl
 ;; - expose fdb/id or keep xt/id?
-;; - hicckup files with scripts as a inside-out web-app, kinda like php, code driven by template
+;; - web server
+;;   - serves mounted paths
+;;   - has fdb.server/get and fdb.server/put etc metadata for fns
+;;   - does auto content negotiation
+;;   - maybe plays well with templates or htmx or whatever
+;;   - hicckup files with scripts as a inside-out web-app, kinda like php, code driven by template
 ;; - feed preprocessor, fetch rss/atom, filter, cache, tag metadata, re-serve locally
-;; - feed server supporting rss cloud, serve anything as a feed (e.g. local file changestream, scrapped sites)
-;; - webserver with rss for changes to any of its files
+;;   - feed server supporting rss cloud, serve anything as a feed (e.g. local file changestream, scrapped sites)
+;;   - webserver with rss for changes to any of its files
 ;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
 ;; - make schedules play nice with sync
 ;;   - millis runs once immediately
@@ -132,6 +137,12 @@
 ;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - mtg database, but not in core project
+;; - code ast
+;;   - maybe fine grained function-level deps like in speculation
+;;   - code loader for clojure
+;; - just doing a doc with file listings for the month would already help with taxes
+;; - just generally try to have stuff I use a lot on-disk and try to come up with cool ways to use it
+;; - store as much as possible in txt/md, goal is to be human readable
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
