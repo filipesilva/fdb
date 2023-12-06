@@ -6,10 +6,11 @@
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
    [clojure.pprint :as pprint]
-   [taoensso.timbre :as log])
+   [clojure.string :as str]
+   [taoensso.timbre :as log]
+   [tick.core :as t])
   (:import
-   (java.io RandomAccessFile )
-   (java.nio.channels OverlappingFileLockException)))
+   (java.io RandomAccessFile)))
 
 (defmacro catch-log
   "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
@@ -152,3 +153,23 @@
   "Updates the config on entry."
   [config [k trigger] f & args]
   (update config k (partial mapv #(if (= trigger %) (apply f % args) %))))
+
+(defn filename-inst
+  "Returns a filename friendly version of inst, with : replaced by .
+  e.g. 2023-11-30T14:20:23 -> 2023-11-30T14.20.23Z
+  Parse it back to inst by replacing . with : again."
+  [inst]
+  (-> inst
+      t/instant
+      str
+      (str/replace ":" ".")))
+
+(defn filename-str
+  "Returns a filename friendly version of s.
+  Removes all characters that are not alphanumeric or -_.,[](){} with a space
+  and trims the result.
+  A simple version of https://stackoverflow.com/a/35352640"
+  [s]
+  (-> s
+      (str/replace #"[^a-zA-Z0-9-_.,\[\](){}]" " ")
+      str/trim))

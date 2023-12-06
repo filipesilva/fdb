@@ -54,3 +54,11 @@
                              {:call 'foo.baz
                               :bar   1}]}
            (sut/update-on config [:fdb.on/modify {:call 'foo.baz}] assoc :bar 1)))))
+
+(deftest filename-inst-test
+  (is (= "2023-11-30T14.20.23Z"
+         (sut/filename-inst #inst "2023-11-30T14:20:23.000-00:00"))))
+
+(deftest filename-str-test
+  (is (= "foo bar-_,       (baz)[foo]{bar}"
+         (sut/filename-str "  foo:bar-_,%:?!!àè(baz)[foo]{bar}  "))))

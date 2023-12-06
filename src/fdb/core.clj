@@ -101,6 +101,7 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
+;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode
 ;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
 ;; - run mode instead of watch, does initial stale check and calls all triggers
 ;;   - to use in repos might need a git mode where it replays commits, don't think we
@@ -125,8 +126,10 @@
 ;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
 ;; - make schedules play nice with sync
 ;;   - millis runs once immediately
-;;   - cron saves last execution and runs immediately if missed
+;;   - cron saves last execution and runs immediately if missed using cron/times arity 2
 ;;   - need to make sure to wait on all listeners before exiting
+;;     - or don't try to wait, load all files in a big tx, then just call trigger on tx one by one
+;;     - this batch load mode is probably better anyway for stale check
 ;;   - would make tests much easier
 ;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
