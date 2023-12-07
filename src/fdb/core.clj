@@ -101,6 +101,7 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
+;; - review the whole on, on-ks, trigger names
 ;; - support file ext processors, e.g. markdown with props
 ;;   - extract data from content directly to db metadata, without making the metadata file
 ;;   - avoids lots of clutter in existing dirs

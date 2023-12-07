@@ -47,14 +47,6 @@
       (sut/swap-edn-file! f update :foo inc)
       (is (= {:foo 2} (sut/slurp-edn f))))))
 
-(deftest update-on-test
-  (let [config {:fdb.on/modify [{:call 'foobar}
-                                {:call 'foo.baz}]}]
-    (is (= {:fdb.on/modify [{:call 'foobar}
-                             {:call 'foo.baz
-                              :bar   1}]}
-           (sut/update-on config [:fdb.on/modify {:call 'foo.baz}] assoc :bar 1)))))
-
 (deftest filename-inst-test
   (is (= "2023-11-30T14.20.23Z"
          (sut/filename-inst #inst "2023-11-30T14:20:23.000-00:00"))))

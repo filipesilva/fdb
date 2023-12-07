@@ -17,7 +17,7 @@
 (defn call
   "Call trigger with call-arg.
   Merges call-arg with {:self self, :on-k on-k} and any extra args."
-  [self on-k trigger {:keys [config-path config] :as call-arg} & more]
+  [self on-k trigger trigger-idx {:keys [config-path config] :as call-arg} & more]
   (let [call-spec (if (map? trigger)
                     (:call trigger)
                     trigger)
@@ -25,7 +25,8 @@
                          call-arg
                          {:self      self
                           :self-path (metadata/path config-path config (:xt/id self))
-                          :on        [on-k trigger]}
+                          :on        [on-k trigger]
+                          :on-ks     [on-k trigger-idx]}
                          more)]
 
     (log/info "calling" (:xt/id self) on-k (u/ellipsis (str trigger))
@@ -41,15 +42,15 @@
   ([call-arg doc self on-k]
    (call-all-triggers call-arg doc self on-k (constantly true)))
   ([{:keys [config-path config] :as call-arg} doc self on-k should-trigger?]
-   (run! (fn [trigger]
+   (run! (fn [[trigger-idx trigger]]
            (when-let [maybe-map (u/catch-log (should-trigger? trigger))]
-             (call self on-k trigger call-arg
+             (call self on-k trigger trigger-idx call-arg
                    (when doc
                      {:doc      doc
                       :doc-path (metadata/path config-path config (:xt/id self))})
                    (when (map? maybe-map)
                      maybe-map))))
-         (on-k self))))
+         (->> self on-k (map-indexed vector)))))
 
 (defn docs-with-k
   "Get all docs with k in db.
@@ -111,17 +112,18 @@
                (do
                  (log/info "adding schedules for" id)
                  (assoc-in schedules [config-path id]
-                           (map (fn [{:keys [cron millis] :as trigger}]
-                                  (when-some [time-seq (u/catch-log
-                                                        (cond
-                                                          cron   (cron/times cron)
-                                                          millis (chime/periodic-seq
-                                                                  (t/now) (t/of-millis millis))))]
-                                    (chime/chime-at time-seq
-                                                    (fn [timestamp]
-                                                      (call doc :fdb.on/schedule trigger call-arg
-                                                            {:timestamp (str timestamp)})))))
-                                on-schedule)))
+                           (map-indexed
+                            (fn [trigger-idx {:keys [cron millis] :as trigger}]
+                              (when-some [time-seq (u/catch-log
+                                                    (cond
+                                                      cron   (cron/times cron)
+                                                      millis (chime/periodic-seq
+                                                              (t/now) (t/of-millis millis))))]
+                                (chime/chime-at time-seq
+                                                (fn [timestamp]
+                                                  (call doc :fdb.on/schedule trigger trigger-idx
+                                                        call-arg {:timestamp (str timestamp)})))))
+                            on-schedule)))
                ;; There's no schedules for this doc, nothing to do.
                schedules)))))
 
@@ -263,6 +265,7 @@
    :db          db
    :tx          tx
    :on          [fdb.on/k trigger]
+   :on-ks       [fdb.on/k 1]
    :self        the doc that has the trigger being called
    :self-path   on-disk path for self
    :doc         the doc the tigger is being called over, if any

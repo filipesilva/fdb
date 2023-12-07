@@ -149,11 +149,6 @@
       (spit-edn path ret)
       ret)))
 
-(defn update-on
-  "Updates the config on entry."
-  [config [k trigger] f & args]
-  (update config k (partial mapv #(if (= trigger %) (apply f % args) %))))
-
 (defn filename-inst
   "Returns a filename friendly version of inst, with : replaced by .
   e.g. 2023-11-30T14:20:23 -> 2023-11-30T14.20.23Z
