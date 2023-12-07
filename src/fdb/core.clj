@@ -118,7 +118,6 @@
 ;; - cli to call code in on config (running or not), probably just a one-shot repl call
 ;;   - works really well with run mode, you can choose when to update and run scripts anytime
 ;;   - probably needs always-on repl
-;; - expose fdb/id or keep xt/id?
 ;; - web server
 ;;   - serves mounted paths
 ;;   - has fdb.server/get and fdb.server/put etc metadata for fns
