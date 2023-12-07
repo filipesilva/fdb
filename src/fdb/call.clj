@@ -20,7 +20,7 @@
 
 (defmethod to-fn clojure.lang.Symbol
   [sym]
-  (resolve sym))
+  (requiring-resolve sym))
 
 (defmethod to-fn clojure.lang.PersistentList
   [sexp]
