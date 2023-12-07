@@ -101,7 +101,12 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
+;; - support file ext processors, e.g. markdown with props
+;;   - extract data from content directly to db metadata, without making the metadata file
+;;   - avoids lots of clutter in existing dirs
+;;   - really good for obsidian or for code ASTs and such
 ;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode
+;; - consider java-time.api instead of tick
 ;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
 ;; - run mode instead of watch, does initial stale check and calls all triggers
 ;;   - to use in repos might need a git mode where it replays commits, don't think we
