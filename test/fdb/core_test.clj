@@ -78,7 +78,12 @@
                                   :call 'fdb.core-test/log-call}]
                :fdb.on/tx       ['fdb.core-test/log-call]
                :fdb.on/schedule [{:millis 50
-                                  :call   'fdb.core-test/log-call}]
+                                  :call   'fdb.core-test/log-call}
+                                 {:millis  50
+                                  :call    '(fn [call-arg]
+                                              (fdb.utils/sleep 100)
+                                              (fdb.core-test/log-call {:on [:fdb.on/schedule-timeout]}))
+                                  :timeout [50 :millis]}]
                :fdb.on/startup  ['fdb.core-test/log-call]
                :fdb.on/shutdown ['fdb.core-test/log-call]})
       (is (u/eventually (db/pull node "/test/file.txt")))

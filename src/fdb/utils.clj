@@ -176,3 +176,24 @@
       (str/replace #"\r" "\n")
       str/trim))
 
+(defn duration-ms
+  [duration]
+  (cond
+    (number? duration)           duration
+    (and (vector? duration)
+         (= (count duration) 2)) (t/millis (apply t/new-duration duration))
+    :else                        nil))
+
+(defn maybe-timeout
+  [timeout fut]
+  (let [timeout-ms (duration-ms timeout)
+        ret        (try (if timeout-ms
+                          (deref fut timeout-ms ::timeout)
+                          (deref fut))
+                        (catch InterruptedException _
+                          ;; The future can still be interrupted from outside this fn.
+                          ::interrupted))]
+    (when (and timeout-ms
+               (#{::timeout ::interrupted} ret))
+      (catch-nil (future-cancel fut)))
+    ret))

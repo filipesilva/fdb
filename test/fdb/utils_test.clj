@@ -54,3 +54,10 @@
 (deftest filename-str-test
   (is (= "foo bar-_,       (baz)[foo]{bar}"
          (sut/filename-str "  foo:bar-_,%:?!!àè(baz)[foo]{bar}  "))))
+
+(deftest maybe-timeout-test
+  (let [fut #(future (sut/sleep 100))]
+    (is (= ::sut/timeout (sut/maybe-timeout 0 (fut))))
+    (is (= ::sut/timeout (sut/maybe-timeout [0 :seconds] (fut))))
+    (is (= nil (sut/maybe-timeout nil (fut))))
+    (is (= nil (sut/maybe-timeout 200 (fut))))))
