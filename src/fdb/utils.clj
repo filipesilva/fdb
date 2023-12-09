@@ -5,8 +5,8 @@
    [babashka.fs :as fs]
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
-   [clojure.pprint :as pprint]
    [clojure.string :as str]
+   [puget.printer :as puget]
    [taoensso.timbre :as log]
    [tick.core :as t])
   (:import
@@ -39,7 +39,8 @@
 (defn spit-edn
   "Same as spit but writes it pretty printed as edn."
   [& args]
-  (apply spit (concat (butlast args) (list (with-out-str (pprint/pprint (last args)))))))
+  (let [edn-string (with-out-str (puget/pprint (last args) {:map-delimiter ""}))]
+    (apply spit (concat (butlast args) (list edn-string)))))
 
 (defn slurp
   "Reads content from a file and returns it as a string. Returns nil instead of erroring out.
