@@ -167,3 +167,12 @@
   (-> s
       (str/replace #"[\\/:*?\"<>|]" " ")
       str/trim))
+
+(defn unix-line-separators
+  "Converts line separators to \n, and trims the result."
+  [s]
+  (-> s
+      (str/replace #"\r\n" "\n")
+      (str/replace #"\r" "\n")
+      str/trim))
+
