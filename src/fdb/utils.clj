@@ -162,10 +162,8 @@
 
 (defn filename-str
   "Returns a filename friendly version of s.
-  Removes all characters that are not alphanumeric or -_.,[](){} with a space
-  and trims the result.
-  A simple version of https://stackoverflow.com/a/35352640"
+  Banned characters from https://stackoverflow.com/a/35352640"
   [s]
   (-> s
-      (str/replace #"[^a-zA-Z0-9-_.,\[\](){}]" " ")
+      (str/replace #"[\\/:*?\"<>|]" " ")
       str/trim))
