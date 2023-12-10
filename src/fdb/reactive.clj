@@ -33,11 +33,14 @@
               (if-some [doc-id (-> call-arg' :doc :xt/id)]
                 (str "over " doc-id)
                 ""))
-    (u/maybe-timeout
-     (:timeout trigger)
-     (future
-       (u/catch-log
-        ((call/to-fn call-spec) call-arg'))))))
+    ;; one future to unblock the tx listener
+    (future
+      (u/maybe-timeout
+       (:timeout trigger)
+       ;; another future to be able to timeout
+       (future
+         (u/catch-log
+          ((call/to-fn call-spec) call-arg')))))))
 
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
