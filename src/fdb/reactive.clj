@@ -118,18 +118,21 @@
                (do
                  (log/info "adding schedules for" id)
                  (assoc-in schedules [config-path id]
-                           (map-indexed
-                            (fn [trigger-idx {:keys [cron every] :as trigger}]
-                              (when-some [time-seq (u/catch-log
-                                                    (cond
-                                                      cron  (cron/times cron)
-                                                      every (chime/periodic-seq
-                                                             (t/now) (-> every u/duration-ms t/of-millis))))]
-                                (chime/chime-at time-seq
-                                                (fn [timestamp]
-                                                  (call doc :fdb.on/schedule trigger trigger-idx
-                                                        call-arg {:timestamp (str timestamp)})))))
-                            on-schedule)))
+                           (doall
+                            (map-indexed
+                             (fn [trigger-idx {:keys [cron every] :as trigger}]
+                               (when-some [time-seq (u/catch-log
+                                                     (cond
+                                                       cron  (cron/times cron)
+                                                       every (chime/periodic-seq
+                                                              (t/now) (-> every u/duration-ms t/of-millis))))]
+                                 (chime/chime-at time-seq
+                                                 (fn [timestamp]
+                                                   (call doc :fdb.on/schedule trigger trigger-idx
+                                                         call-arg {:timestamp (str timestamp)})
+                                                   ;; Never cancel schedule from fn.
+                                                   true))))
+                             on-schedule))))
                ;; There's no schedules for this doc, nothing to do.
                schedules)))))
 
