@@ -17,7 +17,8 @@
   [expr]
   `(try ~expr
      (catch Exception e#
-       (log/error (ex-message e#))
+       (log/error (str (str/replace-first (type e#) "class " "") ":")
+                  (or (ex-message e#) "<no message>"))
        nil)))
 
 (defmacro catch-nil
