@@ -42,7 +42,7 @@
                     :call println}]
  :fdb.on/tx       [println]
  :fdb.on/schedule [{:cron \"0 0 0 * * ?\" ;; https://crontab.guru/
-                    ;; or :millis 1000
+                    ;; or :every [1 :seconds]
                     :call println}]
  :fdb.on/startup  [println]
  :fdb.on/shutdown [println]}"))

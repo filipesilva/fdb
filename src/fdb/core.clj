@@ -130,7 +130,7 @@
 ;;   - webserver with rss for changes to any of its files
 ;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
 ;; - make schedules play nice with sync
-;;   - millis runs once immediately
+;;   - every runs once immediately
 ;;   - cron saves last execution and runs immediately if missed using cron/times arity 2
 ;;   - need to make sure to wait on all listeners before exiting
 ;;     - or don't try to wait, load all files in a big tx, then just call trigger on tx one by one
@@ -151,6 +151,7 @@
 ;; - just doing a doc with file listings for the month would already help with taxes
 ;; - just generally try to have stuff I use a lot on-disk and try to come up with cool ways to use it
 ;; - store as much as possible in txt/md, goal is to be human readable
+;; - add debug logging for call eval/require errors
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router

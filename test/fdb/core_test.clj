@@ -77,9 +77,9 @@
                                   :path "./query-results.edn"
                                   :call 'fdb.core-test/log-call}]
                :fdb.on/tx       ['fdb.core-test/log-call]
-               :fdb.on/schedule [{:millis 50
-                                  :call   'fdb.core-test/log-call}
-                                 {:millis  50
+               :fdb.on/schedule [{:every [50 :millis]
+                                  :call  'fdb.core-test/log-call}
+                                 {:every   [50 :millis]
                                   :call    '(fn [call-arg]
                                               (fdb.utils/sleep 100)
                                               (fdb.core-test/log-call {:on [:fdb.on/schedule-timeout]}))
