@@ -301,26 +301,3 @@
         (call-all-on-tx call-arg))
       (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms"))))
 
-(comment
-  ;; example doc
-  {:xt/id           "/example/doc.txt"
-   :fdb/modified    "2021-03-21T20:00:00.000-00:00"
-   :fdb/refs        #{"/test/two.txt"
-                      "/test/three.txt"
-                      "/test/folder"}
-   :fdb.on/modify   ['println] ;; same as {:call 'println}, can pass some extra props and pick up on call-arg :on
-   :fdb.on/refs     ['println]
-   :fdb.on/pattern  [{:glob "/test/*.txt"
-                      :call 'println}]
-   :fdb.on/query    [{:q    '[:find ?e :where [?e :file/modified ?m]]
-                      :path "./query-results.edn"
-                      :call 'println}]
-   :fdb.on/tx       ['println]
-   :fdb.on/schedule [{:cron "0 0 0 * * ?" ;; https://crontab.guru/
-                      ;; or :millis 1000
-                      :call 'println}]
-   :fdb.on/startup  ['println]
-   :fdb.on/shutdown ['println]}
-
-  ;;
-  )
