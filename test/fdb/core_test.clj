@@ -63,8 +63,8 @@
   (swap! calls conj (-> call-arg :on first)))
 
 (deftest make-me-a-reactive-fdb
+  (reset! calls [])
   (with-temp-fdb-config [config-path mount]
-    (reset! calls [])
     (fdb/with-fdb [config-path node]
       (u/spit mount "file.txt.metadata.edn"
               {:fdb/refs        #{"/test/one.md"
@@ -98,8 +98,7 @@
                              ["/test/one.md"]
                              ["/test/query-results.edn"]}
                            (u/slurp-edn mount "query-results.edn"))))
-      ;; Can take a bit, maybe because of the atom, or maybe it runs in the same process?
-      (is (u/eventually (:fdb.on/schedule @calls) 3000)))
+      (is (u/eventually (some #{:fdb.on/schedule} @calls))))
 
     ;; restart for startup/shutdown
     (fdb/with-fdb [config-path node])
