@@ -6,6 +6,7 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.reactive :as reactive]
+   [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [hashp.core]
    [xtdb.api :as xt]))
@@ -136,6 +137,33 @@
       (u/eventually (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))
       (is (= "Query didn't match expected structure"
              (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))))))
+
+(def ignore-calls (atom 0))
+
+(defn ignore-log-call [_]
+  (swap! ignore-calls inc))
+
+(deftest ignore-me-a-change
+  (reset! ignore-calls 0)
+  (with-temp-fdb-config [config-path mount]
+    (fdb/with-fdb [config-path node]
+      (let [id  "/test/one"
+            f (fs/path mount "one.metadata.edn")]
+        (u/spit-edn f {:fdb.on/modify [{:call  'fdb.core-test/ignore-log-call
+                                         :count 1}]})
+        (is (u/eventually (= 1 @ignore-calls)))
+
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
+
+        ;; wait to see if it gets there
+        (u/eventually (= 4 @ignore-calls))
+
+        (is (= 1 @ignore-calls))
+        (is (-> (u/slurp-edn f)
+                (get-in [:fdb.on/modify 0 :count])
+                (= 4)))))))
 
 (comment
   (def node (db/node "/tmp/fdb-test"))

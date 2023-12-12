@@ -10,6 +10,7 @@
    [fdb.metadata :as metadata]
    [fdb.notifier :as notifier]
    [fdb.reactive :as reactive]
+   [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [taoensso.timbre :as log]
@@ -47,6 +48,7 @@
       (when extra-deps
         (deps/add-libs extra-deps)))
     (with-open [node            (db/node (u/sibling-path config-path db-path))
+                _               (u/closeable (r.ignore/clear config-path))
                 _               (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
                 _               (u/closeable (reactive/start-all-schedules config-path config node))
                 _tx-listener    (db/listen node (partial reactive/on-tx config-path config node))
@@ -145,6 +147,10 @@
 ;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - mtg database, but not in core project
+;;   - mtg game engine based on files too
+;;     - cards contain hooks for triggered and activated abilities
+;;     - counters are just a set of kws, and triggers check them
+;;     - a game is a folder with files for each card in each zone
 ;; - code ast
 ;;   - maybe fine grained function-level deps like in speculation
 ;;   - code loader for clojure

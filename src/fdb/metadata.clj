@@ -1,8 +1,9 @@
 (ns fdb.metadata
-  (:refer-clojure :exclude [read])
+  (:refer-clojure :exclude [read swap!])
   (:require
    [babashka.fs :as fs]
    [clojure.string :as str]
+   [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [tick.core :as t]))
 
@@ -62,3 +63,17 @@
      (when (seq modifieds)
        {:fdb/modified (apply t/max modifieds)})
      (u/slurp-edn metadata-path))))
+
+(defn swap!
+  "Like clojure.core/swap! but over metadata file for path.
+  See fdb.utils/swap-edn-file! docstring for more."
+  [path f & args]
+  (let [[_ metadata-path] (content-and-metadata-paths path)]
+    (apply u/swap-edn-file! metadata-path f args)))
+
+(defn silent-swap!
+  "Like fdb.metadata/swap!, but change will be ignored by reactive triggers."
+  [path config-path id f & args]
+  (let [[_ metadata-path] (content-and-metadata-paths path)]
+    (r.ignore/add config-path id)
+    (apply u/swap-edn-file! metadata-path f args)))

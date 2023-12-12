@@ -6,6 +6,7 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
+   [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [tick.core :as t]
@@ -268,13 +269,13 @@
 (defn on-tx
   "Call all applicable triggers over tx.
   Triggers will be called with a map arg containing:
-  {:config-path config-path
-   :config      config
-   :node        node
-   :db          db
-   :tx          tx
-   :on          [fdb.on/k trigger]
-   :on-ks       [fdb.on/k 1]
+  {:config      fdb config value
+   :config-path on-disk path to config
+   :node        xtdb database node
+   :db          xtdb db value at the time of the tx
+   :tx          the tx
+   :on          the trigger being called as [fdb.on/k trigger]
+   :on-ks       get path inside self for trigger as [fdb.on/k 1]
    :self        the doc that has the trigger being called
    :self-path   on-disk path for self
    :doc         the doc the tigger is being called over, if any
@@ -282,28 +283,31 @@
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"
   [config-path config node tx]
-  (when (:committed? tx)
-    (u/with-time [time-ms]
-      (log/info "processing tx" (::xt/tx-id tx))
-      (let [call-arg {:config-path config-path
-                      :config      config
-                      :node        node
-                      :db          (xt/db node {::xt/tx tx})
-                      :tx          tx}
-            ops      (massage-ops node (::xt/tx-ops tx))]
+  (u/catch-log
+   (when (:committed? tx)
+     (u/with-time [time-ms]
+       (log/info "processing tx" (::xt/tx-id tx))
+       (let [call-arg {:config-path config-path
+                       :config      config
+                       :node        node
+                       :db          (xt/db node {::xt/tx tx})
+                       :tx          tx}
+             ops      (->> tx
+                           ::xt/tx-ops
+                           (massage-ops node)
+                           (remove (partial r.ignore/ignore? config-path)))]
 
-        ;; Update schedules
-        (run! (partial update-schedules call-arg) ops)
+         ;; Update schedules
+         (run! (partial update-schedules call-arg) ops)
 
-        ;; Call triggers in order of "closeness"
-        (run! (partial call-on-query-file call-arg) ops) ;; content
-        (run! (partial call-on-modify call-arg) ops)     ;; self metadata
-        (run! (partial call-on-refs call-arg) ops)       ;; direct ref
-        (run! (partial call-on-pattern call-arg) ops)    ;; pattern
-        (run! (partial call-on-startup call-arg) ops) ;; application lifecycle
+         ;; Call triggers in order of "closeness"
+         (run! (partial call-on-query-file call-arg) ops) ;; content
+         (run! (partial call-on-modify call-arg) ops)     ;; self metadata
+         (run! (partial call-on-refs call-arg) ops)       ;; direct ref
+         (run! (partial call-on-pattern call-arg) ops)    ;; pattern
+         (run! (partial call-on-startup call-arg) ops) ;; application lifecycle
 
-        ;; Don't need ops, just needs to be called after every tx
-        (call-all-on-query call-arg)
-        (call-all-on-tx call-arg))
-      (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms"))))
-
+         ;; Don't need ops, just needs to be called after every tx
+         (call-all-on-query call-arg)
+         (call-all-on-tx call-arg))
+       (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms")))))
