@@ -134,7 +134,8 @@
             (let [messages (->> (mail/all-messages gstore mail-folder (when last-uid
                                                                         {:since-uid (inc last-uid)}))
                                 reverse
-                                (map (fn [msg] [msg (message/uid msg) (read-message msg)])))]
+                                ;; read-message takes about 1s, so pmap really helps here
+                                (pmap (fn [msg] [msg (message/uid msg) (read-message msg)])))]
               (doseq [[message uid message-edn] (cond->> messages
                                                   take-n (take take-n))]
                 (let [_                            (log/info "syncing" mail-folder uid)
