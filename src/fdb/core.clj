@@ -158,6 +158,17 @@
 ;; - just generally try to have stuff I use a lot on-disk and try to come up with cool ways to use it
 ;; - store as much as possible in txt/md, goal is to be human readable
 ;; - add debug logging for call eval/require errors
+;;   - leave only high level update on info, put rest on debug
+;; - don't print mount-id separate from path on stale/update/delete
+;; - sort stale by modified id before updating them
+;; - repl files repl.fdb.clj and nrepl.fdb.clj
+;;   - repl one starts a repl session, outputs to file, and puts a ;; user> prompt line
+;;     - whenever you save the file, it sends everything after the prompt to the repl
+;;     - then it puts the result in a comment at the end
+;;     - and moves the prompt line to the end
+;;   - nrepl one starts a nrepl session, outputs port to a nrepl sibling file
+;;     - this one is for you to connect to with your editor and mess around
+;;   - both these sessions should have some binding they can import with call-arg data
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router

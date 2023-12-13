@@ -56,14 +56,18 @@
      (merge from-message from-headers from-gmail {:uid uid}))))
 
 (defn match-type
-  [part type]
-  (some-> part :content-type str/lower-case (str/starts-with? type)))
+  ([part type]
+   (some-> part :content-type str/lower-case (str/starts-with? type)))
+  ([part type ignore]
+   (when-some [content-type (some-> part :content-type str/lower-case)]
+     (and (str/starts-with? content-type type)
+          (not (str/includes? content-type ignore))))))
 
 (defn prefer-text
   [parts]
   (if (and (seq? parts)
            (>= (count parts) 2))
-    (let [maybe-plain (some #(when (match-type % "text/plain") %) parts)
+    (let [maybe-plain (some #(when (match-type % "text/plain" "; name=") %) parts)
           maybe-html  (some #(when (match-type % "text/html") %) parts)]
       (if (and maybe-plain maybe-html)
         ;; looks like an alternative between plain and html, prefer plain
@@ -74,11 +78,12 @@
 (defn part->text
   [{:keys [content-type body] :as part}]
   (cond
-    (nil? part)                    "<no text body>"
-    (match-type part "text/plain") body
+    (nil? part)                            "<no text body>"
+    (str/includes? content-type "; name=") (str "Attachment: " content-type "\n")
+    (match-type part "text/plain")         body
     ;; With a nice html parser we could make it the preferred option.
-    (match-type part "text/html")  (parser/html->text body)
-    :else                          (str "Attachment: " content-type "\n")))
+    (match-type part "text/html")          (parser/html->text body)
+    :else                                  (str "Attachment: " content-type "\n")))
 
 (defn message-content
   [message-edn]
