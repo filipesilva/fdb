@@ -74,13 +74,7 @@
   "Watch config-path and restart fdb on changes. Returns a closeable that stops watching on close.
   Use ((-> config-watcher deref :wait)) to wait on the watcher."
   [config-path]
-  (let [ntf     (notifier/create config-path)
-        refresh (fn [_]
-                  (log/info "loading config")
-                  (notifier/notify! ntf))
-        close   (fn [_]
-                  (log/info "shutting down")
-                  (notifier/destroy! config-path))]
+  (let [ntf (notifier/create config-path)]
     (when-not ntf
       ;; xtdb doesn't support multiple master.
       ;; This doesn't help when multiple processes are watching the same though.
@@ -89,17 +83,23 @@
       (throw (ex-info "Server already running" {:config-path config-path})))
     (when-not (fs/exists? config-path)
       (throw (ex-info "Config file not found" {:config-path config-path})))
-    (let [ch (go
-               (log/with-merged-config
-                 {:appenders {:spit (appenders/spit-appender {:fname (u/sibling-path config-path "fdb.log")})}}
-                 (log/info "watching config" config-path)
-                 (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
-                   (loop [restart? (notifier/wait ntf)]
-                     (when restart?
-                       (recur (with-fdb [config-path _db]
-                                (log/info "fdb running")
-                                (notifier/wait ntf))))))
-                 (log/info "shutdown")))]
+    ;; TODO: not sure if this works very well when there's multiple in the same process
+    (log/merge-config! {:appenders {:spit (appenders/spit-appender {:fname (u/sibling-path config-path "fdb.log")})}})
+    (let [refresh (fn [_]
+                    (log/info "loading config")
+                    (notifier/notify! ntf))
+          close   (fn [_]
+                    (log/info "shutting down")
+                    (notifier/destroy! config-path))
+          ch      (go
+                    (log/info "watching config" config-path)
+                    (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
+                      (loop [restart? (notifier/wait ntf)]
+                        (when restart?
+                          (recur (with-fdb [config-path _db]
+                                   (log/info "fdb running")
+                                   (notifier/wait ntf))))))
+                    (log/info "shutdown"))]
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
