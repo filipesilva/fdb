@@ -47,10 +47,9 @@
     #_(binding [clojure.core/*repl* true]
       (when extra-deps
         (deps/add-libs extra-deps)))
+    ;; Clear the reactive ignore list before attaching the listener.
+    (r.ignore/clear config-path)
     (with-open [node            (db/node (u/sibling-path config-path db-path))
-                _               (u/closeable (r.ignore/clear config-path))
-                _               (u/closeable (reactive/call-all-k config-path config node :fdb.on/startup))
-                _               (u/closeable (reactive/start-all-schedules config-path config node))
                 _tx-listener    (db/listen node (partial reactive/on-tx config-path config node))
                 ;; Don't do anything about files that were deleted while not watching.
                 ;; Might need some sort of purge functionality later.
@@ -59,6 +58,9 @@
                                      (mapv (partial mount-watch-spec config-path node))
                                      watcher/watch-many
                                      u/closeable-seq)]
+      ;; Call existing trigger after watcher startup and stale check.
+      (reactive/call-all-k config-path config node :fdb.on/startup)
+      (reactive/start-all-schedules config-path config node)
       (let [return (f node)]
         (reactive/stop-config-path-schedules config-path)
         (reactive/call-all-k config-path config node :fdb.on/shutdown)
