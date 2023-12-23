@@ -108,12 +108,37 @@
   [& body]
   `(do-eventually (fn [] ~@body)))
 
+(defn- high-surrogate? [char-code]
+  (<= 0xD800 char-code 0xDBFF))
+
+(defn- char-code-at [^String str pos]
+  (long ^Character (.charAt str pos)))
+
+(defn char-seq
+  "Return a seq of the characters in a string, making sure not to split up
+  UCS-2 (or is it UTF-16?) surrogate pairs. Because JavaScript. And Java.
+  From https://lambdaisland.com/blog/2017-06-12-clojure-gotchas-surrogate-pairs"
+  ([str]
+   (char-seq str 0))
+  ([str offset]
+   (loop [offset offset
+          res []]
+     (if (>= offset (count str))
+       res
+       (let [code (char-code-at str offset)
+             width (if (high-surrogate? code) 2 1)
+             next-offset (+ offset width)
+             cur-char (subs str offset next-offset)]
+         (recur next-offset
+                (conj res cur-char)))))))
+
 (defn ellipsis
   "Truncates a string to max-len (default 60), adding ellipsis if necessary."
   ([s] (ellipsis s 60))
   ([s max-len]
    (if (> (count s) max-len)
-     (str (subs s 0 (- max-len 3)) "...")
+     (str (apply str (take (- max-len 3) (char-seq s)))
+          "...")
      s)))
 
 (defn sleep
