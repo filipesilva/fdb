@@ -26,6 +26,7 @@
     ;; TODO: don't print on exit, how?
     :watch-exit))
 
+;; TODO: reference metadata, reference config
 (defn reference [_]
   (println
 "{:xt/id           \"/example/doc.txt\"

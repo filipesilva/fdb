@@ -311,3 +311,14 @@
          (call-all-on-query call-arg)
          (call-all-on-tx call-arg))
        (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms")))))
+
+
+;; TODO:
+;; - review the whole on, on-ks, trigger names
+;; - make schedules play nice with sync
+;;   - every runs once immediately
+;;   - cron saves last execution and runs immediately if missed using cron/times arity 2
+;;   - need to make sure to wait on all listeners before exiting
+;;     - or don't try to wait, load all files in a big tx, then just call trigger on tx one by one
+;;     - this batch load mode is probably better anyway for stale check
+;;   - would make tests much easier

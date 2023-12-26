@@ -105,11 +105,6 @@
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
 
 ;; TODO:
-;; - review the whole on, on-ks, trigger names
-;; - support file ext processors, e.g. markdown with props
-;;   - extract data from content directly to db metadata, without making the metadata file
-;;   - avoids lots of clutter in existing dirs
-;;   - really good for obsidian or for code ASTs and such
 ;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode
 ;; - consider java-time.api instead of tick
 ;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
@@ -123,39 +118,13 @@
 ;; - cli to call code in on config (running or not), probably just a one-shot repl call
 ;;   - works really well with run mode, you can choose when to update and run scripts anytime
 ;;   - probably needs always-on repl
-;; - web server
-;;   - serves mounted paths
-;;   - has fdb.server/get and fdb.server/put etc metadata for fns
-;;   - does auto content negotiation
-;;   - maybe plays well with templates or htmx or whatever
-;;   - hicckup files with scripts as a inside-out web-app, kinda like php, code driven by template
-;; - feed preprocessor, fetch rss/atom, filter, cache, tag metadata, re-serve locally
-;;   - feed server supporting rss cloud, serve anything as a feed (e.g. local file changestream, scrapped sites)
-;;   - webserver with rss for changes to any of its files
 ;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
-;; - make schedules play nice with sync
-;;   - every runs once immediately
-;;   - cron saves last execution and runs immediately if missed using cron/times arity 2
-;;   - need to make sure to wait on all listeners before exiting
-;;     - or don't try to wait, load all files in a big tx, then just call trigger on tx one by one
-;;     - this batch load mode is probably better anyway for stale check
-;;   - would make tests much easier
 ;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
 ;; - naming hard
 ;;   - "main" file is content, or is it data? makes sense with metadata
 ;;   - metadata or properties?
-;; - file atom, lock file to ensure single access, then swap! to update
-;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
 ;; - allow config to auto-evict based on age, but start with forever
-;; - mtg database, but not in core project
-;;   - mtg game engine based on files too
-;;     - cards contain hooks for triggered and activated abilities
-;;     - counters are just a set of kws, and triggers check them
-;;     - a game is a folder with files for each card in each zone
-;; - code ast
-;;   - maybe fine grained function-level deps like in speculation
-;;   - code loader for clojure
 ;; - just doing a doc with file listings for the month would already help with taxes
 ;; - just generally try to have stuff I use a lot on-disk and try to come up with cool ways to use it
 ;; - store as much as possible in txt/md, goal is to be human readable
@@ -171,6 +140,10 @@
 ;;   - nrepl one starts a nrepl session, outputs port to a nrepl sibling file
 ;;     - this one is for you to connect to with your editor and mess around
 ;;   - both these sessions should have some binding they can import with call-arg data
+;; - stale checks get pretty slow with lots of files
+;;   - have seen 4m
+;;   - whats slow? probably all the db query
+;;   - maybe have a last modified seen saved somewhere, and don't even query if older
 ;; use:
 ;; - cli, process, http-client from babashka
 ;; - server https://github.com/tonsky/clj-simple-router
