@@ -195,12 +195,11 @@
       str/trim))
 
 (defn unix-line-separators
-  "Converts line separators to \n, and trims the result."
+  "Converts line separators to \n."
   [s]
   (-> s
       (str/replace #"\r\n" "\n")
-      (str/replace #"\r" "\n")
-      str/trim))
+      (str/replace #"\r" "\n")))
 
 (defn duration-ms
   [duration]
