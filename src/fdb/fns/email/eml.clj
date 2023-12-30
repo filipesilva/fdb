@@ -5,8 +5,28 @@
    [clojure-mail.core :as mail]
    [clojure-mail.message :as message]
    [clojure-mail.parser :as parser]
+   [clojure.set :as set]
    [clojure.string :as str]
-   [fdb.utils :as u]))
+   [fdb.utils :as u]
+   [tick.core :as t]))
+
+(defn- try-msg->map
+  [msg]
+  {:content-type (.getContentType msg)
+   :body         (try (.getContent msg)
+                      (catch java.io.UnsupportedEncodingException _
+                        "<unsupported encoding>")
+                      (catch Throwable _
+                        "<could not read body>"))})
+
+(defn read-message
+  "Like clojure-mail.message/read-message, but catches unsupported/unknown
+  encoding exceptions while reading content."
+  [message]
+  (with-redefs [message/msg->map try-msg->map]
+    (let [ret (message/read-message message)]
+      (doall (:body ret))
+      ret)))
 
 (defn match-type
   ([part type]
@@ -71,7 +91,7 @@
 
 (defn metadata
   [message-path]
-  (let [message-edn  (-> message-path mail/file->message message/read-message)
+  (let [message-edn  (-> message-path mail/file->message read-message)
         from-message (-> message-edn
                          (update :from #(mapv :address %))
                          (update :to #(mapv :address %))
@@ -81,15 +101,39 @@
                          (dissoc :multipart? :content-type :headers
                                  :body ;; writing it to content separately
                                  :id   ;; getting message-id from headers instead
-                                 ))
-        from-headers (-> (->> message-edn
-                              :headers
-                              (apply merge)
-                              (map (fn [[k v]]
-                                     [(-> k str/lower-case keyword) v]))
-                              (into {}))
+                                 )
+                         (set/rename-keys {:date-sent :date})) ;; match headers better
+        headers      (->> message-edn
+                          :headers
+                          (apply merge)
+                          (map (fn [[k v]]
+                                 [(-> k str/lower-case keyword) v]))
+                          (into {}))
+        from-headers (-> headers
                          (select-keys [:message-id :references :in-reply-to :reply-to])
                          (update :references to-references-vector))
-        from-body    {:body (message-content message-edn)}]
+        from-body    {:text (message-content message-edn)}
+        from-gmail   (-> headers
+                         (select-keys [:x-gm-thrid :x-gmail-labels])
+                         (set/rename-keys {:x-gm-thrid :thread-id
+                                           :x-gmail-labels :labels})
+                         (update :labels #(when % (str/split % #","))))]
     (strip-nil-empty
-     (merge from-message from-headers from-body))))
+     (merge from-message from-headers from-body from-gmail))))
+
+(defn filename
+  "Returns file name for a eml message in the following format:
+  timestamp-or-epoch subject-up-to-80-chars message-id-or-random-uuid"
+  [date subject message-id]
+  (str
+   (u/filename-inst (or date (t/epoch)))
+   " "
+   (u/filename-str (u/ellipsis (or subject "<no subject>") 80))
+   " "
+   (u/filename-str (or message-id (str "<no-message-id-" (random-uuid) ">")))
+   ".eml"))
+
+(comment
+  (metadata "tmp/msg.eml")
+  ;;
+  )

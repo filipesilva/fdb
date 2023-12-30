@@ -12,6 +12,6 @@
              io/resource fs/file sut/metadata)
          {:message-id "123",
           :from ["author@example.com"],
-          :body "This is the body.\nThere are 2 lines.\n\n",
+          :text "This is the body.\nThere are 2 lines.\n\n",
           :subject "Sample message 1",
           :to ["recipient@example.com"]})))

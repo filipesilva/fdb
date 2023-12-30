@@ -4,9 +4,8 @@
   (:require
    [babashka.fs :as fs]
    [clojure.java.io :as io]
-   [fdb.utils :as u]
-   [taoensso.timbre :as log]
-   [tick.core :as t])
+   [fdb.fns.email.eml :as eml]
+   [taoensso.timbre :as log])
   (:import
    [org.apache.james.mime4j.mboxiterator MboxIterator FromLinePatterns]
    [org.apache.james.mime4j.message DefaultMessageBuilder]
@@ -32,26 +31,12 @@
     (.parseMessage builder (io/input-stream (.getBytes s)))))
 
 (defn filename
-  "Returns file name for eml message in the following format:
-  timestamp-or-epoch subject-up-to-80-chars message-id-or-random-uuid"
-  [s]
-  (let [msg (parse-message s)]
-    (str
-     (u/filename-inst (or (.getDate msg)
-                          (t/epoch)))
-     " "
-     (u/filename-str (u/ellipsis (or (.getSubject msg)
-                                     "<no subject>")
-                                 80))
-     " "
-     (u/filename-str (or (.getMessageId msg)
-                         (str "<no-message-id-" (random-uuid) ">")))
-
-     ".eml")))
+  [message]
+  (eml/filename (.getDate message) (.getSubject message) (.getMessageId message)))
 
 (defn write-message
   [path message]
-  (let [filename (str (fs/file path (filename message)))]
+  (let [filename (->> message parse-message filename (fs/file path) str)]
     (log/info "writing" filename)
     (spit filename message)))
 
