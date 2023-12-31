@@ -322,3 +322,4 @@
 ;;     - or don't try to wait, load all files in a big tx, then just call trigger on tx one by one
 ;;     - this batch load mode is probably better anyway for stale check
 ;;   - would make tests much easier
+;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete

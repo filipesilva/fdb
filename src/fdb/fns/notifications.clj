@@ -3,3 +3,4 @@
 ;; TODO:
 ;; - use web push for notification app
 ;;   - https://world.hey.com/dhh/native-mobile-apps-are-optional-for-b2b-startups-in-2024-4c870d3e
+;; - https://github.com/tonsky/AnyBar is cool for mac desktop

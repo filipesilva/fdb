@@ -144,8 +144,9 @@
 ;;   - have seen 4m
 ;;   - whats slow? probably all the db query
 ;;   - maybe have a last modified seen saved somewhere, and don't even query if older
-;; use:
-;; - cli, process, http-client from babashka
-;; - server https://github.com/tonsky/clj-simple-router
-;; - docs https://github.com/clj-commons/meta/issues/76
-;; - status bar https://github.com/tonsky/AnyBar
+;; - check https://github.com/clj-commons/marginalia for docs
+;; - fdb call mount/path/to/file full.ns/fn
+;;   - great for debugging triggers, or running one-offs
+;;   - uses same call arg as triggers, leaves fns around to be used in triggers
+;;   - call code over data
+;;
