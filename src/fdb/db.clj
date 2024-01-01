@@ -60,3 +60,6 @@
                                         {:with-docs? true
                                          :with-corrections? true})]
     (:xt/id (some :xtdb.api/doc (iterator-seq i)))))
+
+;; TODO:
+;; - do I really need all these wrappers? maybe just use xt fns directly

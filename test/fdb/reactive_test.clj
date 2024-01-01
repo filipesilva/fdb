@@ -20,7 +20,7 @@
                                    :call 2}
                                   3]}]
     (with-redefs [call/to-fn    (fn [_] call-spy)
-                  metadata/path (spy/stub "root/folder/foo.txt")]
+                  metadata/id->path (spy/stub "root/folder/foo.txt")]
       (sut/call-all-triggers {:call-arg true}
                              :adoc
                              self

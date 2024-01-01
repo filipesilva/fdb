@@ -33,21 +33,40 @@
       [(metadata-path->content-path path) path]
       [path (content-path->metadata-path path)])))
 
+(defn mount-id->str
+  [mount-id]
+  (if (keyword? mount-id)
+    (name mount-id)
+    mount-id))
+
 (defn id
   [mount-id path]
   (str "/"
-       (if (keyword? mount-id) (name mount-id) mount-id)
+       (mount-id->str mount-id)
        (when-not (str/starts-with? path "/") "/")
        (if (metadata-path? path)
          (metadata-path->content-path path)
          path)))
 
-(defn path
+(defn id->path
   [config-path {:fdb/keys [mount]} id]
   (when-some [[_ mount-id path] (re-find #"^/([^/]+)/(.*)$" id)]
     (when-some [mount-from (or (get mount mount-id)
                                (get mount (keyword mount-id)))]
       (u/sibling-path config-path (fs/path mount-from path)))))
+
+(defn path->id
+  [config-path {:fdb/keys [mount]} path]
+  (some (fn [[mount-id mount-path]]
+          (let [abs-mount-path (str (u/sibling-path config-path mount-path))]
+            (cond
+              ;; Path looks like it's already an id.
+              (str/starts-with? path (str "/" (mount-id->str mount-id) "/"))
+              path
+              ;; Path is an absolute path under a mount.
+              (str/starts-with? path abs-mount-path)
+              (id mount-id (fs/relativize abs-mount-path path)))))
+        mount))
 
 (defn modified [& paths]
   (try

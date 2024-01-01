@@ -25,7 +25,7 @@
         call-arg' (apply merge
                          call-arg
                          {:self      self
-                          :self-path (metadata/path config-path config (:xt/id self))
+                          :self-path (metadata/id->path config-path config (:xt/id self))
                           :on        [on-k trigger]
                           :on-ks     [on-k trigger-idx]}
                          more)]
@@ -54,7 +54,7 @@
              (call self on-k trigger trigger-idx call-arg
                    (when doc
                      {:doc      doc
-                      :doc-path (metadata/path config-path config (:xt/id self))})
+                      :doc-path (metadata/id->path config-path config (:xt/id self))})
                    (when (map? maybe-map)
                      maybe-map))))
          (->> self on-k (map-indexed vector)))))
@@ -177,7 +177,7 @@
   (when (= op ::xt/put)
     (when-some [results-file' (results-file id)]
       (log/info "querying" id "to" results-file')
-      (let [query-path   (metadata/path config-path config id)
+      (let [query-path   (metadata/id->path config-path config id)
             results-path (u/sibling-path query-path results-file')
             results      (try (xt/q db (u/slurp-edn query-path))
                               (catch Exception e
@@ -239,7 +239,7 @@
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
   [config-path config db id {:keys [q path]}]
-  (let [doc-path     (metadata/path config-path config id)
+  (let [doc-path     (metadata/id->path config-path config id)
         results-path (u/sibling-path doc-path path)]
     (if (= doc-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")

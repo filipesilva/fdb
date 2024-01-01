@@ -48,3 +48,4 @@
         (is (spy/called-with? update-fn "f1.txt"))
         (u/spit f1 "1")
         (is (u/eventually (spy/called-n-times? update-fn 2)))))))
+

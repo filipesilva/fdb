@@ -1,11 +1,11 @@
 (ns fdb.core
   "Reactive file metadata database."
   (:require
-   [hashp.core]
+   #_[clojure.repl.deps :as deps]
    [babashka.fs :as fs]
    [clojure.core.async :refer [go <!!]]
    [clojure.edn :as edn]
-   #_[clojure.repl.deps :as deps]
+   [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.notifier :as notifier]
@@ -13,9 +13,10 @@
    [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
+   [hashp.core]
    [taoensso.timbre :as log]
-   [taoensso.timbre.appenders.core :as appenders]
-   [tick.core :as t]))
+   [tick.core :as t]
+   [xtdb.api :as xt]))
 
 (defn- mount-watch-spec
   "Returns watcher/watch args for mounts."
@@ -86,7 +87,8 @@
     (when-not (fs/exists? config-path)
       (throw (ex-info "Config file not found" {:config-path config-path})))
     ;; TODO: not sure if this works very well when there's multiple in the same process
-    (log/merge-config! {:appenders {:spit (appenders/spit-appender {:fname (u/sibling-path config-path "fdb.log")})}})
+    ;; I tried using log/with-merged-config but would lose some logs, I think because of
+    ;; core.async stuff around watch-config-path
     (let [refresh (fn [_]
                     (log/info "loading config")
                     (notifier/notify! ntf))
@@ -103,6 +105,21 @@
                                    (notifier/wait ntf))))))
                     (log/info "shutdown"))]
       (u/closeable {:wait #(<!! ch) :ntf ntf} close))))
+
+(defn call
+  [config-path id-or-path sym]
+  (let [{:fdb/keys [db-path] :as config} (-> config-path slurp edn/read-string)]
+    (with-open [node (db/node (u/sibling-path config-path db-path))]
+      (let [[id path]      (if-some [id (metadata/path->id config-path config id-or-path)]
+                             [id (metadata/id->path config-path config id)]
+                             [nil id-or-path])
+            call-arg {:config-path config-path
+                      :config      config
+                      :node        node
+                      :db          (xt/db node)
+                      :self        (when id (db/pull node id))
+                      :self-path   path}]
+        ((call/to-fn sym) call-arg)))))
 
 ;; TODO:
 ;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode
@@ -145,8 +162,3 @@
 ;;   - whats slow? probably all the db query
 ;;   - maybe have a last modified seen saved somewhere, and don't even query if older
 ;; - check https://github.com/clj-commons/marginalia for docs
-;; - fdb call mount/path/to/file full.ns/fn
-;;   - great for debugging triggers, or running one-offs
-;;   - uses same call arg as triggers, leaves fns around to be used in triggers
-;;   - call code over data
-;;

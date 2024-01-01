@@ -19,15 +19,22 @@
   (is (= "/test/foo.txt"
          (sut/id :test (as-md "foo.txt")))))
 
-(deftest path
+(deftest id->path
   (let [config-path "/root/foo/config.edn"
         config      {:fdb/mount {:not-test "./not-test"
                                  :test     "./test"} }]
     (is (= "/root/foo/test/folder/foo.txt"
-           (sut/path config-path config "/test/folder/foo.txt")))
-    (is (nil? (sut/path config-path config "not-/test/folder/foo.txt")))
-    (is (nil? (sut/path config-path config "/just-mount-id")))
-    (is (nil? (sut/path config-path config "/missing-mount-id/foo.txt")))))
+           (sut/id->path config-path config "/test/folder/foo.txt")))
+    (is (nil? (sut/id->path config-path config "not-/test/folder/foo.txt")))
+    (is (nil? (sut/id->path config-path config "/just-mount-id")))
+    (is (nil? (sut/id->path config-path config "/missing-mount-id/foo.txt")))))
+
+(deftest path->id
+  (let [config-path "/root/foo/config.edn"
+        config      {:fdb/mount {:test "./test"} }]
+    (is (= "/test/foo.txt" (sut/path->id config-path config "/root/foo/test/foo.txt")))
+    (is (= "/test/foo.txt" (sut/path->id config-path config "/test/foo.txt")))
+    (is (nil? (sut/path->id config-path config "/root/foo/not-test/foo.txt")))))
 
 (deftest content-path->metadata-path
   (is (= (as-md "foo.txt")

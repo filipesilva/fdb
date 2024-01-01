@@ -37,3 +37,7 @@
                           (into [(merge io-opts opts)] rest)
                           (into [io-opts] shell-args'))]
       (apply shell shell-args''))))
+
+(defmethod to-fn clojure.lang.Fn
+  [f]
+  f)

@@ -6,7 +6,6 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.reactive :as reactive]
-   [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [hashp.core]
    [xtdb.api :as xt]))
@@ -164,6 +163,39 @@
         (is (-> (u/slurp-edn f)
                 (get-in [:fdb.on/modify 0 :count])
                 (= 4)))))))
+
+(deftest make-me-a-call
+  (with-temp-fdb-config [config-path mount]
+    (let [f     (str (fs/path mount "one"))
+          fm    (fs/path mount "one.metadata.edn")
+          no-db #(dissoc % :node :db) ;; doesn't compare well
+          _     (u/spit fm {:foo "bar"})
+          self  {:xt/id        "/test/one"
+                 :fdb/modified (metadata/modified fm)
+                 :foo          "bar"}]
+      ;; TODO: replace with sync instead of watch
+      (fdb/with-fdb [config-path node]
+        (is (u/eventually (= #{self} (db/all node)))))
+      ;; exists
+      (is (= (no-db (fdb/call config-path f identity))
+             (no-db (fdb/call config-path fm identity))
+             (no-db (fdb/call config-path "/test/one" identity))
+             {:config-path config-path
+              :config      (u/slurp-edn config-path)
+              :self        self
+              :self-path   f}))
+      ;; doesn't exist, but mount is recognized
+      (is (= (no-db (fdb/call config-path "/test/two" identity))
+             {:config-path config-path
+              :config      (u/slurp-edn config-path)
+              :self        nil
+              :self-path   (str (fs/path mount "two"))}))
+      ;; doesn't exist and mount is not recognized
+      (is (= (no-db (fdb/call config-path "/foo/bar" identity))
+             {:config-path config-path
+              :config      (u/slurp-edn config-path)
+              :self        nil
+              :self-path   "/foo/bar"})))))
 
 (comment
   (def node (db/node "/tmp/fdb-test"))

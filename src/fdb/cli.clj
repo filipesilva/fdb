@@ -3,13 +3,22 @@
   (:require
    [babashka.cli :as cli]
    [babashka.fs :as fs]
-   [taoensso.timbre :as log]))
+   [fdb.utils :as u]
+   [taoensso.timbre :as log]
+   [taoensso.timbre.appenders.core :as appenders]))
+
+(defn- log-to-file!
+  [m]
+  (let [config-path (-> m :opts :config fs/absolutize str)
+        path (u/sibling-path config-path "fdb.log")]
+    (log/merge-config! {:appenders {:spit (appenders/spit-appender {:fname path})}})))
 
 (defn- setup-shutdown-hook!
   [f]
   (.addShutdownHook (Runtime/getRuntime) (Thread. f)))
 
 (defn watch [m]
+  (log-to-file! m)
   (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
   (let [config-path       (-> m :opts :config fs/absolutize str)
@@ -23,10 +32,8 @@
                             ;; If we don't wait a little bit, errors don't get logged
                             (Thread/sleep 500)))
     (wait)
-    ;; TODO: don't print on exit, how?
     :watch-exit))
 
-;; TODO: reference metadata, reference config
 (defn reference [_]
   (println
 "{:xt/id           \"/example/doc.txt\"
@@ -52,7 +59,11 @@
   (assoc m :fn :sync))
 
 (defn call [m]
-  (assoc m :fn :call))
+  (log-to-file! m)
+  (let [config-path          (-> m :opts :config fs/absolutize str)
+        [id-or-path sym-str] (:args m)
+        call                 (requiring-resolve 'fdb.core/call)]
+    (call config-path (fs/absolutize id-or-path) (symbol sym-str))))
 
 (defn repl [m]
   (assoc m :fn :repl))
@@ -62,10 +73,10 @@
   (println "help!"))
 
 (def table
-  [{:cmds ["watch"]      :fn watch}
-   {:cmds ["reference"]  :fn reference}
+  [{:cmds ["watch"]     :fn watch}
+   {:cmds ["reference"] :fn reference}
    ;; {:cmds ["sync"]   :fn sync}
-   ;; {:cmds ["call"]   :fn call}
+   {:cmds ["call"]      :fn call}
    ;; {:cmds ["repl"]   :fn repl}
    {:cmds []         :fn help}])
 
@@ -74,4 +85,9 @@
                     :default "fdbconfig.edn"}})
 
 (defn -main [& args]
-  (println (cli/dispatch table args {:spec spec})))
+  (cli/dispatch table args {:spec spec}))
+
+;; TODO:
+;; - reference metadata, reference config
+;; - resolve fdbconfig.edn up from current dir, like node_modules
+;; - support call over a running watch

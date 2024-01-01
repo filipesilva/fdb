@@ -48,3 +48,8 @@
   "Wait for a notification from ntf."
   [ntf]
   (<!! ntf))
+
+;; TODO:
+;; - haven't really needed these notifiers much except for watch-config-path, and even
+;;   there it's not really needed because I need to use file locks for cross-process
+;;   concurrency, so maybe get rid of this ns?
