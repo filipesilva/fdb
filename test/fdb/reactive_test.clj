@@ -34,6 +34,7 @@
                 :doc      :adoc
                 :doc-path "root/folder/foo.txt"
                 :on       [:on-foo {:doit true :call 2}]
+                :on-ks    [:on-foo 1]
                 :didit    true}]]
              (spy/calls call-spy))))))
 

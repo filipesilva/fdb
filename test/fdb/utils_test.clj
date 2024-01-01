@@ -52,7 +52,7 @@
          (sut/filename-inst #inst "2023-11-30T14:20:23.000-00:00"))))
 
 (deftest filename-str-test
-  (is (= "foo bar-_,       (baz)[foo]{bar}"
+  (is (= "foo bar-_,%  !!àè(baz)[foo]{bar}"
          (sut/filename-str "  foo:bar-_,%:?!!àè(baz)[foo]{bar}  "))))
 
 (deftest maybe-timeout-test
