@@ -110,16 +110,17 @@
   [config-path id-or-path sym]
   (let [{:fdb/keys [db-path] :as config} (-> config-path slurp edn/read-string)]
     (with-open [node (db/node (u/sibling-path config-path db-path))]
-      (let [[id path]      (if-some [id (metadata/path->id config-path config id-or-path)]
-                             [id (metadata/id->path config-path config id)]
-                             [nil id-or-path])
-            call-arg {:config-path config-path
-                      :config      config
-                      :node        node
-                      :db          (xt/db node)
-                      :self        (when id (db/pull node id))
-                      :self-path   path}]
-        ((call/to-fn sym) call-arg)))))
+      (let [[id path] (when-some [id (metadata/path->id config-path config id-or-path)]
+                        [id (metadata/id->path config-path config id)])]
+        (if id
+          ((call/to-fn sym)
+           {:config-path config-path
+            :config      config
+            :node        node
+            :db          (xt/db node)
+            :self        (when id (db/pull node id))
+            :self-path   path})
+          (log/error "id not found" id-or-path))))))
 
 ;; TODO:
 ;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode

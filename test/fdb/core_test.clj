@@ -191,11 +191,7 @@
               :self        nil
               :self-path   (str (fs/path mount "two"))}))
       ;; doesn't exist and mount is not recognized
-      (is (= (no-db (fdb/call config-path "/foo/bar" identity))
-             {:config-path config-path
-              :config      (u/slurp-edn config-path)
-              :self        nil
-              :self-path   "/foo/bar"})))))
+      (is (nil? (no-db (fdb/call config-path "/foo/bar" identity)))))))
 
 (comment
   (def node (db/node "/tmp/fdb-test"))
