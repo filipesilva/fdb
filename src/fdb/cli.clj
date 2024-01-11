@@ -91,3 +91,4 @@
 ;; - reference metadata, reference config
 ;; - resolve fdbconfig.edn up from current dir, like node_modules
 ;; - support call over a running watch
+;; - fdb example outputs config, files, etc, readme uses it

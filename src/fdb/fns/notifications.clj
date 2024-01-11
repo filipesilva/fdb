@@ -4,3 +4,6 @@
 ;; - use web push for notification app
 ;;   - https://world.hey.com/dhh/native-mobile-apps-are-optional-for-b2b-startups-in-2024-4c870d3e
 ;; - https://github.com/tonsky/AnyBar is cool for mac desktop
+;; - https://github.com/binwiederhier/ntfy has cli and ios app, oss
+;; - could probably do something interesting with RSS plus ios app that notifies based on RSS
+;;   - https://apps.apple.com/ie/app/simple-rss-push/id711503013 app, paid tho

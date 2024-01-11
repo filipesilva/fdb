@@ -163,3 +163,10 @@
 ;;   - whats slow? probably all the db query
 ;;   - maybe have a last modified seen saved somewhere, and don't even query if older
 ;; - check https://github.com/clj-commons/marginalia for docs
+;; - stale db check
+;;   - delete metadata for files that don't exist anymore
+;;   - list all ids for a given host and delete all that don't have a content or metadata
+;;     file on disk
+;; - register protocol to be able to do fdb://name/call/something
+;;   - a bit like the Oberon system that had text calls, but only for urls
+;;   - urlencode the call args
