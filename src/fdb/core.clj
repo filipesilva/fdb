@@ -20,6 +20,12 @@
    [xtdb.api :as xt]))
 
 
+(defn mount-paths-str
+  [mount-id paths]
+  (->> paths
+       (map (partial metadata/id mount-id))
+       (str/join ", ")))
+
 (defn- mount-watch-spec
   "Returns [mount-path update-fn delete-fn stale-fn] for mount."
   [config-path node [mount-id mount-from]]
@@ -27,14 +33,14 @@
     [mount-path
      ;; update-fn
      (fn [paths]
-       (log/info mount-id "updated" (str/join ", " paths))
+       (log/info "update" (mount-paths-str mount-id paths))
        (->> paths
             (mapv (fn [p] [(metadata/id mount-id p)
                            (metadata/read (fs/file mount-path p))]))
             (db/put node)))
      ;; delete-fn
      (fn [paths]
-       (log/info mount-id "deleted" (str/join ", " paths))
+       (log/info "delete" (mount-paths-str mount-id paths))
        (let [{:keys [puts deletes]}
              (->> paths
                   (mapv (fn [p] [p (metadata/id mount-id p) (metadata/read (fs/file mount-path p))]))
@@ -63,7 +69,7 @@
                                            ;; t> because we only want to update files that is newer than in the db
                                            (->> [modified (:fdb/modified (db/pull node [:fdb/modified] id))] (remove nil?) (apply t/>))))
                                  (mapv   (fn [[p _ _]] p)))]
-         (log/info mount-id "stale" (str/join ", " stale-paths))
+         (log/info "stale" (mount-paths-str mount-id paths))
          stale-paths))]))
 
 (defn do-with-watch
@@ -163,23 +169,12 @@
 ;;     that way one-shot runs do everything in one pass
 ;;   - sync mode is good name
 ;; - parse existing ignore files, at least gitignore
-;; - cli to call code in on config (running or not), probably just a one-shot repl call
-;;   - works really well with run mode, you can choose when to update and run scripts anytime
-;;   - probably needs always-on repl
-;; - shadow dir in config, also look for metadata files there, avoids cluttering up dirs
 ;; - validate mounts, don't allow slashes on mount-id
 ;;   - special :/ ns gets mounted at /, doesn't watch folders in it
-;; - naming hard
-;;   - "main" file is content, or is it data? makes sense with metadata
-;;   - metadata or properties?
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - just doing a doc with file listings for the month would already help with taxes
-;; - just generally try to have stuff I use a lot on-disk and try to come up with cool ways to use it
-;; - store as much as possible in txt/md, goal is to be human readable
 ;; - add debug logging for call eval/require errors
 ;;   - leave only high level update on info, put rest on debug
-;; - don't print mount-id separate from path on stale/update/delete
-;; - sort stale by modified id before updating them
 ;; - repl files repl.fdb.clj and nrepl.fdb.clj
 ;;   - repl one starts a repl session, outputs to file, and puts a ;; user> prompt line
 ;;     - whenever you save the file, it sends everything after the prompt to the repl
