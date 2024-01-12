@@ -20,16 +20,27 @@
   (xt/sync node))
 
 (defn put
-  [node id data]
-  (xt/submit-tx node [[::xt/put (merge {:xt/id id} data)]]))
+  ([node id data]
+   (xt/submit-tx node [[::xt/put (merge {:xt/id id} data)]]))
+  ([node coll]
+   (->> coll
+        (mapv (fn [[id data]]
+                [::xt/put (merge {:xt/id id} data)]))
+        (xt/submit-tx node))))
 
 (defn delete
-  [node id]
-  (xt/submit-tx node [[::xt/delete id]]))
+  [node id-or-ids]
+  (->> (cond-> id-or-ids
+         (not (sequential? id-or-ids)) vector)
+       (mapv (fn [id]
+               [::xt/delete id]))
+       (xt/submit-tx node)))
 
 (defn pull
-  [node id]
-  (xt/pull (xt/db node) '[*] id))
+  ([node query id]
+   (xt/pull (xt/db node) query id))
+  ([node id]
+   (pull node '[*] id)))
 
 (defn q
   [node query & args]

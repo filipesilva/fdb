@@ -5,6 +5,7 @@
    [babashka.fs :as fs]
    [clojure.core.async :refer [go <!!]]
    [clojure.edn :as edn]
+   [clojure.string :as str]
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
@@ -18,29 +19,54 @@
    [tick.core :as t]
    [xtdb.api :as xt]))
 
+
 (defn- mount-watch-spec
-  "Returns watcher/watch args for mounts."
+  "Returns [mount-path update-fn delete-fn stale-fn] for mount."
   [config-path node [mount-id mount-from]]
   (let [mount-path (u/sibling-path config-path mount-from)]
     [mount-path
-     (fn [p]
-       (log/info mount-id "updated" p)
-       (db/put node (metadata/id mount-id p) (metadata/read (fs/file mount-path p))))
-     (fn [p]
-       (log/info mount-id "deleted" p)
-       (let [id   (metadata/id mount-id p)
-             data (metadata/read (fs/file mount-path p))]
-         (if data
-           (db/put node id data)
-           (db/delete node id))))
-     (fn [p]
-       (let [db-modified (->> (metadata/id mount-id p) (db/pull node) :fdb/modified)]
-         (when (or (not db-modified)
-                   (t/> (metadata/modified mount-path p) db-modified))
-           (log/info mount-id "stale" p)
-           true)))]))
+     ;; update-fn
+     (fn [paths]
+       (log/info mount-id "updated" (str/join ", " paths))
+       (->> paths
+            (mapv (fn [p] [(metadata/id mount-id p)
+                           (metadata/read (fs/file mount-path p))]))
+            (db/put node)))
+     ;; delete-fn
+     (fn [paths]
+       (log/info mount-id "deleted" (str/join ", " paths))
+       (let [{:keys [puts deletes]}
+             (->> paths
+                  (mapv (fn [p] [p (metadata/id mount-id p) (metadata/read (fs/file mount-path p))]))
+                  (group-by (fn [[_ _ data]] (if data :puts :deletes))))]
+         (db/put node (mapv rest puts))
+         (db/delete node (mapv second deletes))))
+     ;; stale-fn
+     (fn [paths]
+       (let [mount-modified (ffirst
+                              (xt/q (xt/db node)
+                                    '{:find  [(max ?modified)]
+                                      :in    [?mount-id]
+                                      :where [[?e :xt/id ?id]
+                                              ;; TODO: if this is inneficient, we can put split path in metadata
+                                              ;; e.g. ["/mount" "/mount/folder" "/mount/folder/file.txt"]
+                                              ;; I'd really like efficient folder lookups so might be worth it
+                                              [(fdb.metadata/in-mount? ?mount-id ?id)]
+                                              [?e :fdb/modified ?modified]]}
+                                    mount-id))
+             stale-paths    (->> paths
+                                 (map    (fn [p] [p (metadata/id mount-id p) (metadata/modified mount-path p)]))
+                                 (filter (fn [[_ _ modified]]
+                                           ;; t>= because we might not have updated all files for that modified time
+                                           (->> [modified mount-modified] (remove nil?) (apply t/>=))))
+                                 (filter (fn [[_ id modified]]
+                                           ;; t> because we only want to update files that is newer than in the db
+                                           (->> [modified (:fdb/modified (db/pull node [:fdb/modified] id))] (remove nil?) (apply t/>))))
+                                 (mapv   (fn [[p _ _]] p)))]
+         (log/info mount-id "stale" (str/join ", " stale-paths))
+         stale-paths))]))
 
-(defn do-with-fdb
+(defn do-with-watch
   "Call f with a running fdb configured with config-path."
   [config-path f]
   (let [{:fdb/keys [db-path mount _extra-deps] :as config} (-> config-path slurp edn/read-string)]
@@ -52,14 +78,19 @@
     (r.ignore/clear config-path)
     (with-open [node            (db/node (u/sibling-path config-path db-path))
                 _tx-listener    (db/listen node (partial reactive/on-tx config-path config node))
-                ;; Don't do anything about files that were deleted while not watching.
-                ;; Might need some sort of purge functionality later.
-                ;; We also don't handle renames because they are actually delete+update pairs.
-                _mount-watchers (->> mount
-                                     (mapv (partial mount-watch-spec config-path node))
+                ;; Start watching before the stale check, so no change is lost.
+                all-watch-specs (u/closeable (mapv (partial mount-watch-spec config-path node) mount))
+                _mount-watchers (->> @all-watch-specs
+                                     (mapv butlast) ;; watch doesn't use stale-fn
                                      watcher/watch-many
                                      u/closeable-seq)]
-      ;; Call existing trigger after watcher startup and stale check.
+      ;; Update stale files.
+      (run! (fn [[mount-path update-fn _ stale-fn]]
+              (->> (watcher/glob mount-path)
+                   stale-fn
+                   update-fn))
+            @all-watch-specs)
+      ;; Call existing triggers after watcher startup and stale check.
       (reactive/call-all-k config-path config node :fdb.on/startup)
       (reactive/start-all-schedules config-path config node)
       (let [return (f node)]
@@ -67,11 +98,11 @@
         (reactive/call-all-k config-path config node :fdb.on/shutdown)
         return))))
 
-(defmacro with-fdb
+(defmacro with-watch
   "Call body with a running fdb configured with config-path."
   {:clj-kondo/ignore [:unresolved-symbol]}
   [[config-path node] & body]
-  `(do-with-fdb ~config-path (fn [~node] ~@body)))
+  `(do-with-watch ~config-path (fn [~node] ~@body)))
 
 (defn watch-config-path
   "Watch config-path and restart fdb on changes. Returns a closeable that stops watching on close.
@@ -97,10 +128,10 @@
                     (notifier/destroy! config-path))
           ch      (go
                     (log/info "watching config" config-path)
-                    (with-open [_config-watcher (watcher/watch config-path refresh close (constantly true))]
+                    (with-open [_config-watcher (watcher/watch config-path refresh close)]
                       (loop [restart? (notifier/wait ntf)]
                         (when restart?
-                          (recur (with-fdb [config-path _db]
+                          (recur (with-watch [config-path _db]
                                    (log/info "fdb running")
                                    (notifier/wait ntf))))))
                     (log/info "shutdown"))]
@@ -123,7 +154,6 @@
           (log/error "id not found" id-or-path))))))
 
 ;; TODO:
-;; - do stale check on with-fdb body instead of on watcher, that way we can use it in run mode
 ;; - consider java-time.api instead of tick
 ;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
 ;; - run mode instead of watch, does initial stale check and calls all triggers
@@ -158,10 +188,6 @@
 ;;   - nrepl one starts a nrepl session, outputs port to a nrepl sibling file
 ;;     - this one is for you to connect to with your editor and mess around
 ;;   - both these sessions should have some binding they can import with call-arg data
-;; - stale checks get pretty slow with lots of files
-;;   - have seen 4m
-;;   - whats slow? probably all the db query
-;;   - maybe have a last modified seen saved somewhere, and don't even query if older
 ;; - check https://github.com/clj-commons/marginalia for docs
 ;; - stale db check
 ;;   - delete metadata for files that don't exist anymore

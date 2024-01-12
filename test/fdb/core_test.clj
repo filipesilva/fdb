@@ -26,7 +26,7 @@
     (let [f        (fs/path mount "file.txt")
           fm       (fs/path mount "file.txt.metadata.edn")
           snapshot (atom nil)]
-      (fdb/with-fdb [config-path node]
+      (fdb/with-watch [config-path node]
         (is (empty? (db/all node)))
         (testing "updates from content and metadata files separately"
           (u/spit f "")
@@ -42,7 +42,7 @@
 
       (u/spit f "1")
 
-      (fdb/with-fdb [config-path node]
+      (fdb/with-watch [config-path node]
         (testing "updates on stale data"
           (is (u/eventually (not= @snapshot (db/all node)))))
 
@@ -65,7 +65,7 @@
 (deftest make-me-a-reactive-fdb
   (reset! calls [])
   (with-temp-fdb-config [config-path mount]
-    (fdb/with-fdb [config-path node]
+    (fdb/with-watch [config-path node]
       (u/spit mount "file.txt.metadata.edn"
               {:fdb/refs        #{"/test/one.md"
                                   "/test/folder/two.md"}
@@ -101,7 +101,7 @@
       (is (u/eventually (some #{:fdb.on/schedule} @calls))))
 
     ;; restart for startup/shutdown
-    (fdb/with-fdb [config-path node])
+    (fdb/with-watch [config-path node])
 
     (is (= {:fdb.on/modify   1    ;; one for each modify
             :fdb.on/refs     2    ;; one.txt folder/two.txt
@@ -118,7 +118,7 @@
 
 (deftest make-me-a-fdb-query
   (with-temp-fdb-config [config-path mount]
-    (fdb/with-fdb [config-path node]
+    (fdb/with-watch [config-path node]
       (u/spit mount "one.txt" "")
       (u/spit mount "folder/two.txt" "")
       (u/spit mount "all-modified-query.fdb.edn"
@@ -145,7 +145,7 @@
 (deftest ignore-me-a-change
   (reset! ignore-calls 0)
   (with-temp-fdb-config [config-path mount]
-    (fdb/with-fdb [config-path node]
+    (fdb/with-watch [config-path node]
       (let [id  "/test/one"
             f (fs/path mount "one.metadata.edn")]
         (u/spit-edn f {:fdb.on/modify [{:call  'fdb.core-test/ignore-log-call
@@ -174,7 +174,7 @@
                  :fdb/modified (metadata/modified fm)
                  :foo          "bar"}]
       ;; TODO: replace with sync instead of watch
-      (fdb/with-fdb [config-path node]
+      (fdb/with-watch [config-path node]
         (is (u/eventually (= #{self} (db/all node)))))
       ;; exists
       (is (= (no-db (fdb/call config-path f identity))

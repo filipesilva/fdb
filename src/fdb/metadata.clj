@@ -39,6 +39,10 @@
     (name mount-id)
     mount-id))
 
+(defn in-mount?
+  [mount-id path]
+  (str/starts-with? path (str "/" (mount-id->str mount-id) "/")))
+
 (defn id
   [mount-id path]
   (str "/"
