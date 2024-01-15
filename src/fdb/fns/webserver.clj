@@ -12,3 +12,7 @@
 ;;   - clj repl-like files, eval it, respond with eval result
 ;; - try https://github.com/tonsky/clj-simple-router
 ;; - https://github.com/babashka/http-server for static assets?
+;; - could sync a page to client when it changes, via SSE
+;;   - client can ask for static page, or self-updating page
+;;   - you change the page on disk, new version is pushed to client
+;;   - cool for sync in general, maybe even reified sessions

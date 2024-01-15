@@ -15,6 +15,8 @@
 
 ;; Helpers
 
+(def ^:dynamic *sync* false)
+
 (defn call
   "Call trigger with call-arg.
   Merges call-arg with {:self self, :on-k on-k} and any extra args."
@@ -28,20 +30,19 @@
                           :self-path (metadata/id->path config-path config (:xt/id self))
                           :on        [on-k trigger]
                           :on-ks     [on-k trigger-idx]}
-                         more)]
+                         more)
+        f         (fn []
+                    (u/maybe-timeout (:timeout trigger)
+                                     #(u/catch-log
+                                       ((call/to-fn call-spec) call-arg'))))]
 
     (log/info "calling" (:xt/id self) on-k (u/ellipsis (str trigger))
               (if-some [doc-id (-> call-arg' :doc :xt/id)]
                 (str "over " doc-id)
                 ""))
-    ;; one future to unblock the tx listener
-    (future
-      (u/maybe-timeout
-       (:timeout trigger)
-       ;; another future to be able to timeout
-       (future
-         (u/catch-log
-          ((call/to-fn call-spec) call-arg')))))))
+    (if *sync*
+      (f)
+      (future-call f))))
 
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
@@ -284,7 +285,7 @@
    :timestamp   schedule timestamp, if any}"
   [config-path config node tx]
   (u/catch-log
-   (when (:committed? tx)
+   (when-not (false? (:committed? tx)) ;; can be nil for txs retried from log directly
      (u/with-time [time-ms]
        (log/info "processing tx" (::xt/tx-id tx))
        (let [call-arg {:config-path config-path
@@ -310,7 +311,7 @@
          ;; Don't need ops, just needs to be called after every tx
          (call-all-on-query call-arg)
          (call-all-on-tx call-arg))
-       (log/info "processed tx" (::xt/tx-id tx) "in" (time-ms) "ms")))))
+       (log/info "processed tx-id" (::xt/tx-id tx) "in" (time-ms) "ms")))))
 
 
 ;; TODO:
@@ -323,3 +324,4 @@
 ;;     - this batch load mode is probably better anyway for stale check
 ;;   - would make tests much easier
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
+;; - support x-or-xs triggers, not just vec

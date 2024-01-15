@@ -44,7 +44,7 @@
     (db/put node :two {:bar 2})
     (db/put node :three {:baz 3})
     (db/put node :four {:bar 4})
-    (db/sync node)
+    (xt/sync node)
     (is (= [{:xt/id :two :bar 2}
             {:xt/id :four :bar 4}]
            (sut/docs-with-k (xt/db node) :bar)))))
@@ -64,7 +64,7 @@
     (db/put node :4 {:foo 4 :fdb/refs #{:2 :3}})
     (db/put node :5 {:foo 5})
     (db/put node :6 {:foo 6 :fdb/refs #{:5}})
-    (db/sync node)
+    (xt/sync node)
     (is (= (set [{:xt/id :1 :foo 1 :fdb/refs #{:4}}
                  {:xt/id :2 :foo 2 :fdb/refs #{:1}}
                  {:xt/id :3 :foo 3 :fdb/refs #{:1}}

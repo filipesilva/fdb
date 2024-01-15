@@ -12,6 +12,20 @@
   (:import
    (java.io RandomAccessFile)))
 
+(defn x-or-xs->xs
+  "Returns x if it's a set or sequential, otherwise [x]."
+  [x]
+  (if (or (set? x)
+          (sequential? x))
+    x
+    [x]))
+
+(defn side-effect->>
+  "Call f with x (presumably for side effects), then return x."
+  [f x]
+  (f x)
+  x)
+
 (defmacro catch-log
   "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
   [expr]
@@ -210,8 +224,9 @@
     :else                        nil))
 
 (defn maybe-timeout
-  [timeout fut]
+  [timeout f]
   (let [timeout-ms (duration-ms timeout)
+        fut        (future (f))
         ret        (try (if timeout-ms
                           (deref fut timeout-ms ::timeout)
                           (deref fut))

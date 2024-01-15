@@ -1,8 +1,9 @@
 (ns fdb.db-test
   (:require
-   [fdb.db :as sut]
    [babashka.fs :refer [with-temp-dir]]
-   [clojure.test :refer [deftest is]]))
+   [clojure.test :refer [deftest is]]
+   [fdb.db :as sut]
+   [xtdb.api :as xt]))
 
 (defmacro with-db
   {:clj-kondo/ignore [:unresolved-symbol]}
@@ -14,6 +15,6 @@
 (deftest make-me-a-db
   (with-db [node]
     (sut/put node :foo {:bar "bar"})
-    (sut/sync node)
+    (xt/sync node)
     (is (= {:xt/id :foo :bar "bar"}
            (sut/pull node :foo)))))

@@ -7,6 +7,11 @@
    [taoensso.timbre :as log]
    [taoensso.timbre.appenders.core :as appenders]))
 
+;; Not sure if this is the best way to set the log file,
+;; but had trouble using log/with-merged-config before together with core.async stuff
+;; presumably because of the weird state machine that core.async does.
+;; The trouble was some logs would not show up in the log file, even tho they
+;; showed up in the console.
 (defn- log-to-file!
   [m]
   (let [config-path (-> m :opts :config fs/absolutize str)
@@ -34,6 +39,22 @@
     (wait)
     :watch-exit))
 
+(defn sync [m]
+  (log-to-file! m)
+  (let [config-path          (-> m :opts :config fs/absolutize str)
+        sync                 (requiring-resolve 'fdb.core/sync)]
+    (sync config-path)))
+
+(defn call [m]
+  (log-to-file! m)
+  (let [config-path          (-> m :opts :config fs/absolutize str)
+        [id-or-path sym-str] (:args m)
+        call                 (requiring-resolve 'fdb.core/call)]
+    (call config-path (fs/absolutize id-or-path) (symbol sym-str))))
+
+(defn repl [m]
+  (assoc m :fn :repl))
+
 (defn reference [_]
   (println
 "{:xt/id           \"/example/doc.txt\"
@@ -54,19 +75,6 @@
                     :call println}]
  :fdb.on/startup  [println]
  :fdb.on/shutdown [println]}"))
-
-(defn sync [m]
-  (assoc m :fn :sync))
-
-(defn call [m]
-  (log-to-file! m)
-  (let [config-path          (-> m :opts :config fs/absolutize str)
-        [id-or-path sym-str] (:args m)
-        call                 (requiring-resolve 'fdb.core/call)]
-    (call config-path (fs/absolutize id-or-path) (symbol sym-str))))
-
-(defn repl [m]
-  (assoc m :fn :repl))
 
 (defn help [m]
   #_(assoc m :fn :help)

@@ -15,51 +15,21 @@
              :xtdb.lucene/lucene-store {:db-dir (fs/file db-path "lucene")}}]
     (xt/start-node cfg)))
 
-(defn sync
-  [node]
-  (xt/sync node))
-
 (defn put
-  ([node id data]
-   (xt/submit-tx node [[::xt/put (merge {:xt/id id} data)]]))
-  ([node coll]
-   (->> coll
-        (mapv (fn [[id data]]
-                [::xt/put (merge {:xt/id id} data)]))
-        (xt/submit-tx node))))
-
-(defn delete
-  [node id-or-ids]
-  (->> (cond-> id-or-ids
-         (not (sequential? id-or-ids)) vector)
-       (mapv (fn [id]
-               [::xt/delete id]))
-       (xt/submit-tx node)))
+  [node id data]
+  (xt/submit-tx node [[::xt/put (merge {:xt/id id} data)]]))
 
 (defn pull
-  ([node query id]
-   (xt/pull (xt/db node) query id))
-  ([node id]
-   (pull node '[*] id)))
-
-(defn q
-  [node query & args]
-  (apply xt/q (xt/db node) query args))
+  [node id]
+  (xt/pull (xt/db node) '[*] id))
 
 (defn all
   [node]
-  (->> (q node
-          '{:find [(pull e [*])]
-            :where [[e :xt/id]]})
+  (->> (xt/q (xt/db node)
+             '{:find  [(pull e [*])]
+               :where [[e :xt/id]]})
        (map first)
        set))
-
-(defn listen
-  [node f]
-  (xt/listen node
-             {::xt/event-type ::xt/indexed-tx
-              :with-tx-ops?   true}
-             f))
 
 (defn xtdb-id->xt-id
   "Get :xt/id for the xtdb-id provided for :xtdb.api/delete operations in a tx.
@@ -72,5 +42,7 @@
                                          :with-corrections? true})]
     (:xt/id (some :xtdb.api/doc (iterator-seq i)))))
 
-;; TODO:
-;; - do I really need all these wrappers? maybe just use xt fns directly
+(defn tx-with-ops
+  "Returns the tx with ops for the given tx without ops."
+  [node {::xt/keys [tx-id] :as _tx-without-ops}]
+  (first (iterator-seq (xt/open-tx-log node (dec tx-id) true))))

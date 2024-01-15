@@ -41,3 +41,6 @@
 (defmethod to-fn clojure.lang.Fn
   [f]
   f)
+
+;; TODO:
+;; - support non FQN symbols, just call resolve on them

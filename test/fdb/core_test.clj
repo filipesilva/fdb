@@ -1,6 +1,7 @@
 (ns fdb.core-test
   (:require
    [babashka.fs :refer [with-temp-dir] :as fs]
+   [clojure.core.async :refer [<!! chan close!]]
    [clojure.test :refer [deftest is testing]]
    [fdb.core :as fdb]
    [fdb.db :as db]
@@ -55,7 +56,6 @@
         (testing "deletes"
           (fs/delete fm)
           (is (u/eventually (empty? (db/all node)))))))))
-
 
 (def calls (atom []))
 
@@ -173,9 +173,7 @@
           self  {:xt/id        "/test/one"
                  :fdb/modified (metadata/modified fm)
                  :foo          "bar"}]
-      ;; TODO: replace with sync instead of watch
-      (fdb/with-watch [config-path node]
-        (is (u/eventually (= #{self} (db/all node)))))
+      (fdb/sync config-path)
       ;; exists
       (is (= (no-db (fdb/call config-path f identity))
              (no-db (fdb/call config-path fm identity))
@@ -192,6 +190,40 @@
               :self-path   (str (fs/path mount "two"))}))
       ;; doesn't exist and mount is not recognized
       (is (nil? (no-db (fdb/call config-path "/foo/bar" identity)))))))
+
+(def blocking-ch nil)
+
+(defn blocking-fn [_]
+  (<!! blocking-ch))
+
+(deftest make-me-a-sync
+  (with-temp-fdb-config [config-path mount]
+    (let [f       (str (fs/path mount "one.metadata.edn"))
+          f-id    "/test/one"
+          all-ids #(->> % :node db/all (map :xt/id) set)]
+
+      ;; starts empty
+      (fdb/sync config-path)
+      (is (empty (fdb/call config-path f all-ids)))
+
+      ;; updates
+      (u/spit f {})
+      (fdb/sync config-path)
+      (is (= #{f-id} (fdb/call config-path f all-ids)))
+
+      ;; blocks on sync calls
+      (with-redefs [blocking-ch (chan)]
+        (u/spit-edn f {:fdb.on/modify [{:call 'fdb.core-test/blocking-fn}]})
+        (let [sync-fut (future (fdb/sync config-path))]
+          (is (not (future-done? sync-fut)))
+          (u/sleep 100)
+          (is (not (future-done? sync-fut)))
+          (close! blocking-ch)
+          (is (u/eventually (future-done? sync-fut)))))
+
+      ;; deletes
+      (fs/delete f)
+      (is (empty (fdb/call config-path f all-ids))))))
 
 (comment
   (def node (db/node "/tmp/fdb-test"))
