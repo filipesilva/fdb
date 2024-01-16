@@ -15,6 +15,7 @@
 
 ;; Helpers
 
+;; Whether to call triggers synchronously or asynchronously.
 (def ^:dynamic *sync* false)
 
 (defn call
@@ -325,3 +326,7 @@
 ;;   - would make tests much easier
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
 ;; - support x-or-xs triggers, not just vec
+;;   - will need to update on-ks
+;; - rename on-ks to on-path
+;; - is *sync* important enough for callers that it should be part of call-arg?
+;;   - probably not, as they are ran async by default

@@ -43,4 +43,4 @@
   f)
 
 ;; TODO:
-;; - support non FQN symbols, just call resolve on them
+;; - support non FQNS symbols, just call resolve on them

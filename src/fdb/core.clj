@@ -91,17 +91,18 @@
 (defn sync
   "Sync fdb with fs, running reactive triggers over the changes. Returns stale ids."
   [config-path]
-  (with-fdb [config-path {:fdb/keys [mount] :as config} node]
-    (reactive/call-all-k config-path config node :fdb.on/startup)
-    ;; Update stale files.
-    (let [[stale-ids tx] (update-stale! config-path config node)]
-      (when tx
-        (xt/await-tx node tx)
-        (binding [reactive/*sync* true]
+  ;; Call triggers synchronously
+  (binding [binding [reactive/*sync* true]]
+    (with-fdb [config-path {:fdb/keys [mount] :as config} node]
+      (reactive/call-all-k config-path config node :fdb.on/startup)
+      ;; Update stale files.
+      (let [[stale-ids tx] (update-stale! config-path config node)]
+        (when tx
+          (xt/await-tx node tx)
           ;; TODO: sync call missed cron schedules
-          (reactive/on-tx config-path config node (db/tx-with-ops node tx))))
-      (reactive/call-all-k config-path config node :fdb.on/shutdown)
-      stale-ids)))
+          (reactive/on-tx config-path config node (db/tx-with-ops node tx)))
+        (reactive/call-all-k config-path config node :fdb.on/shutdown)
+        stale-ids))))
 
 (defn mount->watch-spec
   [config config-path node [mount-id mount-from]]
@@ -150,7 +151,6 @@
                      (>!! control-ch true))
         stop!      (fn [_]
                      (log/info "shutting down")
-                     (>!! control-ch false)
                      (close! control-ch))
         process-ch (go
                      (with-open [_config-watcher (watcher/watch config-path restart!)]
@@ -199,3 +199,4 @@
 ;; - register protocol to be able to do fdb://name/call/something
 ;;   - a bit like the Oberon system that had text calls, but only for urls
 ;;   - urlencode the call args
+;; - pass args to call
