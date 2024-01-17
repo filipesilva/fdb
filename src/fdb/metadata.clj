@@ -53,14 +53,14 @@
          path)))
 
 (defn id->path
-  [config-path {:fdb/keys [mount]} id]
+  [config-path {:keys [mount]} id]
   (when-some [[_ mount-id path] (re-find #"^/([^/]+)/(.*)$" id)]
     (when-some [mount-from (or (get mount mount-id)
                                (get mount (keyword mount-id)))]
       (u/sibling-path config-path (fs/path mount-from path)))))
 
 (defn path->id
-  [config-path {:fdb/keys [mount]} path]
+  [config-path {:keys [mount]} path]
   (some (fn [[mount-id mount-path]]
           (let [abs-mount-path (str (u/sibling-path config-path mount-path))]
             (cond

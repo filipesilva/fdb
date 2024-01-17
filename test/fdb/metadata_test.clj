@@ -21,8 +21,8 @@
 
 (deftest id->path
   (let [config-path "/root/foo/config.edn"
-        config      {:fdb/mount {:not-test "./not-test"
-                                 :test     "./test"} }]
+        config      {:mount {:not-test "./not-test"
+                             :test     "./test"} }]
     (is (= "/root/foo/test/folder/foo.txt"
            (sut/id->path config-path config "/test/folder/foo.txt")))
     (is (nil? (sut/id->path config-path config "not-/test/folder/foo.txt")))
@@ -31,7 +31,7 @@
 
 (deftest path->id
   (let [config-path "/root/foo/config.edn"
-        config      {:fdb/mount {:test "./test"} }]
+        config      {:mount {:test "./test"} }]
     (is (= "/test/foo.txt" (sut/path->id config-path config "/root/foo/test/foo.txt")))
     (is (= "/test/foo.txt" (sut/path->id config-path config "/test/foo.txt")))
     (is (nil? (sut/path->id config-path config "/root/foo/not-test/foo.txt")))))

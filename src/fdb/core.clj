@@ -22,7 +22,7 @@
 (defn do-with-fdb
   "Call f over an initialized fdb."
   [config-path f]
-  (let [{:fdb/keys [db-path _extra-deps] :as config} (-> config-path slurp edn/read-string)]
+  (let [{:keys [db-path _extra-deps] :as config} (-> config-path slurp edn/read-string)]
     ;; TODO: should just work when clojure 1.12 is released and installed globally
     #_(binding [clojure.core/*repl* true]
       (when extra-deps
@@ -51,7 +51,7 @@
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
-  [config-path {:fdb/keys [mount]} node]
+  [config-path {:keys [mount]} node]
   (let [in-fs                     (->> mount
                                        ;; get all paths for all mounts
                                        (map (fn [[mount-id mount-from]]
@@ -93,7 +93,7 @@
   [config-path]
   ;; Call triggers synchronously
   (binding [binding [reactive/*sync* true]]
-    (with-fdb [config-path {:fdb/keys [mount] :as config} node]
+    (with-fdb [config-path {:keys [mount] :as config} node]
       (reactive/call-all-k config-path config node :fdb.on/startup)
       ;; Update stale files.
       (let [[stale-ids tx] (update-stale! config-path config node)]
@@ -115,7 +115,7 @@
 (defn watch
   "Call f inside a watching fdb."
   [config-path f]
-  (with-fdb [config-path {:fdb/keys [mount] :as config} node]
+  (with-fdb [config-path {:keys [mount] :as config} node]
     (r.ignore/clear config-path)
     (reactive/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
