@@ -92,7 +92,7 @@
   "Sync fdb with fs, running reactive triggers over the changes. Returns stale ids."
   [config-path]
   ;; Call triggers synchronously
-  (binding [binding [reactive/*sync* true]]
+  (binding [reactive/*sync* true]
     (with-fdb [config-path {:keys [mount] :as config} node]
       (reactive/call-all-k config-path config node :fdb.on/startup)
       ;; Update stale files.
