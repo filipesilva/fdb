@@ -115,7 +115,9 @@
           (when @*new-last-uid
             (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)))))))
 
-;; TODO: throw for now if there's messages but can't find folder-uid
+;; TODO:
+;; - throw for now if there's messages but can't find folder-uid
+;; - maybe just pick latest date email, and start syncing from first uid found at that date?
 
 (comment
   {:xt/id           "/mount/mail/all"

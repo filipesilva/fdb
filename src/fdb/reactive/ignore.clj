@@ -1,6 +1,6 @@
 (ns fdb.reactive.ignore
   "Ignore list for reactive triggers.
-  Reactive triggers for ids in the ignore list will be ignored once.
+  Reactive triggers for ids in the ignore list will be ignored once on the current process.
   Useful with fdb.utils/swap-edn-file! to avoid triggering on your own changes.")
 
 ;; config-path -> #{ids}
@@ -25,3 +25,9 @@
       (when should-ignore?
         (swap! *ignores update config-path disj id))
       should-ignore?))
+
+;; TODO:
+;; - what are the semantics over multiple processes?
+;;   - I guess it goes back to some sort of process affinity
+;;   - if you have a cron or whatever that's running, you don't
+;;     really want it to run in multiple processes anyway
