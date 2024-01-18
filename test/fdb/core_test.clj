@@ -15,11 +15,11 @@
   {:clj-kondo/ignore [:unresolved-symbol]}
   [[config-path mount] & body]
   `(with-temp-dir [dir# {}]
-     (let [~mount        (str dir# "/test")
+     (let [~mount       (str dir# "/test")
            ~config-path (str dir# "/metadata.edn")]
        (fs/create-dirs ~mount)
        (u/spit ~config-path {:db-path "./db"
-                             :mount   {:test "./test"}})
+                             :mounts  {:test "./test"}})
        ~@body)))
 
 (deftest make-me-a-fdb

@@ -1,9 +1,16 @@
 (ns fdb.metadata-test
+  (:refer-clojure :exclude [read])
   (:require
    [babashka.fs :refer [with-temp-dir] :as fs]
    [clojure.test :refer [deftest is]]
    [fdb.metadata :as sut]
    [fdb.utils :as u]))
+
+(deftest id->mount
+  (let [config {:mounts {:test   "./test"
+                         "test2" {:path "./test2"}}}]
+    (is (= "./test"  (sut/id->mount config "/test/foo.txt")))
+    (is (= {:path "./test2"} (sut/id->mount config "/test2/foo.txt")))))
 
 (defn- as-md
   [s]
@@ -21,8 +28,8 @@
 
 (deftest id->path
   (let [config-path "/root/foo/config.edn"
-        config      {:mount {:not-test "./not-test"
-                             :test     "./test"} }]
+        config      {:mounts {:not-test "./not-test"
+                              :test     "./test"} }]
     (is (= "/root/foo/test/folder/foo.txt"
            (sut/id->path config-path config "/test/folder/foo.txt")))
     (is (nil? (sut/id->path config-path config "not-/test/folder/foo.txt")))
@@ -31,7 +38,7 @@
 
 (deftest path->id
   (let [config-path "/root/foo/config.edn"
-        config      {:mount {:test "./test"} }]
+        config      {:mounts {:test "./test"} }]
     (is (= "/test/foo.txt" (sut/path->id config-path config "/root/foo/test/foo.txt")))
     (is (= "/test/foo.txt" (sut/path->id config-path config "/test/foo.txt")))
     (is (nil? (sut/path->id config-path config "/root/foo/not-test/foo.txt")))))
@@ -48,7 +55,7 @@
   (is (thrown? AssertionError
                (sut/metadata-path->content-path "foo.txt"))))
 
-(deftest read-metadata
+(deftest read
   (with-temp-dir [dir {}]
     (is (nil? (sut/read (str dir "/foo.txt"))))
     (let [f   (u/spit dir "f.txt" "")

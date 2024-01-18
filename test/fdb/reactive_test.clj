@@ -85,7 +85,7 @@
 
 (deftest query-results-changed?-test
   (let [config-path "/root/one/two/config.edn"
-        config      {:mount {:test "test"}}
+        config      {:mounts {:test "test"}}
         id          "/test/folder/foo.txt"]
     (with-redefs [xt/q        (spy/spy (fn [_ q] (if (= q :gimme-new)
                                                    {:v 2}

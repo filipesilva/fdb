@@ -10,6 +10,7 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
+   [fdb.processor :as processor]
    [fdb.reactive :as reactive]
    [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
@@ -45,18 +46,21 @@
            (u/side-effect->> #(log/info "updating" (str/join ", " %)))
            (pmap (fn [id]
                    (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
-                     [::xt/put (merge {:xt/id id} metadata)]
+                     [::xt/put (merge ;; order matters: processor data, then metadata, then id
+                                      ;; metadata overrides processor data, id overrides all
+                                      (processor/read config-path config id)
+                                      metadata
+                                      {:xt/id id})]
                      [::xt/delete id])))
            (xt/submit-tx node)))
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
-  [config-path {:keys [mount]} node]
-  (let [in-fs                     (->> mount
+  [config-path {:keys [mounts]} node]
+  (let [in-fs                     (->> mounts
                                        ;; get all paths for all mounts
-                                       (map (fn [[mount-id mount-from]]
-                                              (let [mount-path (u/sibling-path config-path mount-from)]
-                                                [mount-id mount-path])))
+                                       (map (fn [[mount-id mount-spec]]
+                                              [mount-id (metadata/mount-path config-path mount-spec)]))
                                        (pmap (fn [[mount-id mount-path]]
                                                (pmap (fn [p] [(metadata/id mount-id p)
                                                               (metadata/modified mount-path p)])
@@ -93,7 +97,7 @@
   [config-path]
   ;; Call triggers synchronously
   (binding [reactive/*sync* true]
-    (with-fdb [config-path {:keys [mount] :as config} node]
+    (with-fdb [config-path {:keys [mounts] :as config} node]
       (reactive/call-all-k config-path config node :fdb.on/startup)
       ;; Update stale files.
       (let [[stale-ids tx] (update-stale! config-path config node)]
@@ -105,8 +109,8 @@
         stale-ids))))
 
 (defn mount->watch-spec
-  [config config-path node [mount-id mount-from]]
-  (let [mount-path (u/sibling-path config-path mount-from)
+  [config config-path node [mount-id mount-spec]]
+  (let [mount-path (metadata/mount-path config-path mount-spec)
         update-fn  #(->> %
                          (metadata/id mount-id)
                          (update! config-path config node))]
@@ -115,7 +119,7 @@
 (defn watch
   "Call f inside a watching fdb."
   [config-path f]
-  (with-fdb [config-path {:keys [mount] :as config} node]
+  (with-fdb [config-path {:keys [mounts] :as config} node]
     (r.ignore/clear config-path)
     (reactive/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
@@ -124,7 +128,7 @@
                                            (partial reactive/on-tx config-path config node))
                 ;; Start watching before the stale check, so no change is lost.
                 ;; TODO: don't tx anything before the stale update
-                _mount-watchers (->> mount
+                _mount-watchers (->> mounts
                                      (map (partial mount->watch-spec config config-path node))
                                      watcher/watch-many
                                      u/closeable-seq)]

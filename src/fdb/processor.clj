@@ -1,18 +1,38 @@
-(ns fdb.processor)
+(ns fdb.processor
+  (:refer-clojure :exclude [read])
+  (:require [fdb.call :as call]
+            [babashka.fs :as fs]
+            [fdb.metadata :as metadata]
+            [fdb.utils :as u]))
+
+(defn id->processors
+  [config id]
+  (let [ext-k      (-> id fs/split-ext second keyword)
+        mount      (metadata/id->mount config id)
+        processors (->> [(or (:processors mount)
+                             (:processors config))
+                         (:extra-processors mount)]
+                        (map #(update-vals % u/x-or-xs->xs))
+                        (apply merge-with into))]
+    (get processors ext-k)))
+
+(defn read
+  [config-path config id]
+  (->> (id->processors config id)
+       (map call/to-fn)
+       (map #(% (metadata/id->path config-path config id)))
+       (reduce merge {})))
+
 
 ;; TODO:
-;; - support file ext processors, e.g. markdown with props
-;;   - extract data from content directly to db metadata, without making the metadata file
-;;   - avoids lots of clutter in existing dirs
-;;   - really good for obsidian or for code ASTs and such
-;; - always read content for some file types, e.g. json, yaml, xml, html, but allow config
-;; - great for triggered actions on some file types like mbox
-;; - use processors and extra-processors, like deps and extra-deps
-;; - should processors be super special config items tho?
-;;   - would be nice if they worked like triggers... I mean they are a sort of metadata trigger
-;;   - fdb.on/metadata ?
-;;   - vec of fns, each adding to the metadata that will be written
-;;   - then you config them globally like other triggers
-;;   - it's different than other triggers because it happens while loading the metadata for the file,
-;;     so before the tx even happens, and cares a lot about the difference between content and metadata files
-;;   - but even if it's different, the config point still stands
+;; - glob processor ks
+;;   - when id matches ks+globs, what happens?
+;; - content processor
+;;   - puts file content on :content k
+;; - metadata could be a processor too... but that's going a bit meta atm
+;;   - would make it easy to have json and other formats tho
+;;   - would have to distinguish between edn processor and our edn built-in processor
+;; - should the shell to-fn work as a processor?
+;;   - it's pretty hardwired to call-arg atm
+;;   - could see it working tho...
+;;   - also a bit up in the air how the output would be processed... parse edn I guess
