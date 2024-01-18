@@ -27,6 +27,8 @@
 ;; TODO:
 ;; - glob processor ks
 ;;   - when id matches ks+globs, what happens?
+;;   - would be easier if processors were vectors of [k-or-glob f-or-fns], order matters then
+;;   - even nicer: support maps and vecs, use vecs when order matters only
 ;; - content processor
 ;;   - puts file content on :content k
 ;; - metadata could be a processor too... but that's going a bit meta atm
