@@ -19,23 +19,24 @@
                                   {:doit true
                                    :call 2}
                                   3]}]
-    (with-redefs [call/to-fn    (fn [_] call-spy)
+    (with-redefs [call/to-fn        (fn [_] call-spy)
                   metadata/id->path (spy/stub "root/folder/foo.txt")]
-      (sut/call-all-triggers {:call-arg true}
-                             :adoc
-                             self
-                             :on-foo
-                             should-trigger?)
+      (binding [sut/*sync* true]
+        (sut/call-all-triggers {:call-arg true}
+                               :adoc
+                               self
+                               :on-foo
+                               should-trigger?))
       (is (= [[{:call 1}] [{:doit true :call 2}] [3]]
              (spy/calls should-trigger?)))
-      (is (= [[{:call-arg true
-                :self     self
+      (is (= [[{:call-arg  true
+                :self      self
                 :self-path "root/folder/foo.txt"
-                :doc      :adoc
-                :doc-path "root/folder/foo.txt"
-                :on       [:on-foo {:doit true :call 2}]
-                :on-ks    [:on-foo 1]
-                :didit    true}]]
+                :doc       :adoc
+                :doc-path  "root/folder/foo.txt"
+                :on        [:on-foo {:doit true :call 2}]
+                :on-ks     [:on-foo 1]
+                :didit     true}]]
              (spy/calls call-spy))))))
 
 (deftest docs-with-k-test
