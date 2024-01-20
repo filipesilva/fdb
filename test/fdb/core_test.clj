@@ -20,7 +20,7 @@
        (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./db"
                              :mounts  {:test "./test"}
-                             :processors {:test.edn 'u/slurp-edn}})
+                             :processors {:my-edn 'u/slurp-edn}})
        ~@body)))
 
 (deftest make-me-a-fdb
@@ -225,6 +225,32 @@
       ;; deletes
       (fs/delete f)
       (is (empty (fdb/call config-path f all-ids))))))
+
+(deftest make-me-a-processing-db
+  (with-temp-fdb-config [config-path mount-path]
+    (let [f     (str (fs/path mount-path "one.my-edn"))
+          f-md  (str (fs/path mount-path "one.my-edn.metadata.edn"))
+          f-id  "/test/one.my-edn"
+          get-f (fn []
+                  (fdb/sync config-path)
+                  (fdb/call config-path f #(-> % :node (db/pull f-id))))]
+      (is (empty? (get-f)))
+      (u/spit-edn f {:one 1})
+      (is (= {:xt/id        f-id
+              :fdb/modified (metadata/modified f)
+              :one          1}
+             (get-f)))
+      (u/spit-edn f-md {:two 2})
+      (is (= {:xt/id        f-id
+              :fdb/modified (metadata/modified f-md)
+              :one          1
+              :two          2}
+             (get-f)))
+      (u/spit-edn f-md {:one 2})
+      (is (= {:xt/id        f-id
+              :fdb/modified (metadata/modified f-md)
+              :one          2}
+             (get-f))))))
 
 (comment
   (def node (db/node "/tmp/fdb-test"))
