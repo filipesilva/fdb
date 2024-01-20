@@ -20,7 +20,9 @@
 
 (defmethod to-fn clojure.lang.Symbol
   [sym]
-  (requiring-resolve sym))
+  (if (qualified-symbol? sym)
+    (requiring-resolve sym)
+    (resolve sym)))
 
 (defmethod to-fn clojure.lang.PersistentList
   [sexp]
@@ -42,5 +44,3 @@
   [f]
   f)
 
-;; TODO:
-;; - support non FQNS symbols, just call resolve on them
