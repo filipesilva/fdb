@@ -13,19 +13,20 @@
 
 (defmacro with-temp-fdb-config
   {:clj-kondo/ignore [:unresolved-symbol]}
-  [[config-path mount] & body]
+  [[config-path mount-path] & body]
   `(with-temp-dir [dir# {}]
-     (let [~mount       (str dir# "/test")
+     (let [~mount-path  (str dir# "/test")
            ~config-path (str dir# "/metadata.edn")]
-       (fs/create-dirs ~mount)
+       (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./db"
-                             :mounts  {:test "./test"}})
+                             :mounts  {:test "./test"}
+                             :processors {:test.edn 'u/slurp-edn}})
        ~@body)))
 
 (deftest make-me-a-fdb
-  (with-temp-fdb-config [config-path mount]
-    (let [f        (fs/path mount "file.txt")
-          fm       (fs/path mount "file.txt.metadata.edn")
+  (with-temp-fdb-config [config-path mount-path]
+    (let [f        (fs/path mount-path "file.txt")
+          fm       (fs/path mount-path "file.txt.metadata.edn")
           snapshot (atom nil)]
       (fdb/with-watch [config-path node]
         (is (empty? (db/all node)))
@@ -64,9 +65,9 @@
 
 (deftest make-me-a-reactive-fdb
   (reset! calls [])
-  (with-temp-fdb-config [config-path mount]
+  (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
-      (u/spit mount "file.txt.metadata.edn"
+      (u/spit mount-path "file.txt.metadata.edn"
               {:fdb/refs        #{"/test/one.md"
                                   "/test/folder/two.md"}
                :fdb.on/modify   ['fdb.core-test/log-call]
@@ -88,8 +89,8 @@
                :fdb.on/shutdown ['fdb.core-test/log-call]})
       (is (u/eventually (db/pull node "/test/file.txt")))
       (db/pull node "/test/file.txt")
-      (u/spit mount "one.md" "")
-      (u/spit mount "folder/two.md" "")
+      (u/spit mount-path "one.md" "")
+      (u/spit mount-path "folder/two.md" "")
       (is (u/eventually (db/pull node "/test/folder/two.md")))
       ;; Check query ran by waiting for query result.
       (is (u/eventually (= #{["/test/file.txt"]
@@ -97,7 +98,7 @@
                              ["/test/folder/two.md"]
                              ["/test/one.md"]
                              ["/test/query-results.edn"]}
-                           (u/slurp-edn mount "query-results.edn"))))
+                           (u/slurp-edn mount-path "query-results.edn"))))
       (is (u/eventually (some #{:fdb.on/schedule} @calls))))
 
     ;; restart for startup/shutdown
@@ -117,25 +118,25 @@
                (update :fdb.on/schedule #(when % true)))))))
 
 (deftest make-me-a-fdb-query
-  (with-temp-fdb-config [config-path mount]
+  (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
-      (u/spit mount "one.txt" "")
-      (u/spit mount "folder/two.txt" "")
-      (u/spit mount "all-modified-query.fdb.edn"
+      (u/spit mount-path "one.txt" "")
+      (u/spit mount-path "folder/two.txt" "")
+      (u/spit mount-path "all-modified-query.fdb.edn"
               '[:find ?e ?modified
                 :where [?e :fdb/modified ?modified]])
-      (u/eventually (u/slurp mount "all-modified-results.fdb.edn"))
+      (u/eventually (u/slurp mount-path "all-modified-results.fdb.edn"))
       (is (= #{"/test/one.txt"
                "/test/folder"
                "/test/folder/two.txt"
                "/test/all-modified-query.fdb.edn"}
-             (->> (u/slurp-edn mount "all-modified-results.fdb.edn")
+             (->> (u/slurp-edn mount-path "all-modified-results.fdb.edn")
                   (map first)
                   set)))
-      (u/spit mount "all-modified-query.fdb.edn" "foo")
-      (u/eventually (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))
+      (u/spit mount-path "all-modified-query.fdb.edn" "foo")
+      (u/eventually (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn")))
       (is (= "Query didn't match expected structure"
-             (:error (u/slurp-edn mount "all-modified-results.fdb.edn")))))))
+             (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn")))))))
 
 (def ignore-calls (atom 0))
 
@@ -144,10 +145,10 @@
 
 (deftest ignore-me-a-change
   (reset! ignore-calls 0)
-  (with-temp-fdb-config [config-path mount]
+  (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
       (let [id  "/test/one"
-            f (fs/path mount "one.metadata.edn")]
+            f (fs/path mount-path "one.metadata.edn")]
         (u/spit-edn f {:fdb.on/modify [{:call  'fdb.core-test/ignore-log-call
                                          :count 1}]})
         (is (u/eventually (= 1 @ignore-calls)))
@@ -165,9 +166,9 @@
                 (= 4)))))))
 
 (deftest make-me-a-call
-  (with-temp-fdb-config [config-path mount]
-    (let [f     (str (fs/path mount "one"))
-          fm    (fs/path mount "one.metadata.edn")
+  (with-temp-fdb-config [config-path mount-path]
+    (let [f     (str (fs/path mount-path "one"))
+          fm    (fs/path mount-path "one.metadata.edn")
           no-db #(dissoc % :node :db) ;; doesn't compare well
           _     (u/spit fm {:foo "bar"})
           self  {:xt/id        "/test/one"
@@ -182,13 +183,13 @@
               :config      (u/slurp-edn config-path)
               :self        self
               :self-path   f}))
-      ;; doesn't exist, but mount is recognized
+      ;; doesn't exist, but mount-path is recognized
       (is (= (no-db (fdb/call config-path "/test/two" identity))
              {:config-path config-path
               :config      (u/slurp-edn config-path)
               :self        nil
-              :self-path   (str (fs/path mount "two"))}))
-      ;; doesn't exist and mount is not recognized
+              :self-path   (str (fs/path mount-path "two"))}))
+      ;; doesn't exist and mount-path is not recognized
       (is (nil? (no-db (fdb/call config-path "/foo/bar" identity)))))))
 
 (def blocking-ch nil)
@@ -197,8 +198,8 @@
   (<!! blocking-ch))
 
 (deftest make-me-a-sync
-  (with-temp-fdb-config [config-path mount]
-    (let [f       (str (fs/path mount "one.metadata.edn"))
+  (with-temp-fdb-config [config-path mount-path]
+    (let [f       (str (fs/path mount-path "one.metadata.edn"))
           f-id    "/test/one"
           all-ids #(->> % :node db/all (map :xt/id) set)]
 

@@ -118,6 +118,7 @@
 ;; TODO:
 ;; - throw for now if there's messages but can't find folder-uid
 ;; - maybe just pick latest date email, and start syncing from first uid found at that date?
+;; - get gmail creds from env vars, much easier to not leak them
 
 (comment
   {:xt/id           "/mount/mail/all"
