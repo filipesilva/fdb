@@ -33,11 +33,12 @@
 (defn glob
   "Returns all files in file-or-dir matching glob pattern."
   [file-or-dir]
-  (let [[file dir relative] (file-dir-relative file-or-dir)]
-    (->> (if file
-           [file]
-           (fs/glob dir "**"))
-         (mapv relative))))
+  (when (fs/exists? file-or-dir)
+    (let [[file dir relative] (file-dir-relative file-or-dir)]
+      (->> (if file
+             [file]
+             (fs/glob dir "**"))
+           (mapv relative)))))
 
 ;; TODO:
 ;; - include/exclude filters

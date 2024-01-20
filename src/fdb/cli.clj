@@ -41,9 +41,12 @@
 
 (defn sync [m]
   (log-to-file! m)
-  (let [config-path          (-> m :opts :config fs/absolutize str)
-        sync                 (requiring-resolve 'fdb.core/sync)]
-    (sync config-path)))
+  (let [config-path (-> m :opts :config fs/absolutize str)
+        sync        (requiring-resolve 'fdb.core/sync)]
+    (sync config-path)
+    ;; Don't wait for 1m for futures thread to shut down.
+    ;; See https://clojuredocs.org/clojure.core/future
+    (shutdown-agents)))
 
 (defn call [m]
   (log-to-file! m)
@@ -83,7 +86,7 @@
 (def table
   [{:cmds ["watch"]     :fn watch}
    {:cmds ["reference"] :fn reference}
-   ;; {:cmds ["sync"]   :fn sync}
+   {:cmds ["sync"]      :fn sync}
    {:cmds ["call"]      :fn call}
    ;; {:cmds ["repl"]   :fn repl}
    {:cmds []         :fn help}])
