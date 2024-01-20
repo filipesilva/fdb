@@ -14,6 +14,11 @@
                     (clojure.string/lower-case x)))
                 "FOO"))))
 
+(deftest eval-under-call-arg
+  (is (= [1] (sut/eval-under-call-arg {:self-path 1} '[self-path])))
+  (is (= [1 2] (sut/eval-under-call-arg {:self-path 1} '[(:self-path call-arg) 2])))
+  (is (= [1 1] (sut/eval-under-call-arg {:self-path 1} '[1 1]))))
+
 (deftest shell-text
   (is (= "1 2 3\n"
          (with-out-str

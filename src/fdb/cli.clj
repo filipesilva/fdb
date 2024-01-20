@@ -48,12 +48,12 @@
     ;; See https://clojuredocs.org/clojure.core/future
     (shutdown-agents)))
 
-(defn call [m]
+(defn call [{{:keys [id-or-path sym args-xf]} :opts :as m}]
   (log-to-file! m)
-  (let [config-path          (-> m :opts :config fs/absolutize str)
-        [id-or-path sym-str] (:args m)
-        call                 (requiring-resolve 'fdb.core/call)]
-    (call config-path (fs/absolutize id-or-path) (symbol sym-str))))
+  (let [config-path' (-> m :opts :config fs/absolutize str)
+        call         (requiring-resolve 'fdb.core/call)]
+    (log/info (call config-path' (fs/absolutize id-or-path) sym
+                    (when args-xf {:args-xf args-xf})))))
 
 (defn repl [m]
   (assoc m :fn :repl))
@@ -87,7 +87,9 @@
   [{:cmds ["watch"]     :fn watch}
    {:cmds ["reference"] :fn reference}
    {:cmds ["sync"]      :fn sync}
-   {:cmds ["call"]      :fn call}
+   {:cmds ["call"]      :fn call
+    :args->opts [:id-or-path :sym :args-xf]
+    :coerce {:sym :symbol :args-xf :edn}}
    ;; {:cmds ["repl"]   :fn repl}
    {:cmds []         :fn help}])
 

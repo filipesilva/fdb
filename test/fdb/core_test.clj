@@ -190,7 +190,9 @@
               :self        nil
               :self-path   (str (fs/path mount-path "two"))}))
       ;; doesn't exist and mount-path is not recognized
-      (is (nil? (no-db (fdb/call config-path "/foo/bar" identity)))))))
+      (is (nil? (no-db (fdb/call config-path "/foo/bar" identity))))
+      ;; supports args
+      (is (=  2 (fdb/call config-path "/test/one" + :args-xf [1 1]))))))
 
 (def blocking-ch nil)
 

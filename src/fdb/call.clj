@@ -28,17 +28,24 @@
   [sexp]
   (eval sexp))
 
+(defn eval-under-call-arg
+  "Evaluates form under common call-arg bindings, i.e.
+  (fn [{:keys [config-path doc-path self-path] :as call-arg}]
+    <form>)
+  Useful to transform call-args from CLI."
+  [call-arg form]
+  (let [bind-args-fn (eval (list 'fn '[{:keys [config-path doc-path self-path] :as call-arg}] form))]
+    (bind-args-fn call-arg)))
+
 (defmethod to-fn clojure.lang.PersistentVector
   [shell-args]
   (fn [call-arg]
-    (let [bind-args     (eval (list 'fn '[{:keys [config-path doc-path self-path]}] shell-args))
-          shell-args'   (bind-args call-arg)
-          [opts & rest] shell-args'
-          io-opts       {:out *out* :err *err*}
-          shell-args''  (if (map? opts)
-                          (into [(merge io-opts opts)] rest)
-                          (into [io-opts] shell-args'))]
-      (apply shell shell-args''))))
+    (let [[opts & rest :as all] (eval-under-call-arg call-arg shell-args)
+          io-opts               {:out *out* :err *err*}
+          shell-args'           (if (map? opts)
+                                  (into [(merge io-opts opts)] rest)
+                                  (into [io-opts] all))]
+      (apply shell shell-args'))))
 
 (defmethod to-fn clojure.lang.Fn
   [f]

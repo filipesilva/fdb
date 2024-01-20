@@ -168,19 +168,24 @@
     (u/closeable {:wait #(<!! process-ch)} stop!)))
 
 (defn call
-  "Call call-spec over id-or-path in fdb. Returns the result of the call."
-  [config-path id-or-path sym]
+  "Call call-spec over id-or-path in fdb. Returns the result of the call.
+  Optionally receives a args-xf that will be eval'ed with bindings for config-path,
+  doc-path, self-path, and call-arg, and should return a vector of args to apply to sym."
+  [config-path id-or-path sym & {:keys [args-xf] :or {args-xf ['call-arg]}}]
   (with-fdb [config-path config node]
     (let [[id path] (when-some [id (metadata/path->id config-path config id-or-path)]
                       [id (metadata/id->path config-path config id)])]
       (if id
-        ((call/to-fn sym)
-         {:config-path config-path
-          :config      config
-          :node        node
-          :db          (xt/db node)
-          :self        (when id (db/pull node id))
-          :self-path   path})
+        (apply
+         (call/to-fn sym)
+          (call/eval-under-call-arg
+           {:config-path config-path
+            :config      config
+            :node        node
+            :db          (xt/db node)
+            :self        (when id (db/pull node id))
+            :self-path   path}
+          args-xf))
         (log/error "id not found" id-or-path)))))
 
 ;; TODO:
@@ -203,4 +208,3 @@
 ;; - register protocol to be able to do fdb://name/call/something
 ;;   - a bit like the Oberon system that had text calls, but only for urls
 ;;   - urlencode the call args
-;; - pass args to call
