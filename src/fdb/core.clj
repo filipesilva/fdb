@@ -178,13 +178,13 @@
       (if id
         (apply
          (call/to-fn sym)
-          (call/eval-under-call-arg
-           {:config-path config-path
-            :config      config
-            :node        node
-            :db          (xt/db node)
-            :self        (when id (db/pull node id))
-            :self-path   path}
+         (call/eval-under-call-arg
+          {:config-path config-path
+           :config      config
+           :node        node
+           :db          (xt/db node)
+           :self        (when id (db/pull node id))
+           :self-path   path}
           args-xf))
         (log/error "id not found" id-or-path)))))
 
