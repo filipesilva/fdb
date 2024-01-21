@@ -27,7 +27,7 @@
   (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
   (let [config-path       (-> m :opts :config fs/absolutize str)
-        watch-config-path (requiring-resolve 'fdb.core/watch-config-path)
+        watch-config-path (requiring-resolve 'fdb.core/watch-config)
         config-watcher    (watch-config-path config-path)
         wait              (-> config-watcher deref :wait)]
     (setup-shutdown-hook! (fn []
