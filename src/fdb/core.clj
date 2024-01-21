@@ -160,10 +160,10 @@
                      (with-open [_config-watcher (watcher/watch config-path restart!)]
                        (loop [restart? true]
                          (if restart?
-                           (with-watch [config-path _node]
-                             (log/info "fdb running")
-                             ;; Block waiting for config changes.
-                             (recur (<!! control-ch)))
+                           (recur (with-watch [config-path _node]
+                                    (log/info "fdb running")
+                                    ;; Block waiting for config changes.
+                                    (<!! control-ch)))
                            (log/info "shutdown")))))]
     (u/closeable {:wait #(<!! process-ch)} stop!)))
 

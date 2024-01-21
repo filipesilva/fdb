@@ -26,10 +26,10 @@
   (log-to-file! m)
   (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
-  (let [config-path       (-> m :opts :config fs/absolutize str)
-        watch-config-path (requiring-resolve 'fdb.core/watch-config)
-        config-watcher    (watch-config-path config-path)
-        wait              (-> config-watcher deref :wait)]
+  (let [config-path    (-> m :opts :config fs/absolutize str)
+        watch-config   (requiring-resolve 'fdb.core/watch-config)
+        config-watcher (watch-config config-path)
+        wait           (-> config-watcher deref :wait)]
     (setup-shutdown-hook! (fn []
                             (.close config-watcher)
                             ;; really have to wait here otherwise xtdb rocksdb gets bork
