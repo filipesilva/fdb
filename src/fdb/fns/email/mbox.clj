@@ -5,6 +5,7 @@
    [babashka.fs :as fs]
    [clojure.java.io :as io]
    [fdb.fns.email.eml :as eml]
+   [fdb.utils :as u]
    [taoensso.timbre :as log])
   (:import
    [org.apache.james.mime4j.mboxiterator MboxIterator FromLinePatterns]
@@ -49,11 +50,13 @@
     (-> s first (= \newline)) (subs 1)))
 
 (defn mbox->eml
-  [mbox-path to-folder-path]
-  (when-not (fs/exists? to-folder-path)
-    (fs/create-dir to-folder-path))
-  (doseq [message (iterator mbox-path)]
-    (write-message to-folder-path (-> message str strip-leading-newline))))
+  ([mbox-path]
+   (mbox->eml mbox-path (u/sibling-path mbox-path (u/filename-without-extension mbox-path "mbox"))))
+  ([mbox-path to-folder-path]
+   (when-not (fs/exists? to-folder-path)
+     (fs/create-dir to-folder-path))
+   (doseq [message (iterator mbox-path)]
+     (write-message to-folder-path (-> message str strip-leading-newline)))))
 
 (comment
   (let [mbox-path      (fs/file (io/resource "email/sample-crlf.mbox"))

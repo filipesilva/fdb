@@ -238,5 +238,13 @@
       (catch-nil (future-cancel fut)))
     ret))
 
+(defn filename-without-extension
+  [path ext]
+  (-> path
+      fs/file-name
+      (fs/split-ext {:ext ext})
+      first))
+
+
 ;; TODO:
 ;;  - str-path fn
