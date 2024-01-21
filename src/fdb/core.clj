@@ -208,3 +208,10 @@
 ;; - register protocol to be able to do fdb://name/call/something
 ;;   - a bit like the Oberon system that had text calls, but only for urls
 ;;   - urlencode the call args
+;; - malli for config validation
+;;   - use dev mode https://www.metosin.fi/blog/2024-01-16-malli-data-modelling-for-clojure-developers
+;; - ensure sync/call work over running watch, otherwise can't have a live env in lisp terms
+;;   - maybe just connect via the repl, and call sync/call
+;;   - then watch just stores the current node in an atom, and sync/call use it if available
+;; - fdb sync --update /foo/bar/*.md
+;;   - handy for when you add a reader
