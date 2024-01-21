@@ -83,8 +83,13 @@
   #_(assoc m :fn :help)
   (println "help!"))
 
+(def spec {:config {:desc    "The FileDB config file."
+                    :alias   :c
+                    :default "fdbconfig.edn"}})
+
 (def table
-  [{:cmds ["watch"]     :fn watch}
+  [{:cmds []            :spec spec}
+   {:cmds ["watch"]     :fn watch}
    {:cmds ["reference"] :fn reference}
    {:cmds ["sync"]      :fn sync}
    {:cmds ["call"]      :fn call
@@ -93,12 +98,8 @@
    ;; {:cmds ["repl"]   :fn repl}
    {:cmds []         :fn help}])
 
-(def spec {:config {:desc    "The FileDB config file."
-                    :alias   :c
-                    :default "fdbconfig.edn"}})
-
 (defn -main [& args]
-  (cli/dispatch table args {:spec spec}))
+  (cli/dispatch table args))
 
 ;; TODO:
 ;; - reference metadata, reference config

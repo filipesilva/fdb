@@ -9,7 +9,7 @@
          babashka/fs              {:mvn/version "0.4.19"}
          babashka/process         {:mvn/version "0.5.21"}
          org.babashka/http-client {:mvn/version "0.4.15"}
-         org.babashka/cli         {:mvn/version "0.4.39"}
+         org.babashka/cli         {:mvn/version "0.8.54"}
          com.taoensso/timbre      {:mvn/version "6.3.1"}
          tick/tick                {:mvn/version "0.7.5"}
          tortue/spy               {:mvn/version "2.14.0"}
