@@ -43,7 +43,11 @@
   (some->> id-or-ids
            u/x-or-xs->xs
            not-empty
-           (u/side-effect->> #(log/info "updating" (str/join ", " %)))
+           (u/side-effect->> (fn [ids]
+                               (log/info "updating" (str/join ", " (take 5 ids))
+                                         (if (> (count ids) 5)
+                                             (str "and " (-> ids count (- 5) str) " more")
+                                             ""))))
            (pmap (fn [id]
                    (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
                      [::xt/put (merge ;; order matters: processor data, then metadata, then id

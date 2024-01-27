@@ -42,4 +42,5 @@
 
 ;; TODO:
 ;; - include/exclude filters
+;;   - fs/list-dir supports an accept fn
 ;; - auto exclude using .gitignore, maybe .fdbignore

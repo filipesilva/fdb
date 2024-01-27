@@ -40,3 +40,4 @@
 ;;   - also a bit up in the air how the output would be processed... parse edn I guess
 ;; - support ext like .foo.bar, fs/split-ext doesn't work for that
 ;; - maybe reader instead of processor?
+;;   - parser? no, because it doesn't parse all of it
