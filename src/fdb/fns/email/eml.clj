@@ -5,10 +5,15 @@
    [clojure-mail.core :as mail]
    [clojure-mail.message :as message]
    [clojure-mail.parser :as parser]
+   [clojure.java.io :as io]
    [clojure.set :as set]
    [clojure.string :as str]
    [fdb.utils :as u]
-   [tick.core :as t]))
+   [tick.core :as t])
+  (:import
+   [java.util Properties]
+   [javax.mail Session]
+   [javax.mail.internet MimeMessage]))
 
 (defn- try-msg->map
   [msg]
@@ -121,17 +126,32 @@
     (strip-nil-empty
      (merge from-message from-headers from-body from-gmail))))
 
+(defn str->message
+  "Like clojure-mail.message/file->message, but doesn't read the file from disk."
+  [str]
+  (let [props (Session/getDefaultInstance (Properties.))]
+    (MimeMessage. props (io/input-stream (.getBytes str)))))
+
 (defn filename
   "Returns file name for a eml message in the following format:
-  timestamp-or-epoch subject-up-to-80-chars message-id-or-random-uuid"
-  [date subject message-id]
-  (str
-   (u/filename-inst (or date (t/epoch)))
-   " "
-   (u/filename-str (u/ellipsis (or subject "<no subject>") 80))
-   " "
-   (u/filename-str (or message-id (str "<no-message-id-" (random-uuid) ">")))
-   ".eml"))
+  timestamp-or-epoch message-id-or-random-uuid-8-char-hex-hash subject-up-to-80-chars.eml
+  The message-id hash is there to avoid overwriting emails with same timestamp and subject."
+  ([str]
+   (let [msg (str->message str)]
+     (filename (or (message/date-sent msg)
+                   (message/date-received msg))
+               (message/subject msg)
+               (message/id msg))))
+  ([date subject message-id]
+   (str
+    (u/filename-inst (or date (t/epoch)))
+    " "
+    (->> (or message-id (str "<no-message-id-" (random-uuid) ">"))
+         hash
+         (format "%08x"))
+    " "
+    (u/filename-str (u/ellipsis (or subject "<no subject>") 80))
+    ".eml")))
 
 (comment
   (metadata "tmp/msg.eml")

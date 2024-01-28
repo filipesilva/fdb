@@ -202,9 +202,11 @@
 
 (defn filename-str
   "Returns a filename friendly version of s.
-  Banned characters from https://stackoverflow.com/a/35352640"
+  Banned characters from https://stackoverflow.com/a/35352640
+  Control & unused category from https://www.regular-expressions.info/unicode.html#category"
   [s]
   (-> s
+      (str/replace #"\p{C}" "")
       (str/replace #"[\\/:*?\"<>|]" " ")
       str/trim))
 

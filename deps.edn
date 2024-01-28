@@ -19,11 +19,7 @@
          org.slf4j/slf4j-nop      {:mvn/version "2.0.9"}
          mvxcvi/puget             {:mvn/version "1.3.4"}
          io.forward/clojure-mail  {:mvn/version "1.0.8"}
-         com.sun.mail/gimap       {:mvn/version "1.6.7"}
-         org.apache.james/apache-mime4j-core {:mvn/version "0.8.9"}
-         org.apache.james/apache-mime4j-dom {:mvn/version "0.8.9"}
-         org.apache.james/apache-mime4j-mbox-iterator {:mvn/version "0.8.9"}
-         }
+         com.sun.mail/gimap       {:mvn/version "1.6.7"}}
 
  :aliases
  {:neil {:project {:name fdb/fdb}}}}
