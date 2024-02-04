@@ -127,7 +127,7 @@
      (merge from-message from-headers from-body from-gmail))))
 
 (defn str->message
-  "Like clojure-mail.message/file->message, but doesn't read the file from disk."
+  "Like clojure-mail.core/file->message, but doesn't read the file from disk."
   [str]
   (let [props (Session/getDefaultInstance (Properties.))]
     (MimeMessage. props (io/input-stream (.getBytes str)))))

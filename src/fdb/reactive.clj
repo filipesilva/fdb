@@ -330,3 +330,6 @@
 ;; - rename on-ks to on-path
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
+;; - don't log that schedule removal if there's no schedules to remove
+;;   - those conditionals need to be reviewed
+;; - maybe rename ns to fdb.triggers?

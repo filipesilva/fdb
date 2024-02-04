@@ -219,3 +219,18 @@
 ;;   - then watch just stores the current node in an atom, and sync/call use it if available
 ;; - fdb sync --update /foo/bar/*.md
 ;;   - handy for when you add a reader
+;; - watch taking ages on a lot of files, way more than sync
+;; - call should be able to call existing triggers, pretending to be them
+;;   - fdb call id "[:fdb.on/schedule 0]"
+;;   - might need to be call-trigger?
+;;   - fdb trigger id :anything 0
+;;   - yeah this lgtm
+;;   - fdb trigger implies fdb process/read
+;; - pre-tx triggers could do db-with and verify something, like a query
+;; - some facility to view db contents in a certain format
+;;   - email as edn, json, md, pdf
+;;   - I guess it'd need some mapping, because each view should expect some stuff
+;;   - server should provide views via content negotiation, but maybe also some &as=md param
+;; - what's the google-like search for fdb?
+;;   - not just fdb.query I imagine, but that's deff the advanced version
+;;   - should return things as views
