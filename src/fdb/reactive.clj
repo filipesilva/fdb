@@ -32,15 +32,18 @@
                           :on        [on-k trigger]
                           :on-ks     [on-k trigger-idx]}
                          more)
+        log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
+                      (if-some [doc-id (-> call-arg' :doc :xt/id)]
+                        (str " over " doc-id)
+                        ""))
         f         (fn []
                     (u/maybe-timeout (:timeout trigger)
-                                     #(u/catch-log
-                                       ((call/to-fn call-spec) call-arg'))))]
+                                     (fn []
+                                       (u/with-time [t-ms #(log/debug "call" log-str "took" (t-ms) "ms")]
+                                         (u/catch-log
+                                          ((call/to-fn call-spec) call-arg'))))))]
 
-    (log/info "calling" (:xt/id self) on-k (u/ellipsis (str trigger))
-              (if-some [doc-id (-> call-arg' :doc :xt/id)]
-                (str "over " doc-id)
-                ""))
+    (log/info "calling" log-str)
     (if *sync*
       (f)
       (future-call f))))
@@ -75,13 +78,14 @@
   "Call all existing k triggers.
   Mainly for :fdb.on/startup and :fdb.on/shutdown."
   [config-path config node k]
-  (let [db       (xt/db node)
-        call-arg {:config-path config-path
-                  :config      config
-                  :node        node
-                  :db          db}]
-    (run! #(call-all-triggers call-arg % % k)
-          (docs-with-k db k))))
+  (u/with-time [t-ms #(log/debug "call all" k "took" (t-ms) "ms")]
+    (let [db       (xt/db node)
+          call-arg {:config-path config-path
+                    :config      config
+                    :node        node
+                    :db          db}]
+      (run! #(call-all-triggers call-arg % % k)
+            (docs-with-k db k)))))
 
 (defn massage-ops
   "Process ops to pass in to call handlers.
@@ -288,7 +292,7 @@
   (u/catch-log
    (when-not (false? (:committed? tx)) ;; can be nil for txs retried from log directly
      (u/with-time [time-ms]
-       (log/info "processing tx" (::xt/tx-id tx))
+       (log/debug "processing tx" (::xt/tx-id tx))
        (let [call-arg {:config-path config-path
                        :config      config
                        :node        node
@@ -312,7 +316,7 @@
          ;; Don't need ops, just needs to be called after every tx
          (call-all-on-query call-arg)
          (call-all-on-tx call-arg))
-       (log/info "processed tx-id" (::xt/tx-id tx) "in" (time-ms) "ms")))))
+       (log/debug "processed tx-id" (::xt/tx-id tx) "in" (time-ms) "ms")))))
 
 
 ;; TODO:

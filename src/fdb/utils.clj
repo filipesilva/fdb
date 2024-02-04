@@ -163,10 +163,14 @@
 (defmacro with-time
   "Binds time-ms to a fn that returns the number of elapsed ms."
   {:clj-kondo/ignore [:unresolved-symbol]}
-  [[time-ms] & body]
+  [[time-ms f] & body]
   `(let [start#   (System/nanoTime)
-         ~time-ms #(/ (- (System/nanoTime) start#) 1e6) ]
-     ~@body))
+         ~time-ms #(/ (- (System/nanoTime) start#) 1e6)]
+     (try
+       ~@body
+       (finally
+         (when ~f
+           (apply ~f []))))))
 
 (defn lockfile
   "Returns a closeable that attempts to lock the file at paths.

@@ -15,8 +15,10 @@
 (defn- log-to-file!
   [m]
   (let [config-path (-> m :opts :config fs/absolutize str)
-        path (u/sibling-path config-path "fdb.log")]
-    (log/merge-config! {:appenders {:spit (appenders/spit-appender {:fname path})}})))
+        path        (u/sibling-path config-path "fdb.log")
+        min-level   (if (-> m :opts :debug) :debug :info)]
+    (log/merge-config! {:min-level min-level
+                        :appenders {:spit (appenders/spit-appender {:fname path})}})))
 
 (defn- setup-shutdown-hook!
   [f]
@@ -85,7 +87,11 @@
 
 (def spec {:config {:desc    "The FileDB config file."
                     :alias   :c
-                    :default "fdbconfig.edn"}})
+                    :default "fdbconfig.edn"}
+           :debug  {:desc    "Print debug info."
+                    :alias   :d
+                    :default false
+                    :coerce  :boolean}})
 
 (def table
   [{:cmds []            :spec spec}

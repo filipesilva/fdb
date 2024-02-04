@@ -3,6 +3,7 @@
   (:refer-clojure :exclude [sync])
   (:require
    #_[clojure.repl.deps :as deps]
+   [hashp.core]
    [clojure.core.async :refer [go >!! <!! close! chan sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -15,7 +16,6 @@
    [fdb.reactive.ignore :as r.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
-   [hashp.core]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
@@ -40,52 +40,54 @@
 (defn update!
   "Read id-or-ids from fs and update them in node. Returns tx without ops."
   [config-path config node id-or-ids]
-  (some->> id-or-ids
-           u/x-or-xs->xs
-           not-empty
-           (u/side-effect->> (fn [ids]
-                               (log/info "updating" (str/join ", " (take 5 ids))
-                                         (if (> (count ids) 5)
+  (u/with-time [t-ms #(log/debug "update! took" (t-ms) "ms")]
+    (some->> id-or-ids
+             u/x-or-xs->xs
+             not-empty
+             (u/side-effect->> (fn [ids]
+                                 (log/info "updating" (str/join ", " (take 5 ids))
+                                           (if (> (count ids) 5)
                                              (str "and " (-> ids count (- 5) str) " more")
                                              ""))))
-           (pmap (fn [id]
-                   (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
-                     [::xt/put (merge ;; order matters: processor data, then metadata, then id
-                                      ;; metadata overrides processor data, id overrides all
-                                      (processor/read config-path config id)
-                                      metadata
-                                      {:xt/id id})]
-                     [::xt/delete id])))
-           (xt/submit-tx node)))
+             (pmap (fn [id]
+                     (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
+                       [::xt/put (merge ;; order matters: processor data, then metadata, then id
+                                  ;; metadata overrides processor data, id overrides all
+                                  (processor/read config-path config id)
+                                  metadata
+                                  {:xt/id id})]
+                       [::xt/delete id])))
+             (xt/submit-tx node))))
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
   [config-path {:keys [mounts]} node]
-  (let [in-fs                     (->> mounts
-                                       ;; get all paths for all mounts
-                                       (map (fn [[mount-id mount-spec]]
-                                              [mount-id (metadata/mount-path config-path mount-spec)]))
-                                       (pmap (fn [[mount-id mount-path]]
-                                               (pmap (fn [p] [(metadata/id mount-id p)
-                                                              (metadata/modified mount-path p)])
-                                                     (watcher/glob mount-path))))
-                                       (mapcat identity)
-                                       ;; id is the same for content and metadata file, we want
-                                       ;; to keep only the most recent modified
-                                       (group-by first)
-                                       (map #(reduce (fn [[_ m1 :as x] [_ m2 :as y]]
-                                                       (if (t/> m1 m2) x y))
-                                                     (second %)))
-                                       set)
-        in-db                     (xt/q (xt/db node)
-                                        '{:find  [?id ?modified]
-                                          :where [[?e :xt/id ?id]
-                                                  [?e :fdb/modified ?modified]]})
-        [only-in-fs only-in-db _] (data/diff in-fs in-db)
-        stale-ids                 (->> (concat only-in-fs only-in-db)
-                                       (map first)
-                                       set)]
-    stale-ids))
+  (u/with-time [t-ms #(log/debug "stale took" (t-ms) "ms")]
+    (let [in-fs                     (->> mounts
+                                         ;; get all paths for all mounts
+                                         (map (fn [[mount-id mount-spec]]
+                                                [mount-id (metadata/mount-path config-path mount-spec)]))
+                                         (pmap (fn [[mount-id mount-path]]
+                                                 (pmap (fn [p] [(metadata/id mount-id p)
+                                                                (metadata/modified mount-path p)])
+                                                       (watcher/glob mount-path))))
+                                         (mapcat identity)
+                                         ;; id is the same for content and metadata file, we want
+                                         ;; to keep only the most recent modified
+                                         (group-by first)
+                                         (map #(reduce (fn [[_ m1 :as x] [_ m2 :as y]]
+                                                         (if (t/> m1 m2) x y))
+                                                       (second %)))
+                                         set)
+          in-db                     (xt/q (xt/db node)
+                                          '{:find  [?id ?modified]
+                                            :where [[?e :xt/id ?id]
+                                                    [?e :fdb/modified ?modified]]})
+          [only-in-fs only-in-db _] (data/diff in-fs in-db)
+          stale-ids                 (->> (concat only-in-fs only-in-db)
+                                         (map first)
+                                         set)]
+      stale-ids)))
 
 (defn update-stale!
   "Update all stale files. Returns [stale-ids tx]."
@@ -198,8 +200,6 @@
 ;; - validate mounts, don't allow slashes on mount-id, nor empty
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - just doing a doc with file listings for the month would already help with taxes
-;; - add debug logging for call eval/require errors
-;;   - leave only high level update on info, put rest on debug
 ;; - repl files repl.fdb.clj and nrepl.fdb.clj
 ;;   - repl one starts a repl session, outputs to file, and puts a ;; user> prompt line
 ;;     - whenever you save the file, it sends everything after the prompt to the repl
