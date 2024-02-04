@@ -134,10 +134,11 @@
                                            (partial reactive/on-tx config-path config node))
                 ;; Start watching before the stale check, so no change is lost.
                 ;; TODO: don't tx anything before the stale update
-                _mount-watchers (->> mounts
-                                     (map (partial mount->watch-spec config config-path node))
-                                     watcher/watch-many
-                                     u/closeable-seq)]
+                _mount-watchers (u/with-time [t-ms #(log/debug "watch took" (t-ms) "ms")]
+                                  (->> mounts
+                                       (map (partial mount->watch-spec config config-path node))
+                                       watcher/watch-many
+                                       u/closeable-seq))]
       (update-stale! config-path config node)
       (reactive/start-all-schedules config-path config node)
       (let [return (f node)]
@@ -219,7 +220,6 @@
 ;;   - then watch just stores the current node in an atom, and sync/call use it if available
 ;; - fdb sync --update /foo/bar/*.md
 ;;   - handy for when you add a reader
-;; - watch taking ages on a lot of files, way more than sync
 ;; - call should be able to call existing triggers, pretending to be them
 ;;   - fdb call id "[:fdb.on/schedule 0]"
 ;;   - might need to be call-trigger?

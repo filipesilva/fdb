@@ -5,7 +5,9 @@
          com.xtdb/xtdb-core       {:mvn/version "1.24.0"}
          com.xtdb/xtdb-rocksdb    {:mvn/version "1.24.0"}
          com.xtdb/xtdb-lucene     {:mvn/version "1.24.0"}
-         com.nextjournal/beholder {:mvn/version "1.0.2"}
+         com.nextjournal/beholder {;; waiting on https://github.com/nextjournal/beholder/pull/8
+                                   :git/url "https://github.com/filipesilva/beholder.git"
+                                   :git/sha "b0ca87540a28aac823791782d9f12d098ca71ed3"}
          babashka/fs              {:mvn/version "0.4.19"}
          babashka/process         {:mvn/version "0.5.21"}
          org.babashka/http-client {:mvn/version "0.4.15"}
