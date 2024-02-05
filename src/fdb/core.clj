@@ -207,6 +207,9 @@
 ;;     - whenever you save the file, it sends everything after the prompt to the repl
 ;;     - then it puts the result in a comment at the end
 ;;     - and moves the prompt line to the end
+;;     - maybe do .output file instead, like query, and call query one output too
+;;       - actually... query.fdb.edn -> results.fdb.edn, and repl.fdb.edn -> output.fdb.edn
+;;       - actually looks better to have them different
 ;;   - nrepl one starts a nrepl session, outputs port to a nrepl sibling file
 ;;     - this one is for you to connect to with your editor and mess around
 ;;   - both these sessions should have some binding they can import with call-arg data
@@ -231,7 +234,14 @@
 ;; - some facility to view db contents in a certain format
 ;;   - email as edn, json, md, pdf
 ;;   - I guess it'd need some mapping, because each view should expect some stuff
+;;     - default view comes from file ext
 ;;   - server should provide views via content negotiation, but maybe also some &as=md param
+;;   - fdb open /mount/path/file.ext
+;;     - open in browser
+;;     - open folder opens listing, with pagination etc
+;;     - open file opens default view, :as ext for different one
+;;     - maybe an editor there too? for query, repl files, metadata
 ;; - what's the google-like search for fdb?
 ;;   - not just fdb.query I imagine, but that's deff the advanced version
 ;;   - should return things as views
+;; - in xtdb2, tables could be mounts
