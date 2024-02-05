@@ -136,8 +136,9 @@
   "Returns file name for a eml message in the following format:
   timestamp-or-epoch message-id-or-random-uuid-8-char-hex-hash subject-up-to-80-chars.eml
   The message-id hash is there to avoid overwriting emails with same timestamp and subject."
-  ([str]
-   (let [msg (str->message str)]
+  ([str-or-msg]
+   (let [msg (cond-> str-or-msg
+               (string? str-or-msg) str->message)]
      (filename (or (message/date-sent msg)
                    (message/date-received msg))
                (message/subject msg)

@@ -139,7 +139,8 @@
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
                                        u/closeable-seq))]
-      (update-stale! config-path config node)
+      (when-let [tx (second (update-stale! config-path config node))]
+        (xt/await-tx node tx))
       (reactive/start-all-schedules config-path config node)
       (let [return (f node)]
         (reactive/stop-config-path-schedules config-path)
