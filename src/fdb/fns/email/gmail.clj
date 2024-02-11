@@ -70,7 +70,7 @@
   "Syncs a folder from gmail to self-path. self-path must be a folder.
   You'll need to create a app password in google -> security -> 2-step verification -> app passwords.
   Uses :fdb.fns.gmail/email and :fdb.fns.gmail/password from config. "
-  [{:keys [config config-path node self self-path on on-ks]}]
+  [{:keys [config config-path node self self-path on on-path]}]
   (if-not (and self-path (fs/directory? self-path))
     (throw (ex-info "self-path must be a directory" {:self-path self-path}))
     ;; if we can't get a lock on self-path, that means another run is in progress and we should bail
@@ -83,7 +83,7 @@
               ;; pull last-uid from latest version of the db, because we
               ;; silently update it after writing each mail
               last-uid                         (-> (db/pull node (:xt/id self))
-                                                   (get-in on-ks)
+                                                   (get-in on-path)
                                                    :last-uid
                                                    (or 0))
               *new-last-uid                    (atom nil)]
@@ -105,7 +105,7 @@
                     (write message path)
                     (reset! *new-last-uid uid)
                     (metadata/silent-swap! self-path config-path (:xt/id self)
-                                           assoc-in (conj on-ks :last-uid) @*new-last-uid))))))
+                                           assoc-in (conj on-path :last-uid) @*new-last-uid))))))
           (if @*new-last-uid
             (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)
             (log/info "no new messages in" folder-name "!")))))))

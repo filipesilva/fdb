@@ -31,7 +31,7 @@
                          {:self      self
                           :self-path (metadata/id->path config-path config (:xt/id self))
                           :on        [on-k trigger]
-                          :on-ks     [on-k trigger-idx]}
+                          :on-path   [on-k trigger-idx]}
                          more)
         log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
                       (if-some [doc-id (-> call-arg' :doc :xt/id)]
@@ -285,7 +285,7 @@
    :db          xtdb db value at the time of the tx
    :tx          the tx
    :on          the trigger being called as [fdb.on/k trigger]
-   :on-ks       get path inside self for trigger as [fdb.on/k 1]
+   :on-path     get path inside self for trigger as [fdb.on/k 1]
    :self        the doc that has the trigger being called
    :self-path   on-disk path for self
    :doc         the doc the tigger is being called over, if any
@@ -324,7 +324,6 @@
 
 
 ;; TODO:
-;; - review the whole on, on-ks, trigger names
 ;; - make schedules play nice with sync
 ;;   - every runs once immediately
 ;;   - cron saves last execution and runs immediately if missed using cron/times arity 2
@@ -335,6 +334,5 @@
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
 ;; - support x-or-xs triggers, not just vec
 ;;   - will need to update on-ks
-;; - rename on-ks to on-path
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
