@@ -22,6 +22,8 @@
          ;; for xtdb, I guess, I don't care, I just want the startup error to go away
          org.slf4j/slf4j-nop         {:mvn/version "2.0.9"}
          mvxcvi/puget                {:mvn/version "1.3.4"}
+
+         ;; mail deps
          io.forward/clojure-mail     {:mvn/version "1.0.8"}
          ;; Don't really use medley directly, but clojure-mail does, and it always shows
          ;; a warning about abs being overwritten because it's on an old medley version
