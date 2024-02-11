@@ -112,6 +112,8 @@
 
 ;; TODO:
 ;; - get gmail creds from env vars, much easier to not leak them
+;; - no need to update last-uid on all writes, update at the end and every 10
+;; - make progress stuff just debug
 
 (comment
   {:fdb.on/schedule [{:every       [30 :minutes]

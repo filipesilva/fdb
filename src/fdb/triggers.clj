@@ -6,6 +6,7 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
+   [fdb.repl :as repl]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
@@ -179,24 +180,37 @@
 
 ;; Triggers
 
-(defn results-file
-  [id]
-  (when-some[[_ prefix] (re-matches #".*/([^/]*)query\.fdb\.edn$" id)]
-    (str prefix "results.fdb.edn")))
+(defn out-file
+  [id in out ext]
+  (when-some[[_ prefix] (re-matches
+                         (re-pattern (str ".*/([^/]*)" in "\\.fdb\\." ext "$"))
+                         id)]
+    (str prefix out ".fdb." ext)))
 
 (defn call-on-query-file
   "If id matches in /*query.fdb.edn, query with content and output
-  results to sibling /*query-result.fdb.edn file."
+  results to sibling /*results.fdb.edn file."
   [{:keys [db config-path config]} [op id]]
   (when (= op ::xt/put)
-    (when-some [results-file' (results-file id)]
-      (log/info "querying" id "to" results-file')
+    (when-some [results-file (out-file id "query" "results" "edn")]
+      (log/info "querying" id "to" results-file)
       (let [query-path   (metadata/id->path config-path config id)
-            results-path (u/sibling-path query-path results-file')
+            results-path (u/sibling-path query-path results-file)
             results      (try (xt/q db (u/slurp-edn query-path))
                               (catch Exception e
                                 {:error (ex-message e)}))]
         (u/spit-edn results-path results)))))
+
+(defn call-on-repl-file
+  "If id matches in /*repl.fdb.clj, call repl with content and print
+  output to sibling /*outputs.fdb.clj file."
+  [{:keys [config-path config]} [op id]]
+  (when (= op ::xt/put)
+    (when-some [outputs-file (out-file id "repl" "outputs" "clj")]
+      (log/info "sending" id "to repl, outputs in" outputs-file)
+      (let [file-path   (metadata/id->path config-path config id)
+            outputs-path (u/sibling-path file-path outputs-file)]
+        (repl/load config-path file-path outputs-path)))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
@@ -315,6 +329,7 @@
          (run! (partial update-schedules call-arg) ops)
 
          ;; Call triggers in order of "closeness"
+         (run! (partial call-on-repl-file call-arg) ops) ;; content
          (run! (partial call-on-query-file call-arg) ops) ;; content
          (run! (partial call-on-modify call-arg) ops)     ;; self metadata
          (run! (partial call-on-refs call-arg) ops)       ;; direct ref
@@ -338,3 +353,4 @@
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
+;; - don't show the "adding schedules" message on startup if nothing changed
