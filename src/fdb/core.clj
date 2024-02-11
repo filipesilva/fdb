@@ -14,6 +14,7 @@
    [fdb.processor :as processor]
    [fdb.reactive :as reactive]
    [fdb.reactive.ignore :as r.ignore]
+   [fdb.repl :as repl]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [taoensso.timbre :as log]
@@ -21,15 +22,17 @@
    [xtdb.api :as xt]))
 
 (defn do-with-fdb
-  "Call f over an initialized fdb."
+  "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
   [config-path f]
   (let [{:keys [db-path _extra-deps] :as config} (-> config-path slurp edn/read-string)]
     ;; TODO: should just work when clojure 1.12 is released and installed globally
     #_(binding [clojure.core/*repl* true]
       (when extra-deps
         (deps/add-libs extra-deps)))
-    (with-open [node (db/node (u/sibling-path config-path db-path))]
-      (f config-path config node))))
+    (if-some [node (repl/node config-path)]
+      (f config-path config node)
+      (with-open [node (db/node (u/sibling-path config-path db-path))]
+        (f config-path config node)))))
 
 (defmacro with-fdb
   "Call body with over fdb configured with config-path."
@@ -138,7 +141,10 @@
                                   (->> mounts
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
-                                       u/closeable-seq))]
+                                       u/closeable-seq))
+                _repl-server    (repl/start-server {:config-path config-path
+                                                    :config      config
+                                                    :node        node})]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
       (reactive/start-all-schedules config-path config node)
@@ -202,17 +208,16 @@
 ;; - validate mounts, don't allow slashes on mount-id, nor empty
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - just doing a doc with file listings for the month would already help with taxes
-;; - repl files repl.fdb.clj and nrepl.fdb.clj
-;;   - repl one starts a repl session, outputs to file, and puts a ;; user> prompt line
+;; - repl file repl.fdb.clj
+;;   - starts a repl session, outputs to file, and puts a ;; user> prompt line
 ;;     - whenever you save the file, it sends everything after the prompt to the repl
 ;;     - then it puts the result in a comment at the end
 ;;     - and moves the prompt line to the end
 ;;     - maybe do .output file instead, like query, and call query one output too
 ;;       - actually... query.fdb.edn -> results.fdb.edn, and repl.fdb.edn -> output.fdb.edn
 ;;       - actually looks better to have them different
-;;   - nrepl one starts a nrepl session, outputs port to a nrepl sibling file
-;;     - this one is for you to connect to with your editor and mess around
-;;   - both these sessions should have some binding they can import with call-arg data
+;;   - should have some binding they can import with call-arg data
+;;   - doesn't clear input maybe? so the clj tooling recognizes imports
 ;; - check https://github.com/clj-commons/marginalia for docs
 ;; - register protocol to be able to do fdb://name/call/something
 ;;   - a bit like the Oberon system that had text calls, but only for urls
@@ -244,4 +249,5 @@
 ;; - what's the google-like search for fdb?
 ;;   - not just fdb.query I imagine, but that's deff the advanced version
 ;;   - should return things as views
-;; - in xtdb2, tables could be mounts
+;; - in xtdb2, tables could be mounts, or file types
+;; - bulk change config-file-path to config-path

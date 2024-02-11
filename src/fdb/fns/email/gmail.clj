@@ -106,8 +106,9 @@
                     (reset! *new-last-uid uid)
                     (metadata/silent-swap! self-path config-path (:xt/id self)
                                            assoc-in (conj on-ks :last-uid) @*new-last-uid))))))
-          (when @*new-last-uid
-            (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)))))))
+          (if @*new-last-uid
+            (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)
+            (log/info "no new messages in" folder-name "!")))))))
 
 ;; TODO:
 ;; - get gmail creds from env vars, much easier to not leak them

@@ -3,9 +3,13 @@
   (:require
    [babashka.cli :as cli]
    [babashka.fs :as fs]
+   [fdb.repl :as repl]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [taoensso.timbre.appenders.core :as appenders]))
+
+(defn config-path [m]
+  (-> m :opts :config fs/absolutize str))
 
 ;; Not sure if this is the best way to set the log file,
 ;; but had trouble using log/with-merged-config before together with core.async stuff
@@ -14,9 +18,8 @@
 ;; showed up in the console.
 (defn- log-to-file!
   [m]
-  (let [config-path (-> m :opts :config fs/absolutize str)
-        path        (u/sibling-path config-path "fdb.log")
-        min-level   (if (-> m :opts :debug) :debug :info)]
+  (let [path      (u/sibling-path (config-path m) "fdb.log")
+        min-level (if (-> m :opts :debug) :debug :info)]
     (log/merge-config! {:min-level min-level
                         :appenders {:spit (appenders/spit-appender {:fname path})}})))
 
@@ -41,21 +44,30 @@
     (wait)
     :watch-exit))
 
+(defn apply-repl-or-local
+  [config-path sym & args]
+  (if (repl/has-server? config-path)
+    (do
+      (log/with-min-level :error
+        (repl/apply config-path 'fdb.repl/refresh))
+      ;; Note: adds config-path as first arg, because sync/call need it
+      (apply repl/apply config-path sym config-path args))
+    (let [f (requiring-resolve sym)]
+      (apply f args))))
+
 (defn sync [m]
   (log-to-file! m)
-  (let [config-path (-> m :opts :config fs/absolutize str)
-        sync        (requiring-resolve 'fdb.core/sync)]
-    (sync config-path)
-    ;; Don't wait for 1m for futures thread to shut down.
-    ;; See https://clojuredocs.org/clojure.core/future
-    (shutdown-agents)))
+  (apply-repl-or-local (config-path m) 'fdb.core/sync)
+  ;; Don't wait for 1m for futures thread to shut down.
+  ;; See https://clojuredocs.org/clojure.core/future
+  (shutdown-agents))
 
 (defn call [{{:keys [id-or-path sym args-xf]} :opts :as m}]
   (log-to-file! m)
-  (let [config-path' (-> m :opts :config fs/absolutize str)
-        call         (requiring-resolve 'fdb.core/call)]
-    (log/info (call config-path' (fs/absolutize id-or-path) sym
-                    (when args-xf {:args-xf args-xf})))))
+  (log/info (apply-repl-or-local (config-path m) 'fdb.core/call
+                                 (str (fs/absolutize id-or-path)) sym
+                                 (when args-xf {:args-xf args-xf})))
+  (shutdown-agents))
 
 (defn repl [m]
   (assoc m :fn :repl))
@@ -94,15 +106,13 @@
                     :coerce  :boolean}})
 
 (def table
-  [{:cmds []            :spec spec}
+  [{:cmds []            :fn help :spec spec}
    {:cmds ["watch"]     :fn watch}
    {:cmds ["reference"] :fn reference}
    {:cmds ["sync"]      :fn sync}
    {:cmds ["call"]      :fn call
     :args->opts [:id-or-path :sym :args-xf]
-    :coerce {:sym :symbol :args-xf :edn}}
-   ;; {:cmds ["repl"]   :fn repl}
-   {:cmds []         :fn help}])
+    :coerce {:sym :symbol :args-xf :edn}}])
 
 (defn -main [& args]
   (cli/dispatch table args))
@@ -110,5 +120,6 @@
 ;; TODO:
 ;; - reference metadata, reference config
 ;; - resolve fdbconfig.edn up from current dir, like node_modules
-;; - support call over a running watch
 ;; - fdb example outputs config, files, etc, readme uses it
+;; - loading utils and timbre take ~12s, try to defer it until we're sure we're not using the repl
+;; - is it worth to have sync/call/trigger in the cli while they could be called from the repl/repl-file?
