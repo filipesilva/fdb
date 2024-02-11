@@ -1,5 +1,5 @@
 (ns fdb.core
-  "A reactive database over your files."
+  "A programmable database over your files."
   (:refer-clojure :exclude [sync])
   (:require
    #_[clojure.repl.deps :as deps]
