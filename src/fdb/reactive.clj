@@ -113,17 +113,18 @@
   [{:keys [config-path] :as call-arg} [op id doc]]
   (swap! *schedules
          (fn [schedules]
-           ;; Stop all schedules for this id.
+           ;; Start by stopping all schedules for this id, if any.
            (run! u/close (get-in schedules [config-path id]))
-           (if (= op ::xt/delete)
-             ;; Remove schedule.
-             (do
-               (log/info "removing schedules for" id)
-               (update schedules config-path dissoc id))
-             (if-some [on-schedule (:fdb.on/schedule doc)]
-               ;; Add new schedules.
-               (do
-                 (log/info "adding schedules for" id)
+           (cond
+             ;; Remove schedule if id was deleted.
+             (and (= op ::xt/delete)
+                  (get-in schedules [config-path id]))
+             (do (log/info "removing schedules for" id)
+                 (update schedules config-path dissoc id))
+
+             ;; Add new schedules for this id if any.
+             (:fdb.on/schedule doc)
+             (do (log/info "adding schedules for" id)
                  (assoc-in schedules [config-path id]
                            (doall
                             (map-indexed
@@ -139,9 +140,11 @@
                                                          call-arg {:timestamp (str timestamp)})
                                                    ;; Never cancel schedule from fn.
                                                    true))))
-                             on-schedule))))
-               ;; There's no schedules for this doc, nothing to do.
-               schedules)))))
+                             (:fdb.on/schedule doc)))))
+
+             ;; There's no schedules for this doc, nothing to do.
+             :else
+             schedules))))
 
 (defn start-all-schedules
   [config-path config node]
@@ -334,6 +337,4 @@
 ;; - rename on-ks to on-path
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
-;; - don't log that schedule removal if there's no schedules to remove
-;;   - those conditionals need to be reviewed
 ;; - maybe rename ns to fdb.triggers?
