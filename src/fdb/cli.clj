@@ -45,10 +45,10 @@
     :watch-exit))
 
 (defn apply-repl-or-local
-  [config-path sym & args]
+  [config-path refresh? sym & args]
   (if (repl/has-server? config-path)
     (do
-      (log/with-min-level :error
+      (when refresh?
         (repl/apply config-path 'fdb.repl/refresh))
       ;; Note: adds config-path as first arg, because sync/call need it
       (apply repl/apply config-path sym config-path args))
@@ -57,14 +57,15 @@
 
 (defn sync [m]
   (log-to-file! m)
-  (apply-repl-or-local (config-path m) 'fdb.core/sync)
+  (apply-repl-or-local (config-path m) (-> m :opts :refresh) 'fdb.core/sync)
   ;; Don't wait for 1m for futures thread to shut down.
   ;; See https://clojuredocs.org/clojure.core/future
   (shutdown-agents))
 
 (defn call [{{:keys [id-or-path sym args-xf]} :opts :as m}]
   (log-to-file! m)
-  (log/info (apply-repl-or-local (config-path m) 'fdb.core/call
+  (log/info (apply-repl-or-local (config-path m) (-> m :opts :refresh)
+                                 'fdb.core/call
                                  (str (fs/absolutize id-or-path)) sym
                                  (when args-xf {:args-xf args-xf})))
   (shutdown-agents))
@@ -103,7 +104,11 @@
            :debug  {:desc    "Print debug info."
                     :alias   :d
                     :default false
-                    :coerce  :boolean}})
+                    :coerce  :boolean}
+           :refresh {:desc    "Refresh the repl."
+                     :alias   :r
+                     :default false
+                     :coerce  :boolean}})
 
 (def table
   [{:cmds []            :fn help :spec spec}
@@ -121,5 +126,4 @@
 ;; - reference metadata, reference config
 ;; - resolve fdbconfig.edn up from current dir, like node_modules
 ;; - fdb example outputs config, files, etc, readme uses it
-;; - loading utils and timbre take ~12s, try to defer it until we're sure we're not using the repl
 ;; - is it worth to have sync/call/trigger in the cli while they could be called from the repl/repl-file?

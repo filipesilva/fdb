@@ -61,8 +61,6 @@
     (log/info "nrepl server running at" (:port opts))
     server))
 
-;; how to call this? I know I want to call this while developing
-;; call it before any cli apply maybe?
 (def refresh ns/refresh)
 
 (comment
