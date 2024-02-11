@@ -128,7 +128,7 @@
 (defn watch
   "Call f inside a watching fdb."
   [config-path f]
-  (with-fdb [config-path {:keys [mounts] :as config} node]
+  (with-fdb [config-path {:keys [mounts repl] :as config} node]
     (r.ignore/clear config-path)
     (reactive/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
@@ -142,9 +142,11 @@
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
                                        u/closeable-seq))
-                _repl-server    (repl/start-server {:config-path config-path
-                                                    :config      config
-                                                    :node        node})]
+                _repl-server    (if (= repl false)
+                                  (u/closeable nil)
+                                  (repl/start-server {:config-path config-path
+                                                      :config      config
+                                                      :node        node}))]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
       (reactive/start-all-schedules config-path config node)
