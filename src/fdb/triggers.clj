@@ -31,7 +31,11 @@
                          {:self      self
                           :self-path (metadata/id->path config-path config (:xt/id self))
                           :on        [on-k trigger]
-                          :on-path   [on-k trigger-idx]}
+                          ;; trigger-idx might be 0, but on-k might not be a vec because
+                          ;; call-all-triggers and update-schedules do map-indexed over x-or-xs
+                          :on-path   (if (vector? (get self on-k))
+                                       [on-k trigger-idx]
+                                       [on-k])}
                          more)
         log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
                       (if-some [doc-id (-> call-arg' :doc :xt/id)]
@@ -63,7 +67,7 @@
                       :doc-path (metadata/id->path config-path config (:xt/id self))})
                    (when (map? maybe-map)
                      maybe-map))))
-         (->> self on-k (map-indexed vector)))))
+         (->> self on-k u/x-or-xs->xs (map-indexed vector)))))
 
 (defn docs-with-k
   "Get all docs with k in db.
@@ -141,7 +145,7 @@
                                                          call-arg {:timestamp (str timestamp)})
                                                    ;; Never cancel schedule from fn.
                                                    true))))
-                             (:fdb.on/schedule doc)))))
+                             (-> doc :fdb.on/schedule u/x-or-xs->xs)))))
 
              ;; There's no schedules for this doc, nothing to do.
              :else
@@ -332,7 +336,5 @@
 ;;     - this batch load mode is probably better anyway for stale check
 ;;   - would make tests much easier
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
-;; - support x-or-xs triggers, not just vec
-;;   - will need to update on-ks
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default

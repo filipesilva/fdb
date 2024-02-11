@@ -80,19 +80,19 @@
  :fdb/refs        #{\"/test/two.txt\"
                     \"/test/three.txt\"
                     \"/test/folder\"}
- :fdb.on/modify   [println] ;; same as {:call println}
- :fdb.on/refs     [println]
- :fdb.on/pattern  [{:glob \"/test/*.txt\"
-                    :call println}] ;; you can pass in extra properties on this map
- :fdb.on/query    [{:q    [:find ?e :where [?e :file/modified ?m]]
-                    :path \"./query-results.edn\"
-                    :call println}]
- :fdb.on/tx       [println]
- :fdb.on/schedule [{:cron \"0 0 0 * * ?\" ;; https://crontab.guru/
-                    ;; or :every [1 :seconds]
-                    :call println}]
- :fdb.on/startup  [println]
- :fdb.on/shutdown [println]}"))
+ :fdb.on/modify   println ;; same as {:call println}
+ :fdb.on/refs     [println] ;; can pass a single one or a vec
+ :fdb.on/pattern  {:glob \"/test/*.txt\"
+                   :call println} ;; you can pass in extra properties on this map
+ :fdb.on/query    {:q    [:find ?e :where [?e :file/modified ?m]]
+                   :path \"./query-results.edn\"
+                   :call println}
+ :fdb.on/tx       println
+ :fdb.on/schedule {:cron \"0 0 0 * * ?\" ;; https://crontab.guru/
+                   ;; or :every [1 :seconds]
+                   :call println}
+ :fdb.on/startup  println
+ :fdb.on/shutdown println}"))
 
 (defn help [m]
   #_(assoc m :fn :help)

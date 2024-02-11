@@ -71,14 +71,14 @@
       (u/spit mount-path "file.txt.metadata.edn"
               {:fdb/refs        #{"/test/one.md"
                                   "/test/folder/two.md"}
-               :fdb.on/modify   ['fdb.core-test/log-call]
-               :fdb.on/refs     ['fdb.core-test/log-call]
-               :fdb.on/pattern  [{:glob "**/*.md"
-                                  :call 'fdb.core-test/log-call}]
-               :fdb.on/query    [{:q    '[:find ?e :where [?e :xt/id]]
-                                  :path "./query-results.edn"
-                                  :call 'fdb.core-test/log-call}]
-               :fdb.on/tx       ['fdb.core-test/log-call]
+               :fdb.on/modify   'fdb.core-test/log-call
+               :fdb.on/refs     'fdb.core-test/log-call
+               :fdb.on/pattern  {:glob "**/*.md"
+                                 :call 'fdb.core-test/log-call}
+               :fdb.on/query    {:q    '[:find ?e :where [?e :xt/id]]
+                                 :path "./query-results.edn"
+                                 :call 'fdb.core-test/log-call}
+               :fdb.on/tx       'fdb.core-test/log-call
                :fdb.on/schedule [{:every [50 :millis]
                                   :call  'fdb.core-test/log-call}
                                  {:every   [50 :millis]
@@ -86,8 +86,8 @@
                                               (fdb.utils/sleep 100)
                                               (fdb.core-test/log-call {:on [:fdb.on/schedule-timeout]}))
                                   :timeout [50 :millis]}]
-               :fdb.on/startup  ['fdb.core-test/log-call]
-               :fdb.on/shutdown ['fdb.core-test/log-call]})
+               :fdb.on/startup  'fdb.core-test/log-call
+               :fdb.on/shutdown 'fdb.core-test/log-call})
       (is (u/eventually (db/pull node "/test/file.txt")))
       (db/pull node "/test/file.txt")
       (u/spit mount-path "one.md" "")
@@ -151,20 +151,20 @@
     (fdb/with-watch [config-path node]
       (let [id  "/test/one"
             f (fs/path mount-path "one.metadata.edn")]
-        (u/spit-edn f {:fdb.on/modify [{:call  'fdb.core-test/ignore-log-call
-                                         :count 1}]})
+        (u/spit-edn f {:fdb.on/modify {:call  'fdb.core-test/ignore-log-call
+                                       :count 1}})
         (is (u/eventually (= 1 @ignore-calls)))
 
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify 0 :count] inc)
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
+        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
 
         ;; wait to see if it gets there
         (u/eventually (= 4 @ignore-calls))
 
         (is (= 1 @ignore-calls))
         (is (-> (u/slurp-edn f)
-                (get-in [:fdb.on/modify 0 :count])
+                (get-in [:fdb.on/modify :count])
                 (= 4)))))))
 
 (deftest make-me-a-call
@@ -218,7 +218,7 @@
 
       ;; blocks on sync calls
       (with-redefs [blocking-ch (chan)]
-        (u/spit-edn f {:fdb.on/modify [{:call 'fdb.core-test/blocking-fn}]})
+        (u/spit-edn f {:fdb.on/modify {:call 'fdb.core-test/blocking-fn}})
         (let [sync-fut (future (fdb/sync config-path))]
           (is (not (future-done? sync-fut)))
           (u/sleep 100)
