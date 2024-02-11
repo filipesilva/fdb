@@ -1,4 +1,4 @@
-(ns fdb.reactive
+(ns fdb.triggers
   (:require
    [babashka.fs :as fs]
    [chime.core :as chime]
@@ -6,12 +6,13 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.reactive.ignore :as r.ignore]
+   [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt])
-  (:import [java.nio.file FileSystems]))
+  (:import
+   (java.nio.file FileSystems)))
 
 ;; Helpers
 
@@ -304,7 +305,7 @@
              ops      (->> tx
                            ::xt/tx-ops
                            (massage-ops node)
-                           (remove (partial r.ignore/ignore? config-path)))]
+                           (remove (partial tr.ignore/ignore? config-path)))]
 
          ;; Update schedules
          (run! (partial update-schedules call-arg) ops)
@@ -337,4 +338,3 @@
 ;; - rename on-ks to on-path
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
-;; - maybe rename ns to fdb.triggers?

@@ -1,4 +1,4 @@
-(ns fdb.reactive.ignore
+(ns fdb.triggers.ignore
   "Ignore list for reactive triggers.
   Reactive triggers for ids in the ignore list will be ignored once on the current process.
   Useful with fdb.utils/swap-edn-file! to avoid triggering on your own changes.")

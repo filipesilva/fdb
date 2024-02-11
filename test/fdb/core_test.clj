@@ -1,12 +1,12 @@
 (ns fdb.core-test
   (:require
-   [babashka.fs :refer [with-temp-dir] :as fs]
+   [babashka.fs :as fs :refer [with-temp-dir]]
    [clojure.core.async :refer [<!! chan close!]]
    [clojure.test :refer [deftest is testing]]
    [fdb.core :as fdb]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.reactive :as reactive]
+   [fdb.triggers :as triggers]
    [fdb.utils :as u]
    [hashp.core]
    [xtdb.api :as xt]))
@@ -273,7 +273,7 @@
              '...}]
            "/test/one.txt")
 
-  (reactive/recursive-pull-k (xt/db node) "/test/folder/two.txt" :fdb/_refs)
+  (triggers/recursive-pull-k (xt/db node) "/test/folder/two.txt" :fdb/_refs)
 
 
   (tree-seq map? :fdb/_refs

@@ -1,11 +1,11 @@
-(ns fdb.reactive-test
+(ns fdb.triggers-test
   (:require
    [clojure.test :refer [deftest is]]
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.db-test :as db-test]
    [fdb.metadata :as metadata]
-   [fdb.reactive :as sut]
+   [fdb.triggers :as sut]
    [fdb.utils :as u]
    [spy.core :as spy]
    [xtdb.api :as xt]))

@@ -3,8 +3,8 @@
   (:refer-clojure :exclude [sync])
   (:require
    #_[clojure.repl.deps :as deps]
-   [hashp.core]
-   [clojure.core.async :refer [go >!! <!! close! chan sliding-buffer]]
+   hashp.core
+   [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
    [clojure.string :as str]
@@ -12,9 +12,9 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.processor :as processor]
-   [fdb.reactive :as reactive]
-   [fdb.reactive.ignore :as r.ignore]
    [fdb.repl :as repl]
+   [fdb.triggers.ignore :as tr.ignore]
+   [fdb.triggers :as triggers]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [taoensso.timbre :as log]
@@ -105,16 +105,16 @@
   "Sync fdb with fs, running reactive triggers over the changes. Returns stale ids."
   [config-path]
   ;; Call triggers synchronously
-  (binding [reactive/*sync* true]
+  (binding [triggers/*sync* true]
     (with-fdb [config-path {:keys [mounts] :as config} node]
-      (reactive/call-all-k config-path config node :fdb.on/startup)
+      (triggers/call-all-k config-path config node :fdb.on/startup)
       ;; Update stale files.
       (let [[stale-ids tx] (update-stale! config-path config node)]
         (when tx
           (xt/await-tx node tx)
           ;; TODO: sync call missed cron schedules
-          (reactive/on-tx config-path config node (db/tx-with-ops node tx)))
-        (reactive/call-all-k config-path config node :fdb.on/shutdown)
+          (triggers/on-tx config-path config node (db/tx-with-ops node tx)))
+        (triggers/call-all-k config-path config node :fdb.on/shutdown)
         stale-ids))))
 
 (defn mount->watch-spec
@@ -129,12 +129,12 @@
   "Call f inside a watching fdb."
   [config-path f]
   (with-fdb [config-path {:keys [mounts repl] :as config} node]
-    (r.ignore/clear config-path)
-    (reactive/call-all-k config-path config node :fdb.on/startup)
+    (tr.ignore/clear config-path)
+    (triggers/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
                                            {::xt/event-type ::xt/indexed-tx
                                             :with-tx-ops?   true}
-                                           (partial reactive/on-tx config-path config node))
+                                           (partial triggers/on-tx config-path config node))
                 ;; Start watching before the stale check, so no change is lost.
                 ;; TODO: don't tx anything before the stale update
                 _mount-watchers (u/with-time [t-ms #(log/debug "watch took" (t-ms) "ms")]
@@ -149,10 +149,10 @@
                                                       :node        node}))]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
-      (reactive/start-all-schedules config-path config node)
+      (triggers/start-all-schedules config-path config node)
       (let [return (f node)]
-        (reactive/stop-config-path-schedules config-path)
-        (reactive/call-all-k config-path config node :fdb.on/shutdown)
+        (triggers/stop-config-path-schedules config-path)
+        (triggers/call-all-k config-path config node :fdb.on/shutdown)
         return))))
 
 (defmacro with-watch

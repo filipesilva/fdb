@@ -3,7 +3,7 @@
   (:require
    [babashka.fs :as fs]
    [clojure.string :as str]
-   [fdb.reactive.ignore :as r.ignore]
+   [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [tick.core :as t]))
 
@@ -103,5 +103,5 @@
   "Like fdb.metadata/swap!, but change will be ignored by reactive triggers."
   [path config-path id f & args]
   (let [[_ metadata-path] (content-and-metadata-paths path)]
-    (r.ignore/add config-path id)
+    (tr.ignore/add config-path id)
     (apply u/swap-edn-file! metadata-path f args)))
