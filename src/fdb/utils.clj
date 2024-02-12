@@ -100,6 +100,11 @@
   [coll]
   (closeable coll #(run! close %)))
 
+(defn closeable-atom
+  "Returns a closeable, which resets an atom to value and back to nil on close."
+  [atom value]
+  (closeable (reset! atom value) (fn [_] (reset! atom nil))))
+
 (defn do-eventually
   "Repeatedly calls f ever interval-ms until it returns a truthy value, or timeout-ms has passed.
   timeout-ms defaults to 1000, interval-ms defaults to 50."
@@ -253,4 +258,8 @@
 
 
 ;; TODO:
-;;  - str-path fn
+;; - str-path fn
+;; - the watch-config and watch-and-block loop are very similar
+;;   - can probably capure the "stop and wait" returns somehow
+;;   - maybe a closeable-go ?
+;;   - it's a bit more complex... it can be restarted/stopped

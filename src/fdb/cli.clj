@@ -1,9 +1,11 @@
 (ns fdb.cli
   (:refer-clojure :exclude [sync])
   (:require
+   [clojure.core.async :refer [<!! >!! chan close! go-loop sliding-buffer]]
    [babashka.cli :as cli]
    [babashka.fs :as fs]
    [fdb.repl :as repl]
+   [fdb.state :as state]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [taoensso.timbre.appenders.core :as appenders]))
@@ -32,17 +34,33 @@
   (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
   (let [config-path    (-> m :opts :config fs/absolutize str)
-        watch-config   (requiring-resolve 'fdb.core/watch-config)
-        config-watcher (watch-config config-path)
-        wait           (-> config-watcher deref :wait)]
+        watch-config   (requiring-resolve 'fdb.core/watch-config)]
+    (watch-config config-path)))
+
+(defn restart-watch! []
+  (>!! @state/*watch-ch :restart))
+
+(defn watch-loop [m watch-ch]
+  (go-loop [restart? true]
+    (when restart?
+      (let [config-watcher ((var-get #'watch) m)
+            restart?       (<!! watch-ch)]
+        (.close config-watcher)
+        ;; really have to wait here otherwise xtdb rocksdb gets bork
+        ((-> config-watcher deref :wait))
+        (recur restart?)))))
+
+(defn watch-and-block [m]
+  (let [watch-ch (chan (sliding-buffer 1))
+        _        (reset! state/*watch-ch watch-ch)
+        ;; Add a go-loop to restart the watcher in main thread from repl.
+        loop-ch  (watch-loop m watch-ch)]
+    ;; Wait for loop to finish on shutdown.
     (setup-shutdown-hook! (fn []
-                            (.close config-watcher)
-                            ;; really have to wait here otherwise xtdb rocksdb gets bork
-                            (wait)
-                            ;; If we don't wait a little bit, errors don't get logged
-                            (Thread/sleep 500)))
-    (wait)
-    :watch-exit))
+                            (close! watch-ch)
+                            (<!! loop-ch)))
+    ;; Wait forever.
+    @(promise)))
 
 (defn apply-repl-or-local
   [config-path refresh? sym & args]
@@ -76,8 +94,11 @@
     (when-not (repl/has-server? config-path)
       (log/error "no repl server running, can't refresh")
       (System/exit 1))
+    (log/info "refreshing source code and restarting watch")
     (repl/apply config-path 'fdb.repl/refresh)
-    (log/info "refreshed fdb")
+    ;; Couldn't get below to work, so doing it manually
+    ;;   (repl/apply config-path 'fdb.repl/refresh :after fdb.cli/restart-watch!)
+    (repl/apply config-path 'fdb.cli/restart-watch!)
     (shutdown-agents)))
 
 (defn repl [m]
@@ -122,7 +143,7 @@
 
 (def table
   [{:cmds []            :fn help :spec spec}
-   {:cmds ["watch"]     :fn watch}
+   {:cmds ["watch"]     :fn watch-and-block}
    {:cmds ["reference"] :fn reference}
    {:cmds ["refresh"]   :fn refresh}
    {:cmds ["sync"]      :fn sync}

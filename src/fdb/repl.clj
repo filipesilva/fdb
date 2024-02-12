@@ -10,14 +10,6 @@
    [nrepl.server :as server]
    [taoensso.timbre :as log]))
 
-;; Don't reload this ns when refreshing all files to keep *fdb state.
-(ns/disable-reload!)
-
-(defonce *fdb (atom nil))
-
-(defn node [config-path]
-  (when (= config-path (:config-path @*fdb))
-    (:node @*fdb)))
 
 (def default-opts {:port 2525})
 
@@ -54,7 +46,7 @@
       (doseq [{:keys [out err]} resp]
         (when out (log/info out))
         (when err (log/error err)))
-      (log/debug value))))
+      value)))
 
 (defn as-comments
   [s & {:keys [prefix]}]
@@ -86,10 +78,9 @@
       (append "\n"))))
 
 (defn start-server
-  [{:keys [config-path config] :as fdb}]
-  (let [opts   (merge default-opts (:nrepl config))
+  [config-path nrepl]
+  (let [opts   (merge default-opts nrepl)
         server (server/start-server opts)]
-    (reset! *fdb fdb)
     (save-port-file config-path opts)
     (log/info "nrepl server running at" (:port opts))
     server))

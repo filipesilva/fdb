@@ -13,6 +13,7 @@
    [fdb.metadata :as metadata]
    [fdb.processor :as processor]
    [fdb.repl :as repl]
+   [fdb.state :as state]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.triggers :as triggers]
    [fdb.utils :as u]
@@ -20,6 +21,10 @@
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
+
+(defn node [config-path]
+  (when (= config-path (:config-path @state/*fdb))
+    (:node @state/*fdb)))
 
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
@@ -29,7 +34,7 @@
     #_(binding [clojure.core/*repl* true]
       (when extra-deps
         (deps/add-libs extra-deps)))
-    (if-some [node (repl/node config-path)]
+    (if-some [node (node config-path)]
       (f config-path config node)
       (with-open [node (db/node (u/sibling-path config-path db-path))]
         (f config-path config node)))))
@@ -130,6 +135,9 @@
   [config-path f]
   (with-fdb [config-path {:keys [mounts repl] :as config} node]
     (tr.ignore/clear config-path)
+    (when (and (not (false? repl))
+               (not (repl/has-server? config-path)))
+      (repl/start-server config-path repl))
     (triggers/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
                                            {::xt/event-type ::xt/indexed-tx
@@ -142,11 +150,10 @@
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
                                        u/closeable-seq))
-                _repl-server    (if (= repl false)
-                                  (u/closeable nil)
-                                  (repl/start-server {:config-path config-path
-                                                      :config      config
-                                                      :node        node}))]
+                _state          (u/closeable-atom state/*fdb
+                                                  {:config-path config-path
+                                                   :config      config
+                                                   :node        node})]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
       (triggers/start-all-schedules config-path config node)
@@ -210,16 +217,6 @@
 ;; - validate mounts, don't allow slashes on mount-id, nor empty
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - just doing a doc with file listings for the month would already help with taxes
-;; - repl file repl.fdb.clj
-;;   - starts a repl session, outputs to file, and puts a ;; user> prompt line
-;;     - whenever you save the file, it sends everything after the prompt to the repl
-;;     - then it puts the result in a comment at the end
-;;     - and moves the prompt line to the end
-;;     - maybe do .output file instead, like query, and call query one output too
-;;       - actually... query.fdb.edn -> results.fdb.edn, and repl.fdb.edn -> output.fdb.edn
-;;       - actually looks better to have them different
-;;   - should have some binding they can import with call-arg data
-;;   - doesn't clear input maybe? so the clj tooling recognizes imports
 ;; - check https://github.com/clj-commons/marginalia for docs
 ;; - register protocol to be able to do fdb://name/call/something
 ;;   - a bit like the Oberon system that had text calls, but only for urls
