@@ -125,12 +125,12 @@
              ;; Remove schedule if id was deleted.
              (and (= op ::xt/delete)
                   (get-in schedules [config-path id]))
-             (do (log/info "removing schedules for" id)
+             (do (log/debug "removing schedules for" id)
                  (update schedules config-path dissoc id))
 
              ;; Add new schedules for this id if any.
              (:fdb.on/schedule doc)
-             (do (log/info "adding schedules for" id)
+             (do (log/debug "adding schedules for" id)
                  (assoc-in schedules [config-path id]
                            (doall
                             (map-indexed
@@ -353,4 +353,4 @@
 ;; - fdb.on/modify receives nil for delete, or dedicated fdb.on/delete
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
-;; - don't show the "adding schedules" message on startup if nothing changed
+;; - some way to replay the log for repl filesq

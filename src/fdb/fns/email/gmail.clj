@@ -95,7 +95,7 @@
                              mail/file->message
                              (message->folder-uid gstore folder-name))
                         last-uid)]
-              (log/info "syncing" folder-name "to" self-path "since" uid)
+              (log/debug "syncing" folder-name "to" self-path "since" uid)
               (doseq [message (cond->> (reverse (mail/all-messages gstore folder-name {:since-uid uid}))
                                 take-n (take take-n))]
                 (let [uid  (message/uid message)
@@ -108,12 +108,11 @@
                                            assoc-in (conj on-path :last-uid) @*new-last-uid))))))
           (if @*new-last-uid
             (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)
-            (log/info "no new messages in" folder-name "!")))))))
+            (log/debug "no new messages in" folder-name "!")))))))
 
 ;; TODO:
 ;; - get gmail creds from env vars, much easier to not leak them
 ;; - no need to update last-uid on all writes, update at the end and every 10
-;; - make progress stuff just debug
 
 (comment
   {:fdb.on/schedule [{:every       [30 :minutes]
