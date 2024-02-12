@@ -16,3 +16,6 @@
 ;;   - client can ask for static page, or self-updating page
 ;;   - you change the page on disk, new version is pushed to client
 ;;   - cool for sync in general, maybe even reified sessions
+;; - where does that headers-in-the-metadata idea fit in now?
+;;   - I guess it's just a namespaced k, for headers
+;; - fs structure for routes, each clj file has patch/post/get/delete fns

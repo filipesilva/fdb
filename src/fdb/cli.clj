@@ -70,6 +70,16 @@
                                  (when args-xf {:args-xf args-xf})))
   (shutdown-agents))
 
+(defn refresh [m]
+  (log-to-file! m)
+  (let [config-path (config-path m)]
+    (when-not (repl/has-server? config-path)
+      (log/error "no repl server running, can't refresh")
+      (System/exit 1))
+    (repl/apply config-path 'fdb.repl/refresh)
+    (log/info "refreshed fdb")
+    (shutdown-agents)))
+
 (defn repl [m]
   (assoc m :fn :repl))
 
@@ -114,6 +124,7 @@
   [{:cmds []            :fn help :spec spec}
    {:cmds ["watch"]     :fn watch}
    {:cmds ["reference"] :fn reference}
+   {:cmds ["refresh"]   :fn refresh}
    {:cmds ["sync"]      :fn sync}
    {:cmds ["call"]      :fn call
     :args->opts [:id-or-path :sym :args-xf]
