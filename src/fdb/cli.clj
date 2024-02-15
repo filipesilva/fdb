@@ -43,7 +43,7 @@
 (defn watch-loop [m watch-ch]
   (go-loop [restart? true]
     (when restart?
-      (let [config-watcher ((var-get #'watch) m)
+      (let [config-watcher (#'watch m)
             restart?       (<!! watch-ch)]
         (.close config-watcher)
         ;; really have to wait here otherwise xtdb rocksdb gets bork

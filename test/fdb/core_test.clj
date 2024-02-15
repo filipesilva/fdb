@@ -18,10 +18,10 @@
      (let [~mount-path  (str dir# "/test")
            ~config-path (str dir# "/metadata.edn")]
        (fs/create-dirs ~mount-path)
-       (u/spit ~config-path {:db-path    "./db"
-                             :mounts     {:test "./test"}
-                             :processors {:my-edn 'u/slurp-edn}
-                             :repl       false})
+       (u/spit ~config-path {:db-path "./db"
+                             :mounts  {:test "./test"}
+                             :readers {:my-edn 'u/slurp-edn}
+                             :repl    false})
        ~@body)))
 
 (deftest make-me-a-fdb

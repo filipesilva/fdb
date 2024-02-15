@@ -2,8 +2,6 @@
   "A programmable database over your files."
   (:refer-clojure :exclude [sync])
   (:require
-   #_[clojure.repl.deps :as deps]
-   hashp.core
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -11,13 +9,14 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.processor :as processor]
+   [fdb.readers :as readers]
    [fdb.repl :as repl]
    [fdb.state :as state]
-   [fdb.triggers.ignore :as tr.ignore]
    [fdb.triggers :as triggers]
+   [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
+   [hashp.core]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
@@ -59,9 +58,10 @@
                                              ""))))
              (pmap (fn [id]
                      (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
-                       [::xt/put (merge ;; order matters: processor data, then metadata, then id
-                                  ;; metadata overrides processor data, id overrides all
-                                  (processor/read config-path config id)
+                       [::xt/put (merge
+                                  ;; order matters: reader data, then metadata, then id
+                                  ;; metadata overrides reader data, id overrides all
+                                  (readers/read config-path config id)
                                   metadata
                                   {:xt/id id})]
                        [::xt/delete id])))
@@ -228,6 +228,8 @@
 ;;   - then watch just stores the current node in an atom, and sync/call use it if available
 ;; - fdb sync --update /foo/bar/*.md
 ;;   - handy for when you add a reader
+;;   - or just diff previous and current config, check which ids match changed readers, re-read
+;;   - still might want a way to force a read when updating libs and such
 ;; - call should be able to call existing triggers, pretending to be them
 ;;   - fdb call id "[:fdb.on/schedule 0]"
 ;;   - might need to be call-trigger?
