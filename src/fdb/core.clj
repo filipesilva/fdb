@@ -1,5 +1,5 @@
 (ns fdb.core
-  "A programmable database over your files."
+  "A programmable database for your file library."
   (:refer-clojure :exclude [sync])
   (:require
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
@@ -48,24 +48,32 @@
   "Read id-or-ids from fs and update them in node. Returns tx without ops."
   [config-path config node id-or-ids]
   (u/with-time [t-ms #(log/debug "update! took" (t-ms) "ms")]
-    (some->> id-or-ids
-             u/x-or-xs->xs
-             not-empty
-             (u/side-effect->> (fn [ids]
-                                 (log/info "updating" (str/join ", " (take 5 ids))
-                                           (if (> (count ids) 5)
-                                             (str "and " (-> ids count (- 5) str) " more")
-                                             ""))))
-             (pmap (fn [id]
-                     (if-some [metadata (->> id (metadata/id->path config-path config) metadata/read)]
-                       [::xt/put (merge
-                                  ;; order matters: reader data, then metadata, then id
-                                  ;; metadata overrides reader data, id overrides all
-                                  (readers/read config-path config id)
-                                  metadata
-                                  {:xt/id id})]
-                       [::xt/delete id])))
-             (xt/submit-tx node))))
+    (let [call-arg {:config-path config-path
+                    :config      config
+                    :node        node
+                    :db          (xt/db node)}]
+      (some->> id-or-ids
+               u/x-or-xs->xs
+               not-empty
+               (u/side-effect->> (fn [ids]
+                                   (log/info "updating" (str/join ", " (take 5 ids))
+                                             (if (> (count ids) 5)
+                                               (str "and " (-> ids count (- 5) str) " more")
+                                               ""))))
+               (pmap (fn [id]
+                       (let [path (metadata/id->path config-path config id)]
+                         (if-some [metadata (metadata/read path)]
+                           (let [call-arg' (merge call-arg
+                                                  {:self      {:xt/id id}
+                                                   :self-path path})]
+                             [::xt/put (merge
+                                        ;; order matters: reader data, then metadata, then id
+                                        ;; metadata overrides reader data, id overrides all
+                                        (readers/read call-arg')
+                                        metadata
+                                        {:xt/id id})])
+                           [::xt/delete id]))))
+               (xt/submit-tx node)))))
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
@@ -192,15 +200,15 @@
 
 (defn call
   "Call call-spec over id-or-path in fdb. Returns the result of the call.
-  Optionally receives a args-xf that will be eval'ed with bindings for config-path,
-  doc-path, self-path, and call-arg, and should return a vector of args to apply to sym."
-  [config-path id-or-path sym & {:keys [args-xf] :or {args-xf ['call-arg]}}]
+  Optionally receives a args-xf that will be eval'ed with bindings for config-path, doc-path,
+  self-path, and call-arg, and should return a vector of args to apply to call-spec."
+  [config-path id-or-path call-spec & {:keys [args-xf] :or {args-xf ['call-arg]}}]
   (with-fdb [config-path config node]
     (let [[id path] (when-some [id (metadata/path->id config-path config id-or-path)]
                       [id (metadata/id->path config-path config id)])]
       (if id
         (apply
-         (call/to-fn sym)
+         (call/to-fn call-spec)
          (call/eval-under-call-arg
           {:config-path config-path
            :config      config
@@ -230,6 +238,7 @@
 ;;   - handy for when you add a reader
 ;;   - or just diff previous and current config, check which ids match changed readers, re-read
 ;;   - still might want a way to force a read when updating libs and such
+;;   - maybe fdb read path-or-glob, reads paths again, only puts changed ones
 ;; - call should be able to call existing triggers, pretending to be them
 ;;   - fdb call id "[:fdb.on/schedule 0]"
 ;;   - might need to be call-trigger?
@@ -252,3 +261,5 @@
 ;;   - should return things as views
 ;; - in xtdb2, tables could be mounts, or file types
 ;; - bulk change config-file-path to config-path
+;; - rename fdb.fns to fdb.ext
+;; - maybe call-arg stuff should be in fdb.call, with a bit more structure...

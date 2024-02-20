@@ -18,10 +18,9 @@
     (get readers ext-k)))
 
 (defn read
-  [config-path config id]
-  (->> (id->readers config id)
-       (map call/to-fn)
-       (map #(% (metadata/id->path config-path config id)))
+  [{:keys [config self] :as call-arg}]
+  (->> (id->readers config (:xt/id self))
+       (map #(call/apply % call-arg))
        (reduce merge {})))
 
 
@@ -35,8 +34,6 @@
 ;; - metadata could be a reader too... but that's going a bit meta atm
 ;;   - would make it easy to have json and other formats tho
 ;;   - would have to distinguish between edn reader and our edn built-in reader
-;; - should the shell to-fn work as a processor?
-;;   - it's pretty hardwired to call-arg atm
-;;   - could see it working tho...
-;;   - also a bit up in the air how the output would be processed... parse edn I guess
+;; - should the shell to-fn work as a reader?
+;;   - a bit up in the air how the output would be processed... parse edn I guess
 ;; - support ext like .foo.bar, fs/split-ext doesn't work for that

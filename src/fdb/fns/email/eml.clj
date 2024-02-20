@@ -95,8 +95,8 @@
        (into {})))
 
 (defn metadata
-  [message-path]
-  (let [message-edn  (-> message-path mail/file->message read-message)
+  [{:keys [self-path]}]
+  (let [message-edn  (-> self-path mail/file->message read-message)
         from-message (-> message-edn
                          (update :from #(mapv :address %))
                          (update :to #(mapv :address %))

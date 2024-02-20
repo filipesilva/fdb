@@ -25,10 +25,7 @@
   "Call trigger with call-arg.
   Merges call-arg with {:self self, :on-k on-k} and any extra args."
   [self on-k trigger trigger-idx {:keys [config-path config] :as call-arg} & more]
-  (let [call-spec (if (map? trigger)
-                    (:call trigger)
-                    trigger)
-        call-arg' (apply merge
+  (let [call-arg' (apply merge
                          call-arg
                          {:self      self
                           :self-path (metadata/id->path config-path config (:xt/id self))
@@ -40,15 +37,15 @@
                                        [on-k])}
                          more)
         log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
-                      (if-some [doc-id (-> call-arg' :doc :xt/id)]
-                        (str " over " doc-id)
-                        ""))
+                       (if-some [doc-id (-> call-arg' :doc :xt/id)]
+                         (str " over " doc-id)
+                         ""))
         f         (fn []
                     (u/maybe-timeout (:timeout trigger)
                                      (fn []
                                        (u/with-time [t-ms #(log/debug "call" log-str "took" (t-ms) "ms")]
                                          (u/catch-log
-                                          ((call/to-fn call-spec) call-arg'))))))]
+                                          (call/apply trigger call-arg'))))))]
 
     (log/info "calling" log-str)
     (if *sync*
@@ -354,3 +351,4 @@
 ;; - is *sync* important enough for callers that it should be part of call-arg?
 ;;   - probably not, as they are ran async by default
 ;; - some way to replay the log for repl filesq
+;; - maybe :fdb/tags and :fdb.on/tags? cool with readers adding tags

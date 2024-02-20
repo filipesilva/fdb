@@ -24,14 +24,15 @@
 
 (deftest read
   (with-temp-dir [dir {}]
-    (let [f           (fs/file dir "./test/f.edn")
-          id          "/test/f.edn"
-          m           {:foo "bar"}
-          config-path (fs/file dir "fdbconfig.edn")
-          config      {:mounts {:test {:path       "./test"
-                                       :readers {:edn [u/slurp-edn
-                                                          (fn [_] {:bar "baz"})]}}}}]
-      (u/spit-edn f m)
+    (let [f        (fs/file dir "./test/f.edn")
+          config   {:mounts {:test {:path    "./test"
+                                    :readers {:edn [#(-> % :self-path u/slurp-edn)
+                                                    (fn [_] {:bar "baz"})]}}}}
+          call-arg {:config-path (fs/file dir "fdbconfig.edn")
+                    :config      config
+                    :self        {:xt/id "/test/f.edn"}
+                    :self-path   f}]
+      (u/spit-edn f {:foo "bar"})
       (is (= {:foo "bar"
               :bar "baz"}
-             (sut/read config-path config id))))))
+             (sut/read call-arg))))))

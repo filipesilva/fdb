@@ -19,3 +19,4 @@
 ;; - where does that headers-in-the-metadata idea fit in now?
 ;;   - I guess it's just a namespaced k, for headers
 ;; - fs structure for routes, each clj file has patch/post/get/delete fns
+;; - have to make it easier for third party libs to add routes

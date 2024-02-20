@@ -6,10 +6,8 @@
    [fdb.core :as fdb]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.triggers :as triggers]
    [fdb.utils :as u]
-   [hashp.core]
-   [xtdb.api :as xt]))
+   [hashp.core]))
 
 (defmacro with-temp-fdb-config
   {:clj-kondo/ignore [:unresolved-symbol]}
@@ -20,7 +18,7 @@
        (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./db"
                              :mounts  {:test "./test"}
-                             :readers {:my-edn 'u/slurp-edn}
+                             :readers {:my-edn '(fn [x#] (-> x# :self-path fdb.utils/slurp-edn))}
                              :repl    false})
        ~@body)))
 
@@ -230,7 +228,7 @@
       (fs/delete f)
       (is (empty (fdb/call config-path f all-ids))))))
 
-(deftest make-me-a-processing-db
+(deftest make-me-a-reader-db
   (with-temp-fdb-config [config-path mount-path]
     (let [f     (str (fs/path mount-path "one.my-edn"))
           f-md  (str (fs/path mount-path "one.my-edn.metadata.edn"))
@@ -255,28 +253,3 @@
               :fdb/modified (metadata/modified f-md)
               :one          2}
              (get-f))))))
-
-(comment
-  (def node (db/node "/tmp/fdb-test"))
-
-  (db/put node "/test/file.txt"
-          {:fdb/refs #{"/test/one.txt"
-                       "/test/folder/two.txt"}})
-  (db/put node "/test/one.txt" {})
-  (db/put node "/test/folder/two.txt" {})
-
-  (db/pull node "/test/file.txt")
-
-  (xt/pull (xt/db node)
-           [:xt/id
-            {(list :fdb/_refs {:limit ##Inf})
-             '...}]
-           "/test/one.txt")
-
-  (triggers/recursive-pull-k (xt/db node) "/test/folder/two.txt" :fdb/_refs)
-
-
-  (tree-seq map? :fdb/_refs
-   '{:fdb/_refs ({:fdb/_refs ({:fdb/_refs (#:xt {:id :1}), :xt/id :4}), :xt/id :2})})
-
-  )

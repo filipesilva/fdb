@@ -1,11 +1,13 @@
 (ns fdb.call
+  (:refer-clojure :exclude [apply])
   (:require
    [babashka.process :refer [shell]]
    [taoensso.timbre :as log]))
 
 (defmulti to-fn
   "Takes call-spec and returns a function that takes a call-arg.
-  call-specs are dispatched by type:
+  call-specs are dispatched by type of x:
+  - map:    Use :call key to resolve fn
   - symbol: Resolves and returns the var
   - list:   Evaluates and returns the result
   - vec:    Runs shell command via babashka.process/shell
@@ -17,6 +19,10 @@
   [call-spec]
   (fn [_call-arg]
     (log/error "Unknown call-spec" call-spec)))
+
+(defmethod to-fn clojure.lang.PersistentArrayMap
+  [{:keys [call]}]
+  (to-fn call))
 
 (defmethod to-fn clojure.lang.Symbol
   [sym]
@@ -45,9 +51,17 @@
           shell-args'           (if (map? opts)
                                   (into [(merge io-opts opts)] rest)
                                   (into [io-opts] all))]
-      (apply shell shell-args'))))
+      (clojure.core/apply shell shell-args'))))
 
 (defmethod to-fn clojure.lang.Fn
   [f]
   f)
 
+(defn apply
+  "Applies call-spec fn to args."
+  [call-spec & args]
+  (clojure.core/apply (to-fn call-spec) args))
+
+;; TODO:
+;; - apply doesn't work quite like clojure.core/apply, which means I can't use it in fdb/call
+;;   - calling (apply identity [1]) and (clojure.core/apply identity [1]) have different results
