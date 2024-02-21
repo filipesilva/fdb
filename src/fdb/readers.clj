@@ -19,7 +19,8 @@
 (defn read
   [{:keys [config self] :as call-arg}]
   (->> (id->readers config (:xt/id self))
-       (map #(call/apply % call-arg))
+       (map (fn [call-spec]
+              (call/apply call-spec (assoc call-arg :on [:fdb.on/read call-spec]))))
        (reduce merge {})))
 
 
@@ -36,3 +37,4 @@
 ;; - should the shell to-fn work as a reader?
 ;;   - a bit up in the air how the output would be processed... parse edn I guess
 ;; - support ext like .foo.bar, fs/split-ext doesn't work for that
+;; - fdb.on/read on metadata can add more readers

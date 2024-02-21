@@ -27,7 +27,8 @@
     (let [f        (fs/file dir "./test/f.edn")
           config   {:mounts {:test {:path    "./test"
                                     :readers {:edn [#(-> % :self-path u/slurp-edn)
-                                                    (fn [_] {:bar "baz"})]}}}}
+                                                    {:call (fn [x] {:bar (-> x :on second :str)})
+                                                     :str "baz"}]}}}}
           call-arg {:config-path (fs/file dir "fdbconfig.edn")
                     :config      config
                     :self        {:xt/id "/test/f.edn"}
