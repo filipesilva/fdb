@@ -28,7 +28,10 @@
          ;; Don't really use medley directly, but clojure-mail does, and it always shows
          ;; a warning about abs being overwritten because it's on an old medley version
          dev.weavejester/medley      {:mvn/version "1.7.0"}
-         com.sun.mail/gimap          {:mvn/version "1.6.7"}}
+         com.sun.mail/gimap          {:mvn/version "1.6.7"}
+
+         ;; obsidian deps
+         clj-commons/clj-yaml        {:mvn/version "1.0.27"}}
 
  :aliases
  {:neil {:project {:name fdb/fdb}}}}

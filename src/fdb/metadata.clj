@@ -41,8 +41,12 @@
   [{:keys [mounts]} id]
   (some (fn [[mount-id mount-spec]]
           (when (in-mount? id mount-id)
-            mount-spec))
+            [mount-id mount-spec]))
         mounts))
+
+(defn id->mount-spec
+  [config id]
+  (second (id->mount config id)))
 
 (defn mount-path
   [config-path mount-spec]
@@ -105,3 +109,7 @@
   (let [[_ metadata-path] (content-and-metadata-paths path)]
     (tr.ignore/add config-path id)
     (apply u/swap-edn-file! metadata-path f args)))
+
+;; TODO:
+;; - lots of stuff here, mount stuff, should be in a config ns
+;;   - cleaned up too, mount vs mount-spec

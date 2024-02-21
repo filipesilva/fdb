@@ -7,13 +7,13 @@
 
 (defn id->readers
   [config id]
-  (let [ext-k   (-> id fs/split-ext second keyword)
-        mount   (metadata/id->mount config id)
-        readers (->> [(or (:readers mount)
-                          (:readers config))
-                      (:extra-readers mount)]
-                     (map #(update-vals % call/specs))
-                     (apply merge-with into))]
+  (let [ext-k      (-> id fs/split-ext second keyword)
+        mount-spec (metadata/id->mount-spec config id)
+        readers    (->> [(or (:readers mount-spec)
+                             (:readers config))
+                         (:extra-readers mount-spec)]
+                        (map #(update-vals % call/specs))
+                        (apply merge-with into))]
     (get readers ext-k)))
 
 (defn read

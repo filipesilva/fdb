@@ -6,11 +6,11 @@
    [fdb.metadata :as sut]
    [fdb.utils :as u]))
 
-(deftest id->mount
+(deftest id->mount-spec
   (let [config {:mounts {:test   "./test"
                          "test2" {:path "./test2"}}}]
-    (is (= "./test"  (sut/id->mount config "/test/foo.txt")))
-    (is (= {:path "./test2"} (sut/id->mount config "/test2/foo.txt")))))
+    (is (= "./test"  (sut/id->mount-spec config "/test/foo.txt")))
+    (is (= {:path "./test2"} (sut/id->mount-spec config "/test2/foo.txt")))))
 
 (defn- as-md
   [s]

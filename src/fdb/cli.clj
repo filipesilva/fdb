@@ -159,3 +159,4 @@
 ;; - resolve fdbconfig.edn up from current dir, like node_modules
 ;; - fdb example outputs config, files, etc, readme uses it
 ;; - is it worth to have sync/call/trigger in the cli while they could be called from the repl/repl-file?
+;; - cli could always be a bb script, that calls repl/clojure when needed
