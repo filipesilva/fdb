@@ -13,12 +13,10 @@
    (java.io RandomAccessFile)))
 
 (defn x-or-xs->xs
-  "Returns x if it's a set or vector, otherwise [x]."
+  "Returns x if it's a set or sequential, otherwise [x]."
   [x]
   (if (or (set? x)
-          ;; vector? and not sequential? because this fn is used
-          ;; a lot with triggers, and triggers can be sexps
-          (vector? x))
+          (sequential? x))
     x
     [x]))
 

@@ -2,18 +2,39 @@
   (:refer-clojure :exclude [apply])
   (:require
    [babashka.process :refer [shell]]
+   [fdb.utils :as u]
    [taoensso.timbre :as log]))
+
+(defn specs
+  "Returns a seq of call-specs from x."
+  [x]
+  (cond
+    ;; looks like a sexp call-spec
+    (list? x)
+    [x]
+
+    ;; looks like a vector call-spec
+    (and (vector? x)
+         (keyword? (first x)))
+    [x]
+
+    :else
+    (u/x-or-xs->xs x)))
 
 (defmulti to-fn
   "Takes call-spec and returns a function that takes a call-arg.
-  call-specs are dispatched by type of x:
-  - map:    Use :call key to resolve fn
-  - symbol: Resolves and returns the var
-  - list:   Evaluates and returns the result
-  - vec:    Runs shell command via babashka.process/shell
+  call-specs are dispatched by type of x, or if it's a keyword, the kw itself:
+  - map     Use :call key to resolve fn
+  - vector  Use first element to resolve fn
+  - symbol  Resolves and returns the var
+  - list    Evaluates and returns the result
+  - :sh     Runs shell command via babashka.process/shell
             You can use the shell option map, and the config-path,
             doc-path and self-path bindings."
-  (fn [call-spec] (type call-spec)))
+  (fn [call-spec]
+    (if (vector? call-spec)
+      (first call-spec)
+      (type call-spec))))
 
 (defmethod to-fn :default
   [call-spec]
@@ -43,10 +64,10 @@
   (let [bind-args-fn (eval (list 'fn '[{:keys [config-path doc-path self-path] :as call-arg}] form))]
     (bind-args-fn call-arg)))
 
-(defmethod to-fn clojure.lang.PersistentVector
-  [shell-args]
+(defmethod to-fn :sh
+  [[_ & shell-args]]
   (fn [call-arg]
-    (let [[opts & rest :as all] (eval-under-call-arg call-arg shell-args)
+    (let [[opts & rest :as all] (eval-under-call-arg call-arg (vec shell-args))
           io-opts               {:out *out* :err *err*}
           shell-args'           (if (map? opts)
                                   (into [(merge io-opts opts)] rest)
@@ -65,3 +86,8 @@
 ;; TODO:
 ;; - apply doesn't work quite like clojure.core/apply, which means I can't use it in fdb/call
 ;;   - calling (apply identity [1]) and (clojure.core/apply identity [1]) have different results
+;; - maybe support fdb/call style arg mapping in call-spec?
+;;   - {:call 'u/slurp-edn :args-xf [self-path]}
+;;   - instead of '(fn [x] (-> x :self-path u/slurp-end))
+;;   - tbh since that's special syntax vs normal fn, it's worse
+;; - maybe get rid of eval-under-call-args and just replace bindings with kws

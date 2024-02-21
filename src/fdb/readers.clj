@@ -3,8 +3,7 @@
   (:require
    [fdb.call :as call]
    [babashka.fs :as fs]
-   [fdb.metadata :as metadata]
-   [fdb.utils :as u]))
+   [fdb.metadata :as metadata]))
 
 (defn id->readers
   [config id]
@@ -13,7 +12,7 @@
         readers (->> [(or (:readers mount)
                           (:readers config))
                       (:extra-readers mount)]
-                     (map #(update-vals % u/x-or-xs->xs))
+                     (map #(update-vals % call/specs))
                      (apply merge-with into))]
     (get readers ext-k)))
 

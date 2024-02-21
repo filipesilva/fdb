@@ -66,7 +66,7 @@
                       :doc-path (metadata/id->path config-path config (:xt/id self))})
                    (when (map? maybe-map)
                      maybe-map))))
-         (->> self on-k u/x-or-xs->xs (map-indexed vector)))))
+         (->> self on-k call/specs (map-indexed vector)))))
 
 (defn docs-with-k
   "Get all docs with k in db.
@@ -142,7 +142,7 @@
                                                          call-arg {:timestamp (str timestamp)})
                                                    ;; Never cancel schedule from fn.
                                                    true))))
-                             (-> doc :fdb.on/schedule u/x-or-xs->xs)))))
+                             (-> doc :fdb.on/schedule call/specs)))))
 
              ;; There's no schedules for this doc, nothing to do.
              :else

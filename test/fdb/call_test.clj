@@ -22,10 +22,10 @@
   (is (= [1 2] (sut/eval-under-call-arg {:self-path 1} '[(:self-path call-arg) 2])))
   (is (= [1 1] (sut/eval-under-call-arg {:self-path 1} '[1 1]))))
 
-(deftest shell-text
+(deftest shell-test
   (is (= "1 2 3\n"
          (with-out-str
-           ((sut/to-fn '["echo" config-path doc-path self-path])
+           ((sut/to-fn '[:sh "echo" config-path doc-path self-path])
             {:config-path "1" :doc-path "2" :self-path "3"})))))
 
 (deftest apply-test

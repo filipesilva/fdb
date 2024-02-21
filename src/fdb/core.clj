@@ -2,6 +2,7 @@
   "A programmable database for your file library."
   (:refer-clojure :exclude [sync])
   (:require
+   hashp.core
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -16,7 +17,6 @@
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
-   [hashp.core]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
