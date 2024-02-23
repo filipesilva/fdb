@@ -236,8 +236,9 @@
 (defn call-on-refs
   "Call all :fdb.on/refs triggers in docs that have doc in :fdb.on/refs."
   [{:keys [db] :as call-arg} [_op _id doc]]
-  (run! #(call-all-triggers call-arg doc % :fdb.on/refs)
-        (recursive-pull-k db (:xt/id doc) :fdb/_refs)))
+  (->> (recursive-pull-k db (:xt/id doc) :fdb/_refs)
+       (filter :fdb.on/refs)
+       (run! #(call-all-triggers call-arg doc % :fdb.on/refs))))
 
 (defn matches-glob?
   "Returns true if id matches glob."

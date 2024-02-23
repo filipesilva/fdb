@@ -87,3 +87,4 @@
 
 ;; TODO:
 ;; - make vault path configurable within a mount, via reader call-spec k
+;; - if prop k looks like a kw, keywordize it
