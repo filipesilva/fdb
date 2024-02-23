@@ -20,3 +20,5 @@
 ;;   - I guess it's just a namespaced k, for headers
 ;; - fs structure for routes, each clj file has patch/post/get/delete fns
 ;; - have to make it easier for third party libs to add routes
+;; - blog is a cool example of a subset of your file library you might want to expose online
+;; - Is rss just a folder file listing ordered by date and content, and content negotiated to be rss format? The folder could be real, or be full of symlinks, or even be a synthetic listing from the db.

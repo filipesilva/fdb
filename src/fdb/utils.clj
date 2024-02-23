@@ -75,9 +75,12 @@
         (edn/read-string {:readers *data-readers*}))))
 
 (defn sibling-path
-  "Returns normalized sibling-path relative to file-paths parent."
+  "Returns normalized sibling-path relative to file-paths parent.
+  If sibling-path is absolute, returns it."
   [file-path sibling-path]
-  (-> file-path fs/parent (fs/file sibling-path) fs/normalize str))
+  (if (fs/absolute? sibling-path)
+    (str sibling-path)
+    (-> file-path fs/parent (fs/file sibling-path) fs/normalize str)))
 
 (defn closeable
   "From https://medium.com/@maciekszajna/reloaded-workflow-out-of-the-box-be6b5f38ea98
