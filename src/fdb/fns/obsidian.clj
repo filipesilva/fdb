@@ -1,7 +1,6 @@
 (ns fdb.fns.obsidian
   (:require
    [clj-yaml.core :as yaml]
-   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [fdb.metadata :as metadata]
@@ -60,10 +59,6 @@
           yaml/parse-string
           (update-vals #(if (seq? %) (vec %) %))))
 
-(defn read-edn-or-nil
-  [s]
-  (u/catch-nil (edn/read-string s)))
-
 (defn read-edn-for-fdb-keys
   [m]
   (let [ks (filter #(and (qualified-keyword? %)
@@ -73,8 +68,8 @@
     (merge m
            (-> (select-keys m ks)
                (update-vals #(cond
-                               (string? %) (read-edn-or-nil %)
-                               (vector? %) (mapv read-edn-or-nil %)))
+                               (string? %) (u/read-edn %)
+                               (vector? %) (mapv u/read-edn %)))
                u/strip-nil-empty))))
 
 (defn metadata

@@ -2,6 +2,7 @@
   (:require
    [babashka.fs :as fs]
    [chime.core :as chime]
+   [clojure.string :as str]
    [cronstar.core :as cron]
    [fdb.call :as call]
    [fdb.db :as db]
@@ -184,30 +185,62 @@
                          id)]
     (str prefix out ".fdb." ext)))
 
+(defn unwrap-md-codeblock
+  [lang s]
+  (->> s
+       (str/trim)
+       (re-find (re-pattern (str "(?s)^```" lang "\\n(.*)\\n```$")))
+       second))
+
+(defn wrap-md-codeblock
+  [lang s]
+  (str "```" lang "\n" (str/trim s) "\n```\n\n"))
+
+(def ext->codeblock-lang
+  {"clj" "clojure"
+   "edn" "edn"})
+
+(defn rep-ext-or-codeblock
+  "Read eval print helper for query and repl files."
+  [config-path config id in out ext append? log-f f]
+  (let [codeblock? (str/ends-with? id ".md")]
+    (when-some [out-file' (out-file id in out (if codeblock? "md" ext))]
+      (log-f out-file')
+      (let [in-path  (metadata/id->path config-path config id)
+            out-path (u/sibling-path in-path out-file')
+            content  (u/slurp in-path)
+            ret      (if codeblock?
+                      (some->> content
+                               (unwrap-md-codeblock (ext->codeblock-lang ext))
+                               f
+                               (wrap-md-codeblock (ext->codeblock-lang ext)))
+                      (f content))]
+        (when ret
+          (apply spit out-path ret (when append? [:append true])))))))
+
 (defn call-on-query-file
   "If id matches in /*query.fdb.edn, query with content and output
   results to sibling /*results.fdb.edn file."
   [{:keys [db config-path config]} [op id]]
   (when (= op ::xt/put)
-    (when-some [results-file (out-file id "query" "results" "edn")]
-      (log/info "querying" id "to" results-file)
-      (let [query-path   (metadata/id->path config-path config id)
-            results-path (u/sibling-path query-path results-file)
-            results      (try (xt/q db (u/slurp-edn query-path))
-                              (catch Exception e
-                                {:error (ex-message e)}))]
-        (u/spit-edn results-path results)))))
+    (rep-ext-or-codeblock
+     config-path config id
+     "query" "results" "edn" false
+     #(log/info "querying" id "to" %)
+     #(try (u/edn-str (xt/q db %))
+           (catch Exception e
+             {:error (ex-message e)})))))
 
 (defn call-on-repl-file
   "If id matches in /*repl.fdb.clj, call repl with content and print
   output to sibling /*outputs.fdb.clj file."
   [{:keys [config-path config]} [op id]]
   (when (= op ::xt/put)
-    (when-some [outputs-file (out-file id "repl" "outputs" "clj")]
-      (log/info "sending" id "to repl, outputs in" outputs-file)
-      (let [file-path   (metadata/id->path config-path config id)
-            outputs-path (u/sibling-path file-path outputs-file)]
-        (repl/load config-path file-path outputs-path)))))
+    (rep-ext-or-codeblock
+     config-path config id
+     "repl" "outputs" "clj" true
+     #(log/info "sending" id "to repl, outputs in" %)
+     #(repl/load config-path id %))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."

@@ -51,11 +51,14 @@
     (clojure.core/spit f content)
     (str f)))
 
+(defn edn-str
+  [edn]
+  (with-out-str (puget/pprint edn {:map-delimiter ""})))
+
 (defn spit-edn
   "Same as spit but writes it pretty printed as edn."
   [& args]
-  (let [edn-string (with-out-str (puget/pprint (last args) {:map-delimiter ""}))]
-    (apply spit (concat (butlast args) (list edn-string)))))
+  (apply spit (concat (butlast args) (list (edn-str (last args))))))
 
 (defn slurp
   "Reads content from a file and returns it as a string. Returns nil instead of erroring out.
@@ -66,13 +69,16 @@
        str
        clojure.core/slurp)))
 
+(defn read-edn
+  [s]
+  ;; xt has a bunch of readers, especially around time.
+  (catch-nil (edn/read-string {:readers *data-readers*} s)))
+
 (defn slurp-edn
   "Same as slurp but reads it as edn, using current *data-readers*."
   [& paths]
-  (catch-nil
-   (->> (apply slurp paths)
-        ;; xt has a bunch of readers, especially around time.
-        (edn/read-string {:readers *data-readers*}))))
+  (->> (apply slurp paths)
+       read-edn))
 
 (defn sibling-path
   "Returns normalized sibling-path relative to file-paths parent.

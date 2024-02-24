@@ -55,17 +55,17 @@
     (str first-line (str/replace s #"\n." (str "\n" other-lines)))))
 
 (defn load
-  [config-path file-path output-path]
+  [config-path input-path content]
   (with-open [conn (connect config-path)]
-    (log/debug "load" file-path)
-    (let [append #(spit output-path %1 :append true)
-          file   (slurp file-path)
-          _      (append file)
+    (log/debug "load" input-path)
+    (let [*output (atom "")
+          append #(swap! *output str % "\n")
+          _      (append content)
           resp   (-> (nrepl/client conn 15000)
                      (nrepl/message {:op        "load-file"
-                                     :file      file
-                                     :file-name (fs/file-name file-path)
-                                     :file-path file-path})
+                                     :file      content
+                                     :file-name (fs/file-name input-path)
+                                     :file-path input-path})
                      doall)
           value  (first (nrepl/response-values resp))]
       (log/debug resp)
@@ -75,7 +75,7 @@
         (when err (-> err as-comments append)))
       (let [value-str (with-out-str (pprint/pprint value))]
         (-> value-str (as-comments :prefix "=> ") append))
-      (append "\n"))))
+      @*output)))
 
 (defn start-server
   [config-path nrepl]

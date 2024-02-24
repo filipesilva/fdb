@@ -7,7 +7,8 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.utils :as u]
-   [hashp.core]))
+   [hashp.core]
+   [fdb.triggers :as triggers]))
 
 (defmacro with-temp-fdb-config
   {:clj-kondo/ignore [:unresolved-symbol]}
@@ -136,7 +137,24 @@
       (u/spit mount-path "all-modified-query.fdb.edn" "foo")
       (u/eventually (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn")))
       (is (= "Query didn't match expected structure"
-             (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn")))))))
+             (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn"))))
+      (u/spit mount-path "all-modified-query.fdb.md" "
+```edn
+[:find ?e ?modified
+ :where [?e :fdb/modified ?modified]]
+```")
+      (u/eventually (u/slurp mount-path "all-modified-results.fdb.md"))
+      (is (= #{"/test/one.txt"
+               "/test/folder"
+               "/test/folder/two.txt"
+               "/test/all-modified-query.fdb.edn"
+               "/test/all-modified-results.fdb.edn"
+               "/test/all-modified-query.fdb.md"}
+             (->> (u/slurp mount-path "all-modified-results.fdb.md")
+                  (triggers/unwrap-md-codeblock "edn")
+                  u/read-edn
+                  (map first)
+                  set))))))
 
 (def ignore-calls (atom 0))
 
