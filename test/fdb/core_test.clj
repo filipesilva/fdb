@@ -123,34 +123,34 @@
     (fdb/with-watch [config-path node]
       (u/spit mount-path "one.txt" "")
       (u/spit mount-path "folder/two.txt" "")
-      (u/spit mount-path "all-modified-query.fdb.edn"
+      (u/spit mount-path "all-modified.query.fdb.edn"
               '[:find ?e ?modified
                 :where [?e :fdb/modified ?modified]])
-      (u/eventually (u/slurp mount-path "all-modified-results.fdb.edn"))
+      (u/eventually (u/slurp mount-path "all-modified.query-results.fdb.edn"))
       (is (= #{"/test/one.txt"
                "/test/folder"
                "/test/folder/two.txt"
-               "/test/all-modified-query.fdb.edn"}
-             (->> (u/slurp-edn mount-path "all-modified-results.fdb.edn")
+               "/test/all-modified.query.fdb.edn"}
+             (->> (u/slurp-edn mount-path "all-modified.query-results.fdb.edn")
                   (map first)
                   set)))
-      (u/spit mount-path "all-modified-query.fdb.edn" "foo")
-      (u/eventually (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn")))
+      (u/spit mount-path "all-modified.query.fdb.edn" "foo")
+      (u/eventually (:error (u/slurp-edn mount-path "all-modified.query-results.fdb.edn")))
       (is (= "Query didn't match expected structure"
-             (:error (u/slurp-edn mount-path "all-modified-results.fdb.edn"))))
-      (u/spit mount-path "all-modified-query.fdb.md" "
+             (:error (u/slurp-edn mount-path "all-modified.query-results.fdb.edn"))))
+      (u/spit mount-path "all-modified.query.fdb.md" "
 ```edn
 [:find ?e ?modified
  :where [?e :fdb/modified ?modified]]
 ```")
-      (u/eventually (u/slurp mount-path "all-modified-results.fdb.md"))
+      (u/eventually (u/slurp mount-path "all-modified.query-results.fdb.md"))
       (is (= #{"/test/one.txt"
                "/test/folder"
                "/test/folder/two.txt"
-               "/test/all-modified-query.fdb.edn"
-               "/test/all-modified-results.fdb.edn"
-               "/test/all-modified-query.fdb.md"}
-             (->> (u/slurp mount-path "all-modified-results.fdb.md")
+               "/test/all-modified.query.fdb.edn"
+               "/test/all-modified.query-results.fdb.edn"
+               "/test/all-modified.query.fdb.md"}
+             (->> (u/slurp mount-path "all-modified.query-results.fdb.md")
                   (triggers/unwrap-md-codeblock "edn")
                   u/read-edn
                   (map first)

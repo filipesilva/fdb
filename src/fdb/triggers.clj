@@ -183,7 +183,7 @@
   (when-some[[_ prefix] (re-matches
                          (re-pattern (str ".*/([^/]*)" in "\\.fdb\\." ext "$"))
                          id)]
-    (str prefix out ".fdb." ext)))
+    (str prefix in "-" out ".fdb." ext)))
 
 (defn unwrap-md-codeblock
   [lang s]
