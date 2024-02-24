@@ -259,6 +259,15 @@
       (fs/split-ext {:ext ext})
       first))
 
+(defn strip-nil-empty
+  "Removes nil and empty values from a map."
+  [m]
+  (->> m
+       (filter (fn [[_ v]]
+                 (and (not (nil? v))
+                      (or (not (coll? v))
+                          (seq v)))))
+       (into {})))
 
 ;; TODO:
 ;; - str-path fn

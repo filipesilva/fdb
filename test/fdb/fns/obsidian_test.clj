@@ -20,7 +20,9 @@
             :text       "one two three",
             :text-link  "[[another file]]",
             :fdb/refs   #{"/vault/other file.md" "/vault/inbox/another file.md" "/vault/another file.md"},
-            :fdb/tags   #{"1bâc" "aaa" "accepted" "action-item" "applied" "learning"}}
+            :fdb/tags   #{"1bâc" "aaa" "accepted" "action-item" "applied" "learning"}
+            :fdb/k      {:foo "bar"},
+            :fdb.a/ks   ['n.s/sym {:call 'n.s/another-sym} [:sh "echo"]],}
            (sut/metadata {:config-path config-path
                           :config      {:mounts {:vault "./obsidian"}}
                           :self-path   (u/sibling-path config-path "./obsidian/file.md")

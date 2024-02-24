@@ -1,9 +1,11 @@
 (ns fdb.fns.obsidian
   (:require
    [clj-yaml.core :as yaml]
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [fdb.metadata :as metadata]
+   [fdb.utils :as u]
    [fdb.watcher :as watcher]))
 
 ;; https://help.obsidian.md/Editing+and+formatting/Tags#Tag+format
@@ -58,6 +60,23 @@
           yaml/parse-string
           (update-vals #(if (seq? %) (vec %) %))))
 
+(defn read-edn-or-nil
+  [s]
+  (u/catch-nil (edn/read-string s)))
+
+(defn read-edn-for-fdb-keys
+  [m]
+  (let [ks (filter #(and (qualified-keyword? %)
+                         (or (= "fdb" (namespace %))
+                             (str/starts-with? (namespace %) "fdb.")))
+                   (keys m))]
+    (merge m
+           (-> (select-keys m ks)
+               (update-vals #(cond
+                               (string? %) (read-edn-or-nil %)
+                               (vector? %) (mapv read-edn-or-nil %)))
+               u/strip-nil-empty))))
+
 (defn metadata
   [{:keys [self-path] :as call-arg}]
   (let [md            (slurp self-path)
@@ -67,7 +86,7 @@
                           (into (:tags front-matter'))
                           (into (tags body)))
         refs'         (refs call-arg md)]
-    (merge front-matter'
+    (merge (read-edn-for-fdb-keys front-matter')
            (when (seq tags)
              {:fdb/tags tags})
            (when (seq refs')
@@ -87,4 +106,3 @@
 
 ;; TODO:
 ;; - make vault path configurable within a mount, via reader call-spec k
-;; - if prop k looks like a kw, keywordize it

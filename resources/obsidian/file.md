@@ -23,6 +23,11 @@ text-link: "[[another file]]"
 list-links:
   - "[[another file]]"
   - "[[other file]]"
+fdb/k: '{:foo "bar"}'
+fdb.a/ks:
+  - "n.s/sym"
+  - "{:call n.s/another-sym}"
+  - '[:sh "echo"]'
 ---
 markdown body
 

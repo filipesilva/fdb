@@ -85,15 +85,6 @@
            str/split-lines
            (mapv str/trim)))
 
-(defn strip-nil-empty
-  [m]
-  (->> m
-       (filter (fn [[_ v]]
-                 (and (not (nil? v))
-                      (or (not (coll? v))
-                          (seq v)))))
-       (into {})))
-
 (defn metadata
   [{:keys [self-path]}]
   (let [message-edn  (-> self-path mail/file->message read-message)
@@ -123,7 +114,7 @@
                          (set/rename-keys {:x-gm-thrid :thread-id
                                            :x-gmail-labels :labels})
                          (update :labels #(when % (str/split % #","))))]
-    (strip-nil-empty
+    (u/strip-nil-empty
      (merge from-message from-headers from-body from-gmail))))
 
 (defn str->message
