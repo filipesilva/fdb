@@ -17,14 +17,20 @@
   [config-path id]
   (swap! *ignores update config-path #(conj (or % #{}) id)))
 
-(defn ignore?
+(defn ignoring?
   "Returns true if id under config-path is in the ignore list."
-  [config-path [_ id]]
-    (let [ids (get @*ignores config-path #{})
-          should-ignore? (ids id)]
-      (when should-ignore?
-        (swap! *ignores update config-path disj id))
-      should-ignore?))
+  [config-path id]
+  (let [ids (get @*ignores config-path #{})]
+    (ids id)))
+
+(defn ignore-and-remove?
+  "Returns true if id under config-path is in the ignore list,
+  and removes it from the ignore list."
+  [config-path id]
+  (let [ignoring?' (ignoring? config-path id)]
+    (when ignoring?'
+      (swap! *ignores update config-path disj id))
+    ignoring?'))
 
 ;; TODO:
 ;; - what are the semantics over multiple processes?

@@ -56,10 +56,13 @@
                u/x-or-xs->xs
                not-empty
                (u/side-effect->> (fn [ids]
-                                   (log/info "updating" (str/join ", " (take 5 ids))
-                                             (if (> (count ids) 5)
-                                               (str "and " (-> ids count (- 5) str) " more")
-                                               ""))))
+                                   (when-some [ids' (->> ids
+                                                         (remove (partial tr.ignore/ignoring? config-path))
+                                                         seq)]
+                                     (log/info "updating" (str/join ", " (take 5 ids'))
+                                               (if (> (count ids') 5)
+                                                 (str "and " (-> ids' count (- 5) str) " more")
+                                                 "")))))
                (pmap (fn [id]
                        (let [path (metadata/id->path config-path config id)]
                          (if-some [metadata (metadata/read path)]

@@ -321,7 +321,7 @@
              ops      (->> tx
                            ::xt/tx-ops
                            (massage-ops node)
-                           (remove (partial tr.ignore/ignore? config-path)))]
+                           (remove #(tr.ignore/ignore-and-remove? config-path (second %))))]
 
          ;; Update schedules
          (run! (partial update-schedules call-arg) ops)
