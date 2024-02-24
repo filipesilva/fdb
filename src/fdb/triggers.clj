@@ -209,14 +209,16 @@
       (let [in-path  (metadata/id->path config-path config id)
             out-path (u/sibling-path in-path out-file')
             content  (u/slurp in-path)
+            lang     (ext->codeblock-lang ext)
             ret      (if codeblock?
                       (some->> content
-                               (unwrap-md-codeblock (ext->codeblock-lang ext))
+                               (unwrap-md-codeblock lang)
                                f
-                               (wrap-md-codeblock (ext->codeblock-lang ext)))
+                               (wrap-md-codeblock lang))
                       (f content))]
-        (when ret
-          (apply spit out-path ret (when append? [:append true])))))))
+        (cond
+          ret (apply spit out-path ret (when append? [:append true]))
+          codeblock? (log/info "no solo" lang "codeblock found in" id))))))
 
 (defn call-on-query-file
   "If id matches in /*query.fdb.edn, query with content and output
