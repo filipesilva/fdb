@@ -132,15 +132,16 @@
                          "mail.smtp.starttls.enable"              true})))
 
 (defn self-mail
-  [call-arg subject text]
-  (let [[email password] (email+password call-arg)
-        address          (InternetAddress. email)
-        store            (send-session)
-        msg              (doto (MimeMessage. store)
-                           (.setFrom address)
-                           (.setRecipient Message$RecipientType/TO address)
-                           (.setSubject subject)
-                           (.setText text))]
+  [{:keys [on] :as call-arg}]
+  (let [[email password]       (email+password call-arg)
+        address                (InternetAddress. email)
+        store                  (send-session)
+        {:keys [subject text]} (second on)
+        msg                    (doto (MimeMessage. store)
+                                 (.setFrom address)
+                                 (.setRecipient Message$RecipientType/TO address)
+                                 (.setSubject subject)
+                                 (.setText text))]
     (Transport/send msg email password)))
 
 ;; TODO:
@@ -172,6 +173,6 @@
   (message/uid msg)
   (write msg "tmp/msg.eml")
 
-  (self-mail {:config config} "test subject" "test body")
+  (self-mail {:config config :on [:fdb.on/modify {:subject "test subject" :text "test body"}]})
   ;;
   )
