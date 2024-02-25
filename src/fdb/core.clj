@@ -6,6 +6,7 @@
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
+   [clojure.repl.deps :as deps]
    [clojure.string :as str]
    [fdb.call :as call]
    [fdb.db :as db]
@@ -28,9 +29,8 @@
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
   [config-path f]
-  (let [{:keys [db-path _extra-deps] :as config} (-> config-path slurp edn/read-string)]
-    ;; TODO: should just work when clojure 1.12 is released and installed globally
-    #_(binding [clojure.core/*repl* true]
+  (let [{:keys [db-path extra-deps] :as config} (-> config-path slurp edn/read-string)]
+    (binding [clojure.core/*repl* true]
       (when extra-deps
         (deps/add-libs extra-deps)))
     (if-some [node (node config-path)]

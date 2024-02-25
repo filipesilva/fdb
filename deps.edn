@@ -1,5 +1,6 @@
 {:paths ["src" "test" "resources"]
- :deps  {org.clojure/clojure         {:mvn/version "1.12.0-alpha5"}
+ :deps  {;; alpha6 and up suffer from https://github.com/xtdb/xtdb/issues/3169
+         org.clojure/clojure         {:mvn/version "1.12.0-alpha5"}
          org.clojure/core.async      {:mvn/version "1.6.681"}
          org.clojure/tools.namespace {:mvn/version "1.4.5"}
          hashp/hashp                 {:mvn/version "0.2.2"}
