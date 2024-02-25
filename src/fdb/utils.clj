@@ -275,6 +275,11 @@
                           (seq v)))))
        (into {})))
 
+(defmacro current-file
+  "Returns file path of the current file."
+  []
+  `(:file (meta (defn foo# []))))
+
 ;; TODO:
 ;; - str-path fn
 ;; - the watch-config and watch-and-block loop are very similar

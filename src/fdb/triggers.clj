@@ -242,7 +242,7 @@
      config-path config id
      "repl" "outputs" "clj" true
      #(log/info "sending" id "to repl, outputs in" %)
-     #(repl/load config-path id %))))
+     #(repl/load config-path (metadata/id->path config-path config id) %))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
