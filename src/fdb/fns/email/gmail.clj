@@ -13,7 +13,19 @@
    [taoensso.timbre :as log]
    [clojure.java.io :as io])
   (:import
-   [com.sun.mail.gimap GmailMessage]))
+   [com.sun.mail.gimap GmailMessage]
+   [javax.mail Message$RecipientType Session Transport]
+   [javax.mail.internet InternetAddress MimeMessage]))
+
+(defn email+password
+  [{:keys [config on]}]
+  (try
+    (let [{::keys [email password email-env password-env]} (merge config on)
+          email (or email (System/getenv email-env))
+          password (or password (System/getenv password-env))]
+      [email password])
+    (catch Exception _
+      (throw (ex-info "Couldn't get email and password from config or env" {})))))
 
 (defn store
   [email password]
@@ -70,14 +82,14 @@
   "Syncs a folder from gmail to self-path. self-path must be a folder.
   You'll need to create a app password in google -> security -> 2-step verification -> app passwords.
   Uses :fdb.fns.gmail/email and :fdb.fns.gmail/password from config. "
-  [{:keys [config config-path node self self-path on on-path]}]
+  [{:keys [config-path node self self-path on on-path] :as call-arg}]
   (if-not (and self-path (fs/directory? self-path))
     (throw (ex-info "self-path must be a directory" {:self-path self-path}))
     ;; if we can't get a lock on self-path, that means another run is in progress and we should bail
     (with-open [lock (u/lockfile (metadata/metadata-path self-path))]
       (if-not @lock
         (log/info "another email sync for" self-path "is in progress, bailing")
-        (let [{::keys [email password]}        config
+        (let [[email password]                 (email+password call-arg)
               [_ {:keys [mail-folder take-n]}] on
               folder-name                      (gmail/folder->folder-name (or mail-folder :all))
               ;; pull last-uid from latest version of the db, because we
@@ -110,6 +122,27 @@
             (log/info "synced" folder-name "to" self-path "until" @*new-last-uid)
             (log/debug "no new messages in" folder-name "!")))))))
 
+
+(defn send-session
+  []
+  (Session/getInstance (mail/as-properties
+                        {"mail.smtp.host"                         "smtp.gmail.com"
+                         "mail.smtp.port"                         587
+                         "mail.smtp.auth"                         true
+                         "mail.smtp.starttls.enable"              true})))
+
+(defn self-mail
+  [call-arg subject text]
+  (let [[email password] (email+password call-arg)
+        address          (InternetAddress. email)
+        store            (send-session)
+        msg              (doto (MimeMessage. store)
+                           (.setFrom address)
+                           (.setRecipient Message$RecipientType/TO address)
+                           (.setSubject subject)
+                           (.setText text))]
+    (Transport/send msg email password)))
+
 ;; TODO:
 ;; - get gmail creds from env vars, much easier to not leak them
 ;; - no need to update last-uid on all writes, update at the end and every 10
@@ -120,8 +153,10 @@
    :last-uid        1052926 ;; or filename
    }
 
-  (def email "xxx@gmail.com")
-  (def password "xxx")
+  (def config (u/slurp-edn "tmp/fdbconfig.edn"))
+  (def e+p (email+password {:config config}))
+  (def email (first e+p))
+  (def password (second e+p))
   (def folder-name (gmail/folder->folder-name :all))
   (def last-uid 1052650)
 
@@ -137,5 +172,6 @@
   (message/uid msg)
   (write msg "tmp/msg.eml")
 
+  (self-mail {:config config} "test subject" "test body")
   ;;
   )
