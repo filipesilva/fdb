@@ -22,6 +22,13 @@
    [tick.core :as t]
    [xtdb.api :as xt]))
 
+(defn set-dynamic-classloader!
+  []
+  (->>(Thread/currentThread)
+      (.getContextClassLoader)
+      (clojure.lang.DynamicClassLoader.)
+      (.setContextClassLoader (Thread/currentThread))))
+
 (defn node [config-path]
   (when (= config-path (:config-path @state/*fdb))
     (:node @state/*fdb)))
@@ -30,8 +37,9 @@
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
   [config-path f]
   (let [{:keys [db-path extra-deps] :as config} (-> config-path slurp edn/read-string)]
-    (binding [clojure.core/*repl* true]
-      (when extra-deps
+    (when extra-deps
+      (binding [clojure.core/*repl* true]
+        (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
     (if-some [node (node config-path)]
       (f config-path config node)

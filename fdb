@@ -9,4 +9,4 @@ SCRIPT=$(readlink -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 
 # Run the fdb.cli/-main function with the local fdb dep
-clojure -Sdeps "{:deps {filipesilva/fdb {:local/root \"$SCRIPTPATH\"}}}" -M -m fdb.cli "$@"
+clojure -Sdeps "{:deps {org.clojure/clojure {:mvn/version \"1.12.0-alpha5\"} filipesilva/fdb {:local/root \"$SCRIPTPATH\"}}}" -M -m fdb.cli "$@"
