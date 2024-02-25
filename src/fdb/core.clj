@@ -23,6 +23,7 @@
    [xtdb.api :as xt]))
 
 (defn set-dynamic-classloader!
+  "Set dynamic classloader to current thread."
   []
   (->>(Thread/currentThread)
       (.getContextClassLoader)
@@ -39,6 +40,8 @@
   (let [{:keys [db-path extra-deps] :as config} (-> config-path slurp edn/read-string)]
     (when extra-deps
       (binding [clojure.core/*repl* true]
+        ;; Needs dynamic classloader when running from cli
+        ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
     (if-some [node (node config-path)]
