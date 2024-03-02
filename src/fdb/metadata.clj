@@ -113,3 +113,4 @@
 ;; TODO:
 ;; - lots of stuff here, mount stuff, should be in a config ns
 ;;   - cleaned up too, mount vs mount-spec
+;; - change .metadata.edn to just .meta.edn? clojure-like

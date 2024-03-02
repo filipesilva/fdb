@@ -101,3 +101,6 @@
 
 ;; TODO:
 ;; - make vault path configurable within a mount, via reader call-spec k
+;; - markdown with yaml is a pretty good catch-all viz format
+;;   - would be nice to ouptut it for stuff
+;;   - don't have a great way to show things aside from query results, maybe server

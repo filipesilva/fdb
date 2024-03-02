@@ -1,5 +1,5 @@
 (ns fdb.core
-  "A programmable database for your file library."
+  "A hackable database for your file library."
   (:refer-clojure :exclude [sync])
   (:require
    hashp.core
@@ -277,3 +277,11 @@
 ;; - bulk change config-file-path to config-path
 ;; - rename fdb.fns to fdb.ext
 ;; - maybe call-arg stuff should be in fdb.call, with a bit more structure...
+;; - use a separator at the end of id to allow for inner data, synthetic ids
+;;   - userful for csv, line ranges, functions
+;;   - # is allowed in file names
+;;   - : is not allowed in file names
+;;   - / vibes well with nesting already
+;; - what's a google search over all docs like?
+;;   - not just a query
+;;   - maybe its grep over the disk files
