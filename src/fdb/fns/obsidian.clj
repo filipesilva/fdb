@@ -43,7 +43,7 @@
         [mount-id mount-spec] (metadata/id->mount config id)
         vault-files           (->> mount-spec
                                    (metadata/mount-path config-path)
-                                   watcher/glob
+                                   (watcher/glob config)
                                    ;; ambiguous long-form paths at root don't have folder
                                    (sort shorter?))]
     (disj (->> md ;; get wikilinks in body and front-matter

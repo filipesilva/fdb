@@ -91,7 +91,7 @@
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
-  [config-path {:keys [mounts]} node]
+  [config-path {:keys [mounts] :as config} node]
   (u/with-time [t-ms #(log/debug "stale took" (t-ms) "ms")]
     (let [in-fs                     (->> mounts
                                          ;; get all paths for all mounts
@@ -100,7 +100,7 @@
                                          (pmap (fn [[mount-id mount-path]]
                                                  (pmap (fn [p] [(metadata/id mount-id p)
                                                                 (metadata/modified mount-path p)])
-                                                       (watcher/glob mount-path))))
+                                                       (watcher/glob config mount-path))))
                                          (mapcat identity)
                                          ;; id is the same for content and metadata file, we want
                                          ;; to keep only the most recent modified
@@ -150,7 +150,7 @@
         update-fn  #(->> %
                          (metadata/id mount-id)
                          (update! config-path config node))]
-    [mount-path update-fn]))
+    [config mount-path update-fn]))
 
 (defn watch
   "Call f inside a watching fdb."
@@ -202,7 +202,7 @@
                      (log/info "shutting down")
                      (close! control-ch))
         process-ch (go
-                     (with-open [_config-watcher (watcher/watch config-path restart!)]
+                     (with-open [_config-watcher (watcher/watch {} config-path restart!)]
                        (loop [restart? true]
                          (if restart?
                            (recur (with-watch [config-path _node]
@@ -282,6 +282,7 @@
 ;;   - # is allowed in file names
 ;;   - : is not allowed in file names
 ;;   - / vibes well with nesting already
+;;   - I think / wins, just the best semantics for a filesystem based thing
 ;; - what's a google search over all docs like?
 ;;   - not just a query
 ;;   - maybe its grep over the disk files
