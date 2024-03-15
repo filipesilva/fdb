@@ -38,13 +38,22 @@
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
   [config-path f]
-  (let [{:keys [db-path extra-deps] :as config} (-> config-path slurp edn/read-string)]
+  (let [{:keys [db-path extra-deps load] :as config} (-> config-path slurp edn/read-string)]
     (when extra-deps
       (binding [clojure.core/*repl* true]
         ;; Needs dynamic classloader when running from cli
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
+    (when load
+      (doseq [f load]
+        (binding [*ns* (create-ns 'user)]
+          (some->> f
+                   (metadata/id->path config-path config)
+                   fs/absolutize
+                   str
+                   (u/side-effect->> #(log/info "loading" %))
+                   load-file))))
     (if-some [node (node config-path)]
       (f config-path config node)
       (with-open [node (db/node (u/sibling-path config-path db-path))]
@@ -309,3 +318,4 @@
 ;; - what's a google search over all docs like?
 ;;   - not just a query
 ;;   - maybe its grep over the disk files
+;; - stale on-db should be deleting ignores

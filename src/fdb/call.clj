@@ -91,10 +91,3 @@
 ;;   - instead of '(fn [x] (-> x :self-path u/slurp-end))
 ;;   - tbh since that's special syntax vs normal fn, it's worse
 ;; - maybe get rid of eval-under-call-args and just replace bindings with kws
-;; - loading a repl file, or I guess a clj file, would be very cool
-;;   - would be really easy to make and iterate over small scripts
-;;   - string type, for id, would be straightforward
-;;   - put call arg in a binding
-;;   - :load k on call-spec, loads a clj before calling trigger
-;;   - if you don't want to load it all the time, make a lib, add to extra-deps
-;;   - this is the wrong idea: instead I declare stuff in a repl file and ensure it's loaded at startup too
