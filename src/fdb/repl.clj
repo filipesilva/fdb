@@ -44,8 +44,8 @@
       (log/debug resp)
       (log/debug value)
       (doseq [{:keys [out err]} resp]
-        (when out (log/info out))
-        (when err (log/error err)))
+        (when out (log/info (str/trim-newline out)))
+        (when err (log/error (str/trim-newline err))))
       value)))
 
 (defn as-comments
