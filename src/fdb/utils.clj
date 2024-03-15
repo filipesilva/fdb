@@ -12,11 +12,10 @@
   (:import
    (java.io RandomAccessFile)))
 
-(defn x-or-xs->xs
-  "Returns x if it's a set or sequential, otherwise [x]."
+(defn one-or-many
+  "Returns x if it's a set, sequential, or nil, otherwise [x]."
   [x]
-  (if (or (set? x)
-          (sequential? x))
+  (if ((some-fn sequential? set? nil?) x)
     x
     [x]))
 

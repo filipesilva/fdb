@@ -19,7 +19,7 @@
     [x]
 
     :else
-    (u/x-or-xs->xs x)))
+    (u/one-or-many x)))
 
 (defmulti to-fn
   "Takes call-spec and returns a function that takes a call-arg.

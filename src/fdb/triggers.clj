@@ -32,7 +32,7 @@
                           :self-path (metadata/id->path config-path config (:xt/id self))
                           :on        [on-k trigger]
                           ;; trigger-idx might be 0, but on-k might not be a vec because
-                          ;; call-all-triggers and update-schedules do map-indexed over x-or-xs
+                          ;; call-all-triggers and update-schedules do map-indexed over one-or-many
                           :on-path   (if (vector? (get self on-k))
                                        [on-k trigger-idx]
                                        [on-k])}

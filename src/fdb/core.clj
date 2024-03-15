@@ -64,7 +64,7 @@
                     :node        node
                     :db          (xt/db node)}]
       (some->> id-or-ids
-               u/x-or-xs->xs
+               u/one-or-many
                not-empty
                (u/side-effect->> (fn [ids]
                                    (when-some [ids' (->> ids
