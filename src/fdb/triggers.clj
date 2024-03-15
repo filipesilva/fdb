@@ -388,3 +388,5 @@
 ;;   - probably not, as they are ran async by default
 ;; - some way to replay the log for repl filesq
 ;; - maybe :fdb/tags and :fdb.on/tags? cool with readers adding tags
+;; - would be cool to render ids in markdown for markdown query
+;; - add timestamp to repl output, and prepend instead of append

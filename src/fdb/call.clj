@@ -95,3 +95,5 @@
 ;;   - would be really easy to make and iterate over small scripts
 ;;   - string type, for id, would be straightforward
 ;;   - put call arg in a binding
+;;   - :load k on call-spec, loads a clj before calling trigger
+;;   - if you don't want to load it all the time, make a lib, add to extra-deps

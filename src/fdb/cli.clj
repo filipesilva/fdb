@@ -161,3 +161,10 @@
 ;; - is it worth to have sync/call/trigger in the cli while they could be called from the repl/repl-file?
 ;; - cli could always be a bb script, that calls repl/clojure when needed
 ;; - fdbb cli for a bb repl script
+;;   - maybe not worth it, if repl file is a core part of workflow
+;; - fdb init
+;;   - makes cfg at folder
+;;   - folder is provided `fdb init .` or defaults to ~
+;;   - --demo flag adds demo folder to mounts
+;;   - use demo files in tests
+;;   - maybe always make some fdb folder with a query and repl file
