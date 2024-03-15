@@ -97,3 +97,4 @@
 ;;   - put call arg in a binding
 ;;   - :load k on call-spec, loads a clj before calling trigger
 ;;   - if you don't want to load it all the time, make a lib, add to extra-deps
+;;   - this is the wrong idea: instead I declare stuff in a repl file and ensure it's loaded at startup too
