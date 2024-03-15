@@ -1,5 +1,5 @@
 (ns fdb.cli
-  (:refer-clojure :exclude [sync])
+  (:refer-clojure :exclude [sync read])
   (:require
    [clojure.core.async :refer [<!! >!! chan close! go-loop sliding-buffer]]
    [babashka.cli :as cli]
@@ -63,29 +63,35 @@
     @(promise)))
 
 (defn apply-repl-or-local
-  [config-path refresh? sym & args]
-  (if (repl/has-server? config-path)
-    (do
-      (when refresh?
-        (repl/apply config-path 'fdb.repl/refresh))
-      ;; Note: adds config-path as first arg, because sync/call need it
-      (apply repl/apply config-path sym config-path args))
-    (let [f (requiring-resolve sym)]
-      (apply f args))))
+  [m sym & args]
+  (let [config-path (config-path m)
+        refresh?    (-> m :opts :refresh)]
+    (if (repl/has-server? config-path)
+      (do
+        (when refresh?
+          (repl/apply config-path 'fdb.repl/refresh))
+        ;; Note: adds config-path as first arg, because sync/call need it
+        (apply repl/apply config-path sym config-path args))
+      (let [f (requiring-resolve sym)]
+        (apply f args)))))
 
 (defn sync [m]
   (log-to-file! m)
-  (apply-repl-or-local (config-path m) (-> m :opts :refresh) 'fdb.core/sync)
+  (apply-repl-or-local m 'fdb.core/sync)
   ;; Don't wait for 1m for futures thread to shut down.
   ;; See https://clojuredocs.org/clojure.core/future
   (shutdown-agents))
 
 (defn call [{{:keys [id-or-path sym args-xf]} :opts :as m}]
   (log-to-file! m)
-  (log/info (apply-repl-or-local (config-path m) (-> m :opts :refresh)
-                                 'fdb.core/call
+  (log/info (apply-repl-or-local m 'fdb.core/call
                                  (str (fs/absolutize id-or-path)) sym
                                  (when args-xf {:args-xf args-xf})))
+  (shutdown-agents))
+
+(defn read [m]
+  (log-to-file! m)
+  (apply-repl-or-local m 'fdb.core/read (str (fs/cwd)) (-> m :opts :pattern))
   (shutdown-agents))
 
 (defn refresh [m]
@@ -147,6 +153,7 @@
    {:cmds ["reference"] :fn reference}
    {:cmds ["refresh"]   :fn refresh}
    {:cmds ["sync"]      :fn sync}
+   {:cmds ["read"]      :fn read :args->opts [:pattern]}
    {:cmds ["call"]      :fn call
     :args->opts [:id-or-path :sym :args-xf]
     :coerce {:sym :symbol :args-xf :edn}}])

@@ -1,8 +1,9 @@
 (ns fdb.core
   "A hackable database environment for your file library."
-  (:refer-clojure :exclude [sync])
+  (:refer-clojure :exclude [sync read])
   (:require
    hashp.core
+   [babashka.fs :as fs]
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -233,6 +234,17 @@
           args-xf))
         (log/error "id not found" id-or-path)))))
 
+(defn read
+  "Force a read of pattern on root. Useful when updating readers."
+  [config-path root pattern]
+  (log/info "reading" pattern)
+  (with-fdb [config-path config node]
+    (->> (watcher/glob config root :pattern pattern)
+         (map fs/absolutize)
+         (map (partial metadata/path->id config-path config))
+         (remove nil?)
+         (update! config-path config node))))
+
 ;; TODO:
 ;; - consider java-time.api instead of tick
 ;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
@@ -248,11 +260,6 @@
 ;; - ensure sync/call work over running watch, otherwise can't have a live env in lisp terms
 ;;   - maybe just connect via the repl, and call sync/call
 ;;   - then watch just stores the current node in an atom, and sync/call use it if available
-;; - fdb sync --update /foo/bar/*.md
-;;   - handy for when you add a reader
-;;   - or just diff previous and current config, check which ids match changed readers, re-read
-;;   - still might want a way to force a read when updating libs and such
-;;   - maybe fdb read path-or-glob, reads paths again, only puts changed ones
 ;; - call should be able to call existing triggers, pretending to be them
 ;;   - fdb call id "[:fdb.on/schedule 0]"
 ;;   - might need to be call-trigger?

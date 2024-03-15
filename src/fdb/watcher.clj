@@ -60,12 +60,12 @@
 
 (defn glob
   "Returns all files in file-or-dir matching glob pattern."
-  [config file-or-dir]
+  [config file-or-dir & {:keys [pattern] :or {pattern "**"}}]
   (when (fs/exists? file-or-dir)
     (let [[file dir relative] (file-dir-relative file-or-dir)
           ignore-list         (config->ignore-list config)]
       (->> (if file
              [file]
-             (fs/glob dir "**"))
+             (fs/glob dir pattern))
            (mapv relative)
            (filterv (complement (partial ignore? ignore-list)))))))

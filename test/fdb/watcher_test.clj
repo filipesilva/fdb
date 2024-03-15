@@ -42,3 +42,10 @@
         (u/spit f1 "1")
         (is (u/eventually (spy/called-with? update-fn "f1.txt")))
         (is (u/eventually (spy/called-n-times? update-fn 1)))))))
+
+(deftest glob
+  (with-temp-dir [dir {}]
+    (u/spit dir "f1.txt" "")
+    (u/spit dir "f2.txt" "")
+    (is (= ["f1.txt" "f2.txt"] (sut/glob {} dir)))
+    (is (= ["f1.txt"] (sut/glob {} dir :pattern "*1.txt")))))
