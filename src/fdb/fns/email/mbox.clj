@@ -49,3 +49,4 @@
     (fs/delete-tree to-folder-path)
     (mbox->eml mbox-path to-folder-path)))
 
+;; - make a version usable in reader, or just call from repl file

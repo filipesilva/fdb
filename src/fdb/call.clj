@@ -84,10 +84,4 @@
   (clojure.core/apply (to-fn call-spec) args))
 
 ;; TODO:
-;; - apply doesn't work quite like clojure.core/apply, which means I can't use it in fdb/call
-;;   - calling (apply identity [1]) and (clojure.core/apply identity [1]) have different results
-;; - maybe support fdb/call style arg mapping in call-spec?
-;;   - {:call 'u/slurp-edn :args-xf [self-path]}
-;;   - instead of '(fn [x] (-> x :self-path u/slurp-end))
-;;   - tbh since that's special syntax vs normal fn, it's worse
 ;; - maybe get rid of eval-under-call-args and just replace bindings with kws

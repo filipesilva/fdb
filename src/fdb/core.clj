@@ -9,7 +9,6 @@
    [clojure.edn :as edn]
    [clojure.repl.deps :as deps]
    [clojure.string :as str]
-   [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
@@ -221,27 +220,6 @@
                                     (<!! control-ch)))
                            (log/info "shutdown")))))]
     (u/closeable {:wait #(<!! process-ch)} stop!)))
-
-(defn call
-  "Call call-spec over id-or-path in fdb. Returns the result of the call.
-  Optionally receives a args-xf that will be eval'ed with bindings for config-path, doc-path,
-  self-path, and call-arg, and should return a vector of args to apply to call-spec."
-  [config-path id-or-path call-spec & {:keys [args-xf] :or {args-xf ['call-arg]}}]
-  (with-fdb [config-path config node]
-    (let [[id path] (when-some [id (metadata/path->id config-path config id-or-path)]
-                      [id (metadata/id->path config-path config id)])]
-      (if id
-        (apply
-         (call/to-fn call-spec)
-         (call/eval-under-call-arg
-          {:config-path config-path
-           :config      config
-           :node        node
-           :db          (xt/db node)
-           :self        (when id (db/pull node id))
-           :self-path   path}
-          args-xf))
-        (log/error "id not found" id-or-path)))))
 
 (defn read
   "Force a read of pattern on root. Useful when updating readers."

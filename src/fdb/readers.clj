@@ -37,8 +37,4 @@
 ;; - should the shell to-fn work as a reader?
 ;;   - a bit up in the air how the output would be processed... parse edn I guess
 ;; - support ext like .foo.bar, fs/split-ext doesn't work for that
-;; - fdb.on/read on metadata can add more readers
-;; - use reader to create new files e.g. mailbox split, then get rid of `fdb call`
-;;   - watch centered flow
-;;   - also do it for csvs
-;;   - still need fdb read I think tho
+;; - fdb.on/read on metadata can add more readers, used for testing

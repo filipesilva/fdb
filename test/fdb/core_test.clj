@@ -183,35 +183,6 @@
                 (get-in [:fdb.on/modify :count])
                 (= 4)))))))
 
-(deftest make-me-a-call
-  (with-temp-fdb-config [config-path mount-path]
-    (let [f     (str (fs/path mount-path "one"))
-          fm    (fs/path mount-path "one.metadata.edn")
-          no-db #(dissoc % :node :db) ;; doesn't compare well
-          _     (u/spit fm {:foo "bar"})
-          self  {:xt/id        "/test/one"
-                 :fdb/modified (metadata/modified fm)
-                 :foo          "bar"}]
-      (fdb/sync config-path)
-      ;; exists
-      (is (= (no-db (fdb/call config-path f identity))
-             (no-db (fdb/call config-path fm identity))
-             (no-db (fdb/call config-path "/test/one" identity))
-             {:config-path config-path
-              :config      (u/slurp-edn config-path)
-              :self        self
-              :self-path   f}))
-      ;; doesn't exist, but mount-path is recognized
-      (is (= (no-db (fdb/call config-path "/test/two" identity))
-             {:config-path config-path
-              :config      (u/slurp-edn config-path)
-              :self        nil
-              :self-path   (str (fs/path mount-path "two"))}))
-      ;; doesn't exist and mount-path is not recognized
-      (is (nil? (no-db (fdb/call config-path "/foo/bar" identity))))
-      ;; supports args
-      (is (=  2 (fdb/call config-path "/test/one" + :args-xf [1 1]))))))
-
 (def blocking-ch nil)
 
 (defn blocking-fn [_]
@@ -221,16 +192,17 @@
   (with-temp-fdb-config [config-path mount-path]
     (let [f       (str (fs/path mount-path "one.metadata.edn"))
           f-id    "/test/one"
-          all-ids #(->> % :node db/all (map :xt/id) set)]
+          all-ids #(fdb/with-fdb [config-path _ node]
+                     (->> node db/all (map :xt/id) set))]
 
       ;; starts empty
       (fdb/sync config-path)
-      (is (empty (fdb/call config-path f all-ids)))
+      (is (empty (all-ids)))
 
       ;; updates
       (u/spit f {})
       (fdb/sync config-path)
-      (is (= #{f-id} (fdb/call config-path f all-ids)))
+      (is (= #{f-id} (all-ids)))
 
       ;; blocks on sync calls
       (with-redefs [blocking-ch (chan)]
@@ -244,7 +216,7 @@
 
       ;; deletes
       (fs/delete f)
-      (is (empty (fdb/call config-path f all-ids))))))
+      (is (empty (all-ids))))))
 
 (deftest make-me-a-reader-db
   (with-temp-fdb-config [config-path mount-path]
@@ -253,7 +225,8 @@
           f-id  "/test/one.my-edn"
           get-f (fn []
                   (fdb/sync config-path)
-                  (fdb/call config-path f #(-> % :node (db/pull f-id))))]
+                  (fdb/with-fdb [config-path _ node]
+                    (db/pull node f-id)))]
       (is (empty? (get-f)))
       (u/spit-edn f {:one 1})
       (is (= {:xt/id        f-id

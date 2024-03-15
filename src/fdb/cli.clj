@@ -82,13 +82,6 @@
   ;; See https://clojuredocs.org/clojure.core/future
   (shutdown-agents))
 
-(defn call [{{:keys [id-or-path sym args-xf]} :opts :as m}]
-  (log-to-file! m)
-  (log/info (apply-repl-or-local m 'fdb.core/call
-                                 (str (fs/absolutize id-or-path)) sym
-                                 (when args-xf {:args-xf args-xf})))
-  (shutdown-agents))
-
 (defn read [m]
   (log-to-file! m)
   (apply-repl-or-local m 'fdb.core/read (str (fs/cwd)) (-> m :opts :pattern))
@@ -150,13 +143,10 @@
 (def table
   [{:cmds []            :fn help :spec spec}
    {:cmds ["watch"]     :fn watch-and-block}
-   {:cmds ["reference"] :fn reference}
-   {:cmds ["refresh"]   :fn refresh}
    {:cmds ["sync"]      :fn sync}
    {:cmds ["read"]      :fn read :args->opts [:pattern]}
-   {:cmds ["call"]      :fn call
-    :args->opts [:id-or-path :sym :args-xf]
-    :coerce {:sym :symbol :args-xf :edn}}])
+   {:cmds ["refresh"]   :fn refresh}
+   {:cmds ["reference"] :fn reference}])
 
 (defn -main [& args]
   (cli/dispatch table args))
