@@ -94,7 +94,8 @@
                                         ;; metadata overrides reader data, id overrides all
                                         (readers/read call-arg')
                                         metadata
-                                        {:xt/id id})])
+                                        {:xt/id      id
+                                         :fdb/parent (-> id fs/parent str)})])
                            [::xt/delete id]))))
                (xt/submit-tx node)))))
 
@@ -271,28 +272,6 @@
 ;; - bulk change config-file-path to config-path
 ;; - rename fdb.fns to fdb.ext
 ;; - maybe call-arg stuff should be in fdb.call, with a bit more structure...
-;; - use a separator at the end of id to allow for inner data, synthetic ids
-;;   - userful for csv, line ranges, functions
-;;   - # is allowed in file names
-;;   - : is not allowed in file names
-;;   - / vibes well with nesting already
-;;   - I think / wins, just the best semantics for a filesystem based thing
-;;   - also good for KG blocks, and fits the nested abstraction
-;;   - allow read to return one-or-many
-;;     - then add :fdb/parent prop, direct parent
-;;     - when removing a file, also remove backrefs to :parent
-;;     - or just :fdb/src, for files whose source is another file
-;;       - handles both delete and modify
-;;       - on modify, query for source backref and delete them
-;;       - adds a query to every modify and delete tho...
-;;     - think I want both even
-;;     - I think I don't want synthetic ids after all...
-;;       - can't ref them in obs
-;;       - already can make them by just outputting the files like with mailbox
-;;         - maybe what's missing is is to output it on the reader tho
-;;         - not sure how sending 10gig worth of reader return would work...
-;;         - but easy to just do the write as a side effect
-;;       - super easy to output file or metatada or both
 ;; - what's a google search over all docs like?
 ;;   - not just a query
 ;;   - maybe its grep over the disk files

@@ -33,11 +33,13 @@
         (testing "updates from content and metadata files separately"
           (u/spit f "")
           (is (u/eventually (= #{{:xt/id        "/test/file.txt"
-                                  :fdb/modified (metadata/modified f)}}
+                                  :fdb/modified (metadata/modified f)
+                                  :fdb/parent   "/test"}}
                                (db/all node))))
           (u/spit fm {:foo "bar"})
           (is (u/eventually (= #{{:xt/id        "/test/file.txt"
                                   :fdb/modified (metadata/modified fm)
+                                  :fdb/parent   "/test"
                                   :foo          "bar"}}
                                (db/all node)))))
         (reset! snapshot (db/all node)))
@@ -52,6 +54,7 @@
           (fs/delete f)
           (is (u/eventually (= #{{:xt/id        "/test/file.txt"
                                   :fdb/modified (metadata/modified fm)
+                                  :fdb/parent   "/test"
                                   :foo          "bar"}}
                                (db/all node)))))
         (testing "deletes"
@@ -231,16 +234,19 @@
       (u/spit-edn f {:one 1})
       (is (= {:xt/id        f-id
               :fdb/modified (metadata/modified f)
+              :fdb/parent   "/test"
               :one          1}
              (get-f)))
       (u/spit-edn f-md {:two 2})
       (is (= {:xt/id        f-id
               :fdb/modified (metadata/modified f-md)
+              :fdb/parent   "/test"
               :one          1
               :two          2}
              (get-f)))
       (u/spit-edn f-md {:one 2})
       (is (= {:xt/id        f-id
               :fdb/modified (metadata/modified f-md)
+              :fdb/parent   "/test"
               :one          2}
              (get-f))))))
