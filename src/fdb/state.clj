@@ -13,3 +13,6 @@
 
 ;; Used by fdb.cli/watch-and-block and fdb.cli/restart-watch!
 (defonce *watch-ch (atom nil))
+
+;; TODO:
+;; - use clj-reload, move state to ns that use it

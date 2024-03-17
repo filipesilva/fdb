@@ -5,6 +5,7 @@
    [babashka.fs :as fs]
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.string :as str]
    [puget.printer :as puget]
    [taoensso.timbre :as log]
@@ -278,6 +279,14 @@
   "Returns file path of the current file."
   []
   `(:file (meta (defn foo# []))))
+
+(defn fdb-src
+  "Returns fdb source path."
+  []
+  (-> (io/resource "file.txt")
+      (fs/path  "../")
+      fs/normalize
+      str))
 
 ;; TODO:
 ;; - str-path fn

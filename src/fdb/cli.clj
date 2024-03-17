@@ -4,14 +4,15 @@
    [clojure.core.async :refer [<!! >!! chan close! go-loop sliding-buffer]]
    [babashka.cli :as cli]
    [babashka.fs :as fs]
+   [fdb.config :as config]
    [fdb.repl :as repl]
    [fdb.state :as state]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [taoensso.timbre.appenders.core :as appenders]))
 
-(defn config-path [m]
-  (-> m :opts :config fs/absolutize str))
+(defn config-file [{{:keys [config]} :opts}]
+  (config/file config))
 
 ;; Not sure if this is the best way to set the log file,
 ;; but had trouble using log/with-merged-config before together with core.async stuff
@@ -19,9 +20,9 @@
 ;; The trouble was some logs would not show up in the log file, even tho they
 ;; showed up in the console.
 (defn- log-to-file!
-  [m]
-  (let [path      (u/sibling-path (config-path m) "fdb.log")
-        min-level (if (-> m :opts :debug) :debug :info)]
+  [{{:keys [debug]} :opts :as m}]
+  (let [path      (u/sibling-path (config-file m) "fdb.log")
+        min-level (if debug :debug :info)]
     (log/merge-config! {:min-level min-level
                         :appenders {:spit (appenders/spit-appender {:fname path})}})))
 
@@ -29,13 +30,27 @@
   [f]
   (.addShutdownHook (Runtime/getRuntime) (Thread. f)))
 
+(defn init [{{:keys [dir demo]} :opts :as m}]
+  (log-to-file! m)
+  (let [path (config/new-file dir)]
+    (if (fs/exists? path)
+      (log/error path "already exists!")
+      (do
+        (u/spit-edn path (cond-> {:db-path    "./db"
+                                  :mounts     {}
+                                  :readers    {}
+                                  :extra-deps {}
+                                  :load       []}
+                           demo (assoc-in [:mounts :demo]
+                                          (u/sibling-path (u/fdb-src) "demo"))))
+        (log/info "created new config at" path)))))
+
 (defn watch [m]
   (log-to-file! m)
   (log/info "starting fdb in watch mode")
   ;; only load everything when we need it, so we can have fast call and sync
-  (let [config-path    (-> m :opts :config fs/absolutize str)
-        watch-config   (requiring-resolve 'fdb.core/watch-config)]
-    (watch-config config-path)))
+  (let [watch-config (requiring-resolve 'fdb.core/watch-config)]
+    (watch-config (config-file m))))
 
 (defn restart-watch! []
   (>!! @state/*watch-ch :restart))
@@ -63,15 +78,14 @@
     @(promise)))
 
 (defn apply-repl-or-local
-  [m sym & args]
-  (let [config-path (config-path m)
-        refresh?    (-> m :opts :refresh)]
-    (if (repl/has-server? config-path)
+  [{{:keys [refresh]} :opts :as m} sym & args]
+  (let [config-file (config-file m)]
+    (if (repl/has-server? config-file)
       (do
-        (when refresh?
-          (repl/apply config-path 'fdb.repl/refresh))
-        ;; Note: adds config-path as first arg, because sync/call need it
-        (apply repl/apply config-path sym config-path args))
+        (when refresh
+          (repl/apply config-file 'fdb.repl/refresh))
+        ;; Note: adds config-file as first arg, because sync/call need it
+        (apply repl/apply config-file sym config-file args))
       (let [f (requiring-resolve sym)]
         (apply f args)))))
 
@@ -82,55 +96,30 @@
   ;; See https://clojuredocs.org/clojure.core/future
   (shutdown-agents))
 
-(defn read [m]
+(defn read [{{:keys [pattern]} :opts :as m}]
   (log-to-file! m)
-  (apply-repl-or-local m 'fdb.core/read (str (fs/cwd)) (-> m :opts :pattern))
+  (apply-repl-or-local m 'fdb.core/read (str (fs/cwd)) pattern)
   (shutdown-agents))
 
 (defn refresh [m]
   (log-to-file! m)
-  (let [config-path (config-path m)]
-    (when-not (repl/has-server? config-path)
+  (let [config-file (config-file m)]
+    (when-not (repl/has-server? config-file)
       (log/error "no repl server running, can't refresh")
       (System/exit 1))
     (log/info "refreshing source code and restarting watch")
-    (repl/apply config-path 'fdb.repl/refresh)
+    (repl/apply config-file 'fdb.repl/refresh)
     ;; Couldn't get below to work, so doing it manually
-    ;;   (repl/apply config-path 'fdb.repl/refresh :after fdb.cli/restart-watch!)
-    (repl/apply config-path 'fdb.cli/restart-watch!)
+    ;;   (repl/apply config-file 'fdb.repl/refresh :after fdb.cli/restart-watch!)
+    (repl/apply config-file 'fdb.cli/restart-watch!)
     (shutdown-agents)))
-
-(defn repl [m]
-  (assoc m :fn :repl))
-
-(defn reference [_]
-  (println
-"{:xt/id           \"/example/doc.txt\"
- :fdb/modified    \"2021-03-21T20:00:00.000-00:00\"
- :fdb/refs        #{\"/test/two.txt\"
-                    \"/test/three.txt\"
-                    \"/test/folder\"}
- :fdb.on/modify   println ;; same as {:call println}
- :fdb.on/refs     [println] ;; can pass a single one or a vec
- :fdb.on/pattern  {:glob \"/test/*.txt\"
-                   :call println} ;; you can pass in extra properties on this map
- :fdb.on/query    {:q    [:find ?e :where [?e :file/modified ?m]]
-                   :path \"./query-results.edn\"
-                   :call println}
- :fdb.on/tx       println
- :fdb.on/schedule {:cron \"0 0 0 * * ?\" ;; https://crontab.guru/
-                   ;; or :every [1 :seconds]
-                   :call println}
- :fdb.on/startup  println
- :fdb.on/shutdown println}"))
 
 (defn help [m]
   #_(assoc m :fn :help)
   (println "help!"))
 
 (def spec {:config {:desc    "The FileDB config file."
-                    :alias   :c
-                    :default "fdbconfig.edn"}
+                    :alias   :c}
            :debug  {:desc    "Print debug info."
                     :alias   :d
                     :default false
@@ -142,23 +131,26 @@
 
 (def table
   [{:cmds []            :fn help :spec spec}
+   {:cmds ["init"]      :fn init :args->opts [:dir]}
    {:cmds ["watch"]     :fn watch-and-block}
    {:cmds ["sync"]      :fn sync}
    {:cmds ["read"]      :fn read :args->opts [:pattern]}
-   {:cmds ["refresh"]   :fn refresh}
-   {:cmds ["reference"] :fn reference}])
+   {:cmds ["refresh"]   :fn refresh}])
 
 (defn -main [& args]
   (cli/dispatch table args))
 
 ;; TODO:
-;; - reference metadata, reference config
 ;; - resolve fdbconfig.edn up from current dir, like node_modules
-;; - fdb example outputs config, files, etc, readme uses it
 ;; - is it worth to have sync/call/trigger in the cli while they could be called from the repl/repl-file?
+;;   - sync I think always makes sense for the not-watch usecase
+;;   - call is gone, trigger doesn't exist and we can debug stuff better than that
+;;   - refresh I think could go away, and be called from repl instead
 ;; - cli could always be a bb script, that calls repl/clojure when needed
-;; - fdbb cli for a bb repl script
-;;   - maybe not worth it, if repl file is a core part of workflow
+;;   - would need a way to start the java process with a repl, which sounds doable
+;;   - would also need to pipe out to this process
+;;   - the config watch and blocking stuff would need to move to the core too
+;;     - might even simplify it
 ;; - fdb init
 ;;   - makes cfg at folder
 ;;   - folder is provided `fdb init .` or defaults to ~
