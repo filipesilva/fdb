@@ -288,6 +288,25 @@
       fs/normalize
       str))
 
+(defn as-comments
+  "Return s as a clojure comment."
+  [s & {:keys [prefix]}]
+  (let [first-line (str ";; " prefix)
+        other-lines (str ";; " (apply str (repeat (count prefix) " ")))]
+    (str first-line (str/replace s #"\n(?!\Z)" (str "\n" other-lines)))))
+
+(defn eval-to-comment
+  "Eval form to a comment string."
+  [form]
+  (let [*val        (atom nil)
+        out-and-err (with-out-str
+                      (binding [*ns*  (create-ns 'user)
+                                *err* *out*]
+                        (reset! *val (load-string form))))]
+    (str
+     (when-not (empty? out-and-err) (as-comments out-and-err))
+     (as-comments (edn-str @*val) :prefix "=> "))))
+
 ;; TODO:
 ;; - str-path fn
 ;; - the watch-config and watch-and-block loop are very similar

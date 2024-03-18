@@ -12,12 +12,12 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
-   [fdb.repl :as repl]
    [fdb.state :as state]
    [fdb.triggers :as triggers]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
+   [nrepl.server :as nrepl-server]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
@@ -247,7 +247,14 @@
                                ;; Don't wait for 1m for futures thread to shut down.
                                ;; See https://clojuredocs.org/clojure.core/future
                                (shutdown-agents))))
-  (repl/start-server config-path (-> config-path slurp edn/read-string :repl))
+  (let [opts      (merge {:port 2525}
+                         (-> config-path slurp edn/read-string :repl))
+        ;; Like nrepl.cmdline/save-port-file, but next to the config file.
+        port-file (-> config-path (u/sibling-path ".nrepl-port") fs/file)]
+    (.deleteOnExit ^java.io.File port-file)
+    (nrepl-server/start-server opts)
+    (log/info "nrepl server running at" (:port opts))
+    (spit port-file (:port opts)))
   @(promise))
 
 ;; TODO:

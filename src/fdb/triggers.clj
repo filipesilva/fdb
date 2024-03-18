@@ -7,7 +7,6 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.repl :as repl]
    [fdb.state :as state]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
@@ -242,7 +241,7 @@
      config-path config id
      "repl" "outputs" "clj" true
      #(log/info "sending" id "to repl, outputs in" %)
-     #(repl/load config-path (metadata/id->path config-path config id) %))))
+     #(str % "\n" (u/eval-to-comment %) "\n"))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."

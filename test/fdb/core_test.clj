@@ -121,7 +121,7 @@
                (update :fdb.on/schedule #(when % true))
                (update :fdb.on/tx #(min 5 %)))))))
 
-(deftest make-me-a-fdb-query
+(deftest make-me-a-query-fdb
   (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
       (u/spit mount-path "one.txt" "")
@@ -158,6 +158,23 @@
                   u/read-edn
                   (map first)
                   set))))))
+
+(deftest make-me-a-repl-fdb
+  (with-temp-fdb-config [config-path mount-path]
+    (fdb/with-watch [config-path node]
+      (u/spit mount-path "repl.fdb.clj" "(inc 1)")
+      (u/eventually (u/slurp mount-path "repl-outputs.fdb.clj"))
+      (is (= "(inc 1)\n;; => 2\n\n"
+             (u/slurp mount-path "repl-outputs.fdb.clj")))
+      (let [form-with-out-and-err "
+(println 1)
+(binding [*out* *err*]
+  (println 2))
+(inc 2)"]
+        (u/spit mount-path "2repl.fdb.clj" form-with-out-and-err)
+        (u/eventually (u/slurp mount-path "2repl-outputs.fdb.clj"))
+        (is (= (str form-with-out-and-err "\n;; 1\n;; 2\n;; => 3\n\n")
+               (u/slurp mount-path "2repl-outputs.fdb.clj")))))))
 
 (def ignore-calls (atom 0))
 
