@@ -7,7 +7,7 @@
    [fdb.utils :as u]
    [tick.core :as t]))
 
-(def default-metadata-ext "metadata.edn")
+(def default-metadata-ext "meta.edn")
 
 (defn metadata-path? [f]
   (-> f (fs/split-ext {:ext default-metadata-ext}) second))
@@ -113,4 +113,3 @@
 ;; TODO:
 ;; - lots of stuff here, mount stuff, should be in a config ns
 ;;   - cleaned up too, mount vs mount-spec
-;; - change .metadata.edn to just .meta.edn? clojure-like

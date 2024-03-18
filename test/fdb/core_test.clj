@@ -15,7 +15,7 @@
   [[config-path mount-path] & body]
   `(with-temp-dir [dir# {}]
      (let [~mount-path  (str dir# "/test")
-           ~config-path (str dir# "/metadata.edn")]
+           ~config-path (str dir# "/meta.edn")]
        (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./db"
                              :mounts  {:test "./test"}
@@ -26,7 +26,7 @@
 (deftest make-me-a-fdb
   (with-temp-fdb-config [config-path mount-path]
     (let [f        (fs/path mount-path "file.txt")
-          fm       (fs/path mount-path "file.txt.metadata.edn")
+          fm       (fs/path mount-path "file.txt.meta.edn")
           snapshot (atom nil)]
       (fdb/with-watch [config-path node]
         (is (empty? (db/all node)))
@@ -70,7 +70,7 @@
   (reset! calls [])
   (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
-      (u/spit mount-path "file.txt.metadata.edn"
+      (u/spit mount-path "file.txt.meta.edn"
               {:fdb/refs        #{"/test/one.md"
                                   "/test/folder/two.md"}
                :fdb.on/modify   'fdb.core-test/log-call
@@ -186,7 +186,7 @@
   (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
       (let [id  "/test/one"
-            f (fs/path mount-path "one.metadata.edn")]
+            f (fs/path mount-path "one.meta.edn")]
         (u/spit-edn f {:fdb.on/modify {:call  'fdb.core-test/ignore-log-call
                                        :count 1}})
         (is (u/eventually (= 1 @ignore-calls)))
@@ -210,7 +210,7 @@
 
 (deftest make-me-a-sync
   (with-temp-fdb-config [config-path mount-path]
-    (let [f       (str (fs/path mount-path "one.metadata.edn"))
+    (let [f       (str (fs/path mount-path "one.meta.edn"))
           f-id    "/test/one"
           all-ids #(fdb/with-fdb [config-path _ node]
                      (->> node db/all (map :xt/id) set))]
@@ -241,7 +241,7 @@
 (deftest make-me-a-reader-db
   (with-temp-fdb-config [config-path mount-path]
     (let [f     (str (fs/path mount-path "one.my-edn"))
-          f-md  (str (fs/path mount-path "one.my-edn.metadata.edn"))
+          f-md  (str (fs/path mount-path "one.my-edn.meta.edn"))
           f-id  "/test/one.my-edn"
           get-f (fn []
                   (fdb/sync config-path)
