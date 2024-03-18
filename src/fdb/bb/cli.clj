@@ -58,14 +58,17 @@
   (let [path (config/new-path dir)]
     (if (fs/exists? path)
       (log/error path "already exists!")
-      (do
+      (let [fdb-demo-path (fs/path (u/fdb-root) "demo")
+            demo-path     (u/sibling-path path "fdb-demo")]
+        (when demo
+          (fs/copy-tree fdb-demo-path demo-path {:replace-existing true})
+          (log/info "created demo folder at" demo-path))
         (u/spit-edn path (cond-> {:db-path    "./db"
                                   :mounts     {}
                                   :readers    {}
                                   :extra-deps {}
                                   :load       []}
-                           demo (assoc-in [:mounts :demo]
-                                          (-> (u/fdb-root) (fs/path "demo") str))))
+                           demo (assoc-in [:mounts :demo] demo-path)))
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]
