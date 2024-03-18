@@ -224,6 +224,14 @@
     (reset! state/*config-watcher (u/closeable process-ch stop!))
     (<!! process-ch)))
 
+(defn restart-watch-config!
+  "Restarts watch-config! with current config-path.
+  Useful after a code reload."
+  []
+  (let [config-path (:config-path @state/*fdb)]
+    (some-> @state/*config-watcher .close)
+    (future (watch-config! config-path))))
+
 (defn read
   "Force a read of pattern on root. Useful when updating readers."
   [config-path root pattern]

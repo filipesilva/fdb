@@ -335,10 +335,10 @@
    :db          xtdb db value at the time of the tx
    :tx          the tx
    :on          the trigger being called as [fdb.on/k trigger]
-   :on-path     get path inside self for trigger as [fdb.on/k 1]
+   :on-path     get-in path inside self for trigger as [fdb.on/k 1]
    :self        the doc that has the trigger being called
    :self-path   on-disk path for self
-   :doc         the doc the tigger is being called over, if any
+   :doc         the doc the trigger is being called over, if any
    :doc-path    on-disk path for doc, if any
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"

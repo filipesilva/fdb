@@ -23,16 +23,17 @@
 
 (defmulti to-fn
   "Takes call-spec and returns a function that takes a call-arg.
-  call-specs are dispatched by type of x, or if it's a keyword, the kw itself:
+  call-specs are dispatched by type of x, or by keyword if it's
+  a vector with a keyword first element:
   - map     Use :call key to resolve fn
-  - vector  Use first element to resolve fn
   - symbol  Resolves and returns the var
   - list    Evaluates and returns the result
   - :sh     Runs shell command via babashka.process/shell
             You can use the shell option map, and the config-path,
             doc-path and self-path bindings."
   (fn [call-spec]
-    (if (vector? call-spec)
+    (if (and (vector? call-spec)
+             (keyword? (first call-spec)))
       (first call-spec)
       (type call-spec))))
 

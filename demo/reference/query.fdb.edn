@@ -1,0 +1,7 @@
+;; When you save this file it will be be used as a query, and the result will
+;; be printed to query-output.fdb.edn
+;; See https://v1-docs.xtdb.com/language-reference/datalog-queries/ for query syntax
+
+;; Find all data for files in this directory
+{:find  [(pull e [*])]
+ :where [[e :fdb/parent "/demo/reference"]]}
