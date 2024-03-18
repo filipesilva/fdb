@@ -10,7 +10,6 @@
    [nrepl.server :as server]
    [taoensso.timbre :as log]))
 
-
 (def default-opts {:port 2525})
 
 (defn port-file [config-path]
@@ -23,30 +22,11 @@
     (.deleteOnExit ^java.io.File f)
     (spit f port)))
 
-(defn has-server? [config-path]
-  (fs/exists? (port-file config-path)))
-
 (defn connect
   [config-path]
   (let [config (u/slurp-edn config-path)
         opts   (merge default-opts (:nrepl config))]
     (nrepl/connect opts)))
-
-(defn apply
-  [config-path sym & args]
-  (with-open [conn (connect config-path)]
-    (let [code  (format "(clojure.core/apply (requiring-resolve '%s) %s)" sym (vec args))
-          _     (log/debug "apply" code)
-          resp  (-> (nrepl/client conn 15000)
-                    (nrepl/message {:op "eval" :code code})
-                    doall)
-          value (first (nrepl/response-values resp))]
-      (log/debug resp)
-      (log/debug value)
-      (doseq [{:keys [out err]} resp]
-        (when out (log/info (str/trim-newline out)))
-        (when err (log/error (str/trim-newline err))))
-      value)))
 
 (defn as-comments
   [s & {:keys [prefix]}]
@@ -81,20 +61,18 @@
   [config-path nrepl]
   (let [opts   (merge default-opts nrepl)
         server (server/start-server opts)]
-    (save-port-file config-path opts)
     (log/info "nrepl server running at" (:port opts))
+    (save-port-file config-path opts)
     server))
 
 (def refresh ns/refresh)
 
 (comment
   (def config-path "tmp/fdbconfig.edn")
-  (has-server? config-path)
-  (apply config-path 'clojure.core/+ 1 2)
-  (apply config-path 'clojure.core/println "foo\nbar\nbaz")
-  (apply config-path 'clojure.core/merge {:a 1 :b 2} {:c 3})
-  (apply config-path 'clojure.core// 1 0)
-
   (load config-path "tmp/load.clj" "tmp/load.log")
 
   )
+
+;; TODO:
+;; - can I do repl/load in triggers in a simpler way?
+;;   - just via eval with out/err bindings

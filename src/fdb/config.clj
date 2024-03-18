@@ -5,7 +5,7 @@
 
 (def filename "fdbconfig.edn")
 
-(defn new-file
+(defn new-path
   "Returns file path for a new config file."
   [path]
   (-> (if (u/catch-nil (fs/directory? path))
@@ -16,7 +16,7 @@
       fs/normalize
       str))
 
-(defn file
+(defn path
   "Returns path if it's a file, otherwise looks for the config file in
   path, current dir, and home dir. Returns nil if none was found"
   [path]
@@ -31,4 +31,3 @@
 
 ;; TODO:
 ;; - move all the config fns scattered around here instead
-;; - config-path or config-file everywhere?

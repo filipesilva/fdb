@@ -165,11 +165,9 @@
 (defn watch
   "Call f inside a watching fdb."
   [config-path f]
+  (log/info "starting fdb in watch mode")
   (with-fdb [config-path {:keys [mounts repl] :as config} node]
     (tr.ignore/clear config-path)
-    (when (and (not (false? repl))
-               (not (repl/has-server? config-path)))
-      (repl/start-server config-path repl))
     (triggers/call-all-k config-path config node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
                                            {::xt/event-type ::xt/indexed-tx
@@ -200,17 +198,14 @@
   [[config-path node] & body]
   `(watch ~config-path (fn [~node] ~@body)))
 
-(defn watch-config
-  "Watch config-path and restart fdb on changes. Returns a closeable that stops watching on close.
-  Use ((-> config-watcher deref :wait)) to wait on the watcher."
+(defn watch-config!
+  "Watch config-path and restart fdb on changes.
+  Blocks, saves a closeable on state/*config-watcher that will stop it."
   [config-path]
   (let [control-ch (chan (sliding-buffer 1))
         restart!   (fn [_]
                      (log/info "config changed, restarting")
                      (>!! control-ch true))
-        stop!      (fn [_]
-                     (log/info "shutting down")
-                     (close! control-ch))
         process-ch (go
                      (with-open [_config-watcher (watcher/watch {} config-path restart!)]
                        (loop [restart? true]
@@ -219,8 +214,15 @@
                                     (log/info "fdb running")
                                     ;; Block waiting for config changes.
                                     (<!! control-ch)))
-                           (log/info "shutdown")))))]
-    (u/closeable {:wait #(<!! process-ch)} stop!)))
+                           ;; I don't see this message when calling from cli,
+                           ;; but I tested that stop! can block the process from
+                           ;; being killed so I think it's shutting down correctly.
+                           (log/info "shutdown")))))
+        stop!      (fn [_]
+                     (close! control-ch)
+                     (<!! process-ch))]
+    (reset! state/*config-watcher (u/closeable process-ch stop!))
+    (<!! process-ch)))
 
 (defn read
   "Force a read of pattern on root. Useful when updating readers."
@@ -232,6 +234,21 @@
          (map (partial metadata/path->id config-path config))
          (remove nil?)
          (update! config-path config node))))
+
+(defn repl
+  "Start a repl and wait forever.
+  Takes a map because it's called via clojure -X."
+  [{:keys [config-path debug]}]
+  (log/merge-config! {:min-level (if debug :debug :info)})
+  (.addShutdownHook (Runtime/getRuntime)
+                    (Thread. (fn []
+                               ;; Close and wait for the config watcher on exit, if any.
+                               (some-> @state/*config-watcher .close)
+                               ;; Don't wait for 1m for futures thread to shut down.
+                               ;; See https://clojuredocs.org/clojure.core/future
+                               (shutdown-agents))))
+  (repl/start-server config-path (-> config-path slurp edn/read-string :repl))
+  @(promise))
 
 ;; TODO:
 ;; - consider java-time.api instead of tick

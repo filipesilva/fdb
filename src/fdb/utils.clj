@@ -280,11 +280,11 @@
   []
   `(:file (meta (defn foo# []))))
 
-(defn fdb-src
-  "Returns fdb source path."
+(defn fdb-root
+  "Returns fdb root path."
   []
   (-> (io/resource "file.txt")
-      (fs/path  "../")
+      (fs/path  "../../")
       fs/normalize
       str))
 
