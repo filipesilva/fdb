@@ -57,7 +57,9 @@
 (defn init [{{:keys [dir demo]} :opts}]
   (let [path (config/new-path dir)]
     (if (fs/exists? path)
-      (log/error path "already exists!")
+      (do
+        (log/error path "already exists!")
+        (System/exit 1))
       (let [fdb-demo-path (fs/path (u/fdb-root) "demo")
             demo-path     (u/sibling-path path "fdb-demo")]
         (when demo
