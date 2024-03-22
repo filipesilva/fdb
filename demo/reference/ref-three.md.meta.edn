@@ -1,1 +1,1 @@
-:fdb/refs #{"/demo/reference/ref-one.md"}
+{:fdb/refs #{"/demo/reference/ref-one.md"}}

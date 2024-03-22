@@ -106,23 +106,24 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; If you're used fdb init --demo, it's already added to the load vector.
+;; It was added to the load vector when used `fdb init --demo`
+;; so it's acessible on first load.
 (defn print-call-arg
-  "Simple fn to see what triggers are doing."
-  [{:keys [doc-path self-path on]}]
-  (println self-path "called" on "over" doc-path))
-
+  "Simple fn to see which triggers are called."
+  [{:keys [on-path]}]
+  (println "=== called" (first on-path) "==="))
 ```
 
 Will append the evaluated code with output in a comment to `repl-results.fdb.clj`:
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; If you're used fdb init --demo, it's already added to the load vector.
+;; It was added to the load vector when used `fdb init --demo`
+;; so it's acessible on first load.
 (defn print-call-arg
-  "Simple fn to see what triggers are doing."
-  [{:keys [doc-path self-path on]}]
-  (println self-path "called" on "over doc-path"))
+  "Simple fn to see which triggers are called."
+  [{:keys [on-path]}]
+  (println "=== called" (first on-path) "==="))
 
 ;; => #'user/print-call-arg
 ```
@@ -139,7 +140,7 @@ See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) fo
 Will output to `query-results.fdb.edn`:
 
 ``` edn
-#{"/demo/reference/todo.txt"}
+#{["/demo/reference/todo.md"] ["/demo/reference/doc.md"]}
 ```
 
 
