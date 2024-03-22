@@ -88,16 +88,29 @@
   (let [config-path (find-config-path config)]
     (eval-in-fdb config-path 'fdb.core/read config-path (str (fs/cwd)) pattern)))
 
-(defn help [m]
-  (println m)
-  (println "help!"))
-
-(def spec {:config {:desc    "The FileDB config file."
+(def spec {:config {:desc    "The FileDB config file. Defaults to ~/fdbconfig.edn."
                     :alias   :c}
            :debug  {:desc    "Print debug info."
                     :alias   :d
                     :default false
                     :coerce  :boolean}})
+
+(defn help [m]
+  (println (format
+            "FileDB is a hackable database environment for your file library.
+Local docs at %s/README.md.
+Repo at https://github.com/filipesilva/fdb.
+
+Available commands:
+  fdb init <path-to-dir>    Add a empty fdbconfig.edn at path-to-dir or ~ if omitted, --demo adds demo mount.
+  fdb watch                 Start fdb in watch mode, reacting to file changes as they happen.
+  fdb sync                  Run fdb once, updating db to current file state and calling any triggers.
+  fdb read <glob-pattern>   Read all files matched by glob-pattern. Use after changing readers.
+
+All commands take the following options:
+%s "
+            (u/fdb-root)
+            (cli/format-opts {:spec spec}))))
 
 (def table
   [{:cmds []        :fn help :spec spec}
