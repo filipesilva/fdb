@@ -26,29 +26,20 @@
   (f x)
   x)
 
-(defn simple-error-str
-  [e]
-  (str (str/replace-first (type e) "class " "")
-       ": "
-       (or (ex-message e) "<no message>")))
-
 (defmacro catch-log
   "Wraps expr in a try/catch that logs to err any exceptions messages, without stack trace."
   [expr]
-  `(try
-     ~expr
+  `(try ~expr
      (catch Exception e#
-       (log/error (simple-error-str e#))
+       (log/error (str (str/replace-first (type e#) "class " "") ":")
+                  (or (ex-message e#) "<no message>"))
        nil)))
 
 (defmacro catch-nil
-  "Wraps expr in a try/catch that returns nil on err, and only logs on debug."
+  "Wraps expr in a try/catch that returns nil on err."
   [expr]
-  `(try
-     ~expr
-     (catch Exception e#
-       (log/debug (simple-error-str e#))
-       nil)))
+  `(try ~expr
+     (catch Exception _#)))
 
 (defn spit
   "Writes content to a file and returns file path, creating parent directories if necessary.
