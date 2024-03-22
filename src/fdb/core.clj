@@ -308,3 +308,4 @@
 ;;   - not just a query
 ;;   - maybe its grep over the disk files
 ;; - stale on-db should be deleting ignores
+;; - maybe make a debug ns and put hashp and some others there, like trace

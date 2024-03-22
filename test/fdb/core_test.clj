@@ -64,7 +64,7 @@
 (def calls (atom []))
 
 (defn log-call [call-arg]
-  (swap! calls conj (-> call-arg :on first)))
+  (swap! calls conj (-> call-arg :on-path first)))
 
 (deftest make-me-a-reactive-fdb
   (reset! calls [])
@@ -267,3 +267,6 @@
               :fdb/parent   "/test"
               :one          2}
              (get-f))))))
+
+;; TODO
+;; - speed up tests if I can, it's 15s now because of the watch stuff
