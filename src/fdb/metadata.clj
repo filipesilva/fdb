@@ -93,8 +93,8 @@
         modifieds                    (remove nil? [(modified content-path)
                                                    (modified metadata-path)])]
     (when (seq modifieds)
-      (merge {:fdb/modified (apply t/max modifieds)}
-             (u/slurp-edn metadata-path)))))
+      (merge (u/slurp-edn metadata-path)
+             {:fdb/modified (apply t/max modifieds)}))))
 
 (defn swap!
   "Like clojure.core/swap! but over metadata file for path.
