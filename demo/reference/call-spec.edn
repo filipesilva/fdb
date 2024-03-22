@@ -1,0 +1,26 @@
+;; These are the different formats supported for call-spec, used in readers and triggers.
+
+;; A function name will be required and resolved under the user ns, then called with call-arg.
+println
+clojure.core/println
+
+;; A sexp containing a function, evaluated then called with call-arg.
+(fn [{:keys [self-path]}]
+  (println self-path))
+
+;; A vector uses the first kw element to decide what to do.
+;; The only built-in resolution is :sh, that calls a shell command and can use a few bindings from call-arg.
+;; You can add your own with (defmethod fdb.call/to-fn :my-thing ...)
+[:sh "echo" config-path doc-path self-path]
+
+;; A map containing :call, which is any of the above
+;; You can put more data in this map, and since call-arg has the trigger iself in :on, you can use
+;; this data to parametrize the call.
+{:call    (fn [{:keys [self-path on]}]
+            (println self-path (:my-data on)))
+ :my-data 42}
+
+;; Call-specs can always be one or many, and are called in sequence.
+[println
+ {:call println}
+ [:sh "echo" self-path]]

@@ -1,0 +1,56 @@
+;; Metadata files are <file-path>.meta.edn.
+;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
+{;; ID is /mount/ followed by relative path on mount.
+ ;; It is added automatically so you don't really add it.
+ :xt/id           "/demo/reference/doc.md"
+
+ ;; Modified is the most recent between doc.md and doc.md.meta.edn.
+ ;; Added automatically in the db.
+ :fdb/modified    "2021-03-21T20:00:00.000-00:00"
+
+ ;; The ID of the parent of this ID, useful for recursive queries
+ ;; Added automatically in the db.
+ :fdb/parent      "/demo/reference"
+
+ ;; ID references and tags are useful enough in relating docs that they're first class.
+ :fdb/refs        #{"/demo/reference/todo.md"
+                    "/demo/reference/ref-one.md"}
+ :fdb/tags        #{"important" "not-very-important"}
+
+ ;; Called when this file, or its metadata, is modified.
+ ;; The fn will be called with the call-arg.
+ ;; print-call-arg is a function that we added in repl.fdb.edn, so we can use it here.
+ :fdb.on/modify   print-call-arg
+
+ ;; Called when any file that matches the glob changes.
+ ;; It should match ./pattern-glob-match.md.
+ :fdb.on/pattern  {:glob "/demo/reference/*glob*.md"
+                   :call print-call-arg}
+
+ ;; Called when the files referenced in :fdb/refs change.
+ ;; Refs will be resolved recursively and you can have cycles, so this triggers
+ ;; when ./ref-two.md or ./ref-three are modified too.
+ :fdb.on/refs     print-call-arg
+
+ ;; Called when the query results change.
+ ;; The latest results will be in important-files.edn, specified in the :path key.
+ ;; You can add triggers to path metadata, or use it as a ref to other triggers.
+ :fdb.on/query    {:q    [:find ?e
+                          :where [?e :fdb/tags "important"]]
+                   :path "./important-files.edn"
+                   :call print-call-arg}
+
+ ;; Called every 1 hours.
+ ;; The :every syntax supports :seconds :hours :days and more, see (keys tick.core/unit-map).
+ ;; You can also use a cron schedule, use https://crontab.guru/ to make your cron schedules.
+ :fdb.on/schedule {:every [1 :hours]
+                   ;; or :cron "0 * * * *"
+                   :call print-call-arg}
+
+ ;; Called once on watch startup/shutdown, including restarts.
+ :fdb.on/startup  print-call-arg
+ :fdb.on/shutdown print-call-arg
+
+ ;; Called on every db transaction via https://v1-docs.xtdb.com/clients/clojure/#_listen
+ ;; This is how every other trigger is made, so you can make your own triggers.
+ :fdb.on/tx       print-call-arg}

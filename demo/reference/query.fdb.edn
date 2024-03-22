@@ -2,6 +2,14 @@
 ;; be printed to query-output.fdb.edn
 ;; See https://v1-docs.xtdb.com/language-reference/datalog-queries/ for query syntax
 
-;; Find all data for files in this directory
-{:find  [(pull e [*])]
- :where [[e :fdb/parent "/demo/reference"]]}
+;; All files marked as important.
+[:find ?e
+ :where [?e :fdb/tags "important"]]
+
+;; Some other common queries.
+;; #_ means they are commented out, so uncomment the one you want to use and leave
+;; all others commented.
+
+;; Pull all data for files in this directory
+#_{:find  [(pull e [*])]
+   :where [[e :fdb/parent "/demo/reference"]]}
