@@ -19,7 +19,6 @@
        (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./db"
                              :mounts  {:test "./test"}
-                             :readers {:my-edn '(fn [x#] (-> x# :self-path fdb.utils/slurp-edn))}
                              :repl    false})
        ~@body)))
 
@@ -247,6 +246,8 @@
                   (fdb/sync config-path)
                   (fdb/with-fdb [config-path _ node]
                     (db/pull node f-id)))]
+      (u/swap-edn-file! config-path assoc
+                        :readers {:my-edn '(fn [x#] (-> x# :self-path fdb.utils/slurp-edn))})
       (is (empty? (get-f)))
       (u/spit-edn f {:one 1})
       (is (= {:xt/id        f-id
@@ -267,6 +268,19 @@
               :fdb/parent   "/test"
               :one          2}
              (get-f))))))
+
+(deftest make-me-a-loader-db
+  (with-temp-fdb-config [config-path mount-path]
+    (let [script (str (fs/path mount-path "script.clj"))
+          f      (str (fs/path mount-path "f.meta.edn"))]
+      (u/swap-edn-file! config-path assoc :load [script])
+      (u/spit-edn f {:fdb.on/modify 'foo})
+      (spit script "
+(def *load-test (atom nil))
+(defn foo [{:keys [self-path]}] (reset! *load-test self-path))")
+      (fdb/sync config-path)
+      (is (= (metadata/metadata-path->content-path f)
+             (-> 'user/*load-test resolve deref deref))))))
 
 ;; TODO
 ;; - speed up tests if I can, it's 15s now because of the watch stuff

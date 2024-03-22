@@ -313,3 +313,4 @@
 ;;   - can probably capure the "stop and wait" returns somehow
 ;;   - maybe a closeable-go ?
 ;;   - it's a bit more complex... it can be restarted/stopped
+;; - all the string converstions for paths are starting to piss me off

@@ -170,9 +170,9 @@ Will output to `query-results.fdb.edn`:
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
  :readers      {:eml fdb.fns.email.eml/meta}
  
- ;; Ids of clj files to be loaded at the start.
+ ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/demo/reference/repl.fdb.edn"]
+ :load         ["/demo/reference/repl.fdb.clj"]
  
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

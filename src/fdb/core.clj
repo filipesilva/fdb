@@ -48,7 +48,6 @@
       (doseq [f load]
         (binding [*ns* (create-ns 'user)]
           (some->> f
-                   (metadata/id->path config-path config)
                    fs/absolutize
                    str
                    (u/side-effect->> #(log/info "loading" %))
