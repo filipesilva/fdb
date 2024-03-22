@@ -48,13 +48,15 @@
 
 (defmethod to-fn clojure.lang.Symbol
   [sym]
-  (if (qualified-symbol? sym)
-    (requiring-resolve sym)
-    (resolve sym)))
+  (binding [*ns* (create-ns 'user)]
+    (if (qualified-symbol? sym)
+      (requiring-resolve sym)
+      (resolve sym))))
 
 (defmethod to-fn clojure.lang.PersistentList
   [sexp]
-  (eval sexp))
+  (binding [*ns* (create-ns 'user)]
+    (eval sexp)))
 
 (defn eval-under-call-arg
   "Evaluates form under common call-arg bindings, i.e.
