@@ -68,7 +68,8 @@
                                   :readers    {}
                                   :extra-deps {}
                                   :load       []}
-                           demo (assoc-in [:mounts :demo] demo-path)))
+                           demo (-> (assoc-in [:mounts :demo] demo-path)
+                                    (update :load conj "/demo/repl.fdb.clj"))))
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]
