@@ -6,6 +6,7 @@
    [clojure.core.async :refer [timeout alts!! <!!]]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
+   [clojure.pprint :as pprint]
    [clojure.string :as str]
    [puget.printer :as puget]
    [taoensso.timbre :as log]
@@ -298,13 +299,16 @@
 (defn eval-to-comment
   "Eval form to a comment string."
   [form]
-  (let [*val        (atom nil)
-        out-and-err (with-out-str
-                      (binding [*err* *out*]
-                        (reset! *val (load-string form))))]
-    (str
-     (when-not (empty? out-and-err) (as-comments out-and-err))
-     (as-comments (edn-str @*val) :prefix "=> "))))
+  (try
+    (let [*val        (atom nil)
+          out-and-err (with-out-str
+                        (binding [*err* *out*]
+                          (reset! *val (load-string form))))]
+      (str
+       (when-not (empty? out-and-err) (as-comments out-and-err))
+       (as-comments (with-out-str (pprint/pprint @*val)) :prefix "=> ")))
+    (catch Exception e
+      (as-comments (with-out-str (pprint/pprint e))))))
 
 ;; TODO:
 ;; - str-path fn
@@ -313,3 +317,7 @@
 ;;   - maybe a closeable-go ?
 ;;   - it's a bit more complex... it can be restarted/stopped
 ;; - all the string converstions for paths are starting to piss me off
+;;   - maybe it's just adding a u/path that returns a str
+;; - puget/pprint is a bit different than pprint/pprint for large stuff
+;;   - e.g. printing call-arg in a repl file
+;;   - figure out how and if I can just use one of them
