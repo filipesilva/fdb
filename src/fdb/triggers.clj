@@ -229,7 +229,7 @@
      config-path config id
      "query" "results" "edn" false
      #(log/info "querying" id "to" %)
-     #(try (u/edn-str (xt/q db %))
+     #(try (u/edn-str (xt/q db (u/read-edn %)))
            (catch Exception e
              {:error (ex-message e)})))))
 
