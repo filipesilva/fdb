@@ -235,13 +235,17 @@
 (defn call-on-repl-file
   "If id matches in /*repl.fdb.clj, call repl with content and print
   output to sibling /*outputs.fdb.clj file."
-  [{:keys [config-path config]} [op id]]
+  [{:keys [config-path config] :as call-arg} [op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
      config-path config id
      "repl" "outputs" "clj" true
      #(log/info "sending" id "to repl, outputs in" %)
-     #(str % "\n" (u/eval-to-comment %) "\n"))))
+     #(str % "\n"
+           (binding [*ns*            (create-ns 'user)
+                     call/*call-arg* call-arg]
+             (u/eval-to-comment %))
+           "\n"))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."

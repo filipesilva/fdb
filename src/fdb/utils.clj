@@ -300,8 +300,7 @@
   [form]
   (let [*val        (atom nil)
         out-and-err (with-out-str
-                      (binding [*ns*  (create-ns 'user)
-                                *err* *out*]
+                      (binding [*err* *out*]
                         (reset! *val (load-string form))))]
     (str
      (when-not (empty? out-and-err) (as-comments out-and-err))

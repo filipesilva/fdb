@@ -81,10 +81,17 @@
   [f]
   f)
 
+;; The argument sent into trigger and reader calls.
+;; Also available as a dynamic binding for triggers, readers, repl files, and
+;; files loaded in fdbconfig.edn.
+(def ^:dynamic *call-arg* nil)
+
 (defn apply
-  "Applies call-spec fn to args."
-  [call-spec & args]
-  (clojure.core/apply (to-fn call-spec) args))
+  "Applies call-spec fn to call-arg.
+  Binds call-arg to fdb.call/*call-arg*."
+  [call-spec call-arg]
+  (binding [*call-arg* call-arg]
+    ((to-fn call-spec) call-arg)))
 
 ;; TODO:
 ;; - maybe get rid of eval-under-call-args and just replace bindings with kws

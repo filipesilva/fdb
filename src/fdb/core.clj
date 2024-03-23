@@ -2,13 +2,14 @@
   "A hackable database environment for your file library."
   (:refer-clojure :exclude [sync read])
   (:require
-   hashp.core
+   hashp.core ;; keep at top to use everywhere
    [babashka.fs :as fs]
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
    [clojure.repl.deps :as deps]
    [clojure.string :as str]
+   [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
@@ -44,18 +45,19 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (when load
+    (with-open [node (or (when (= config-path (:config-path @state/*fdb))
+                           (-> @state/*fdb :node u/closeable))
+                         (db/node (u/sibling-path config-path db-path)))]
       (doseq [f load]
-        (binding [*ns* (create-ns 'user)]
-          (some->> f
-                   fs/absolutize
-                   str
-                   (u/side-effect->> #(log/info "loading" %))
-                   load-file))))
-    (if-some [node (node config-path)]
-      (f config-path config node)
-      (with-open [node (db/node (u/sibling-path config-path db-path))]
-        (f config-path config node)))))
+        (when-some [path (-> f fs/absolutize str)]
+          (binding [*ns*            (create-ns 'user)
+                    call/*call-arg* {:config-path config-path
+                                     :config      config
+                                     :node        node
+                                     :self-path   path}]
+            (log/info "loading" path)
+            (load-file path))))
+      (f config-path config node))))
 
 (defmacro with-fdb
   "Call body with over fdb configured with config-path."

@@ -37,3 +37,4 @@
 ;;   - I guess it goes back to some sort of process affinity
 ;;   - if you have a cron or whatever that's running, you don't
 ;;     really want it to run in multiple processes anyway
+;; - maybe get the watcher ignore here too, and move this to toplevel ns
