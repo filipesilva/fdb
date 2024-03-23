@@ -129,3 +129,8 @@ All commands take the following options:
   (apply -main *command-line-args*))
 
 ;; TODO:
+;; - can I start clojure on fdb-root instead of trying making a new deps?
+;;   - could enable using aliases, improve repl setup
+;;   - atm I'm auto-adding cider stuff
+;;   - maybe I can just add them in my own fdbconfig.json
+;;   - maybe I can do something fancy with deps alias and config merging from fdbconfig.edn

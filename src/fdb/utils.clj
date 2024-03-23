@@ -276,11 +276,6 @@
                           (seq v)))))
        (into {})))
 
-(defmacro current-file
-  "Returns file path of the current file."
-  []
-  `(:file (meta (defn foo# []))))
-
 (defn fdb-root
   "Returns fdb root path."
   []

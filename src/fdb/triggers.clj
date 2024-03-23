@@ -243,8 +243,8 @@
      "repl" "outputs" "clj" true
      #(log/info "sending" id "to repl, outputs in" %)
      #(str % "\n"
-           (binding [*ns*            (create-ns 'user)
-                     call/*call-arg* (assoc call-arg :self-path (metadata/id->path config-path config id))]
+           (binding [*ns*       (create-ns 'user)
+                     call/*arg* (assoc call-arg :self-path (metadata/id->path config-path config id))]
              (u/eval-to-comment %))
            "\n"))))
 

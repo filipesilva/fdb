@@ -4,6 +4,7 @@
   (:require
    hashp.core ;; keep at top to use everywhere
    [babashka.fs :as fs]
+   [cider.nrepl :as cider-nrepl]
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -50,11 +51,11 @@
                          (db/node (u/sibling-path config-path db-path)))]
       (doseq [f load]
         (when-some [path (-> f fs/absolutize str)]
-          (binding [*ns*            (create-ns 'user)
-                    call/*call-arg* {:config-path config-path
-                                     :config      config
-                                     :node        node
-                                     :self-path   path}]
+          (binding [*ns*       (create-ns 'user)
+                    call/*arg* {:config-path config-path
+                                :config      config
+                                :node        node
+                                :self-path   path}]
             (log/info "loading" path)
             (load-file path))))
       (f config-path config node))))
@@ -256,7 +257,8 @@
                                ;; Don't wait for 1m for futures thread to shut down.
                                ;; See https://clojuredocs.org/clojure.core/future
                                (shutdown-agents))))
-  (let [opts      (merge {:port 2525}
+  (let [opts      (merge {:port 2525
+                          :handler cider-nrepl/cider-nrepl-handler}
                          (-> config-path slurp edn/read-string :repl))
         ;; Like nrepl.cmdline/save-port-file, but next to the config file.
         port-file (-> config-path (u/sibling-path ".nrepl-port") fs/file)]

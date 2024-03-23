@@ -21,6 +21,7 @@
          cronstar/cronstar           {:mvn/version "1.0.2"}
          jarohen/chime               {:mvn/version "0.3.3"}
          nrepl/nrepl                 {:mvn/version "1.1.0"}
+         cider/cider-nrepl           {:mvn/version "0.45.0"}
          babashka/nrepl-client       {:git/url "https://github.com/babashka/nrepl-client"
                                       :git/sha "f560a68bbad7b625b07b4025b240c2d0b5b610ad"}
          ;; for xtdb, I guess, I don't care, I just want the startup error to go away

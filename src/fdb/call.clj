@@ -81,16 +81,28 @@
   [f]
   f)
 
-;; The argument sent into trigger and reader calls.
-;; Also available as a dynamic binding for triggers, readers, repl files, and
-;; files loaded in fdbconfig.edn.
-(def ^:dynamic *call-arg* nil)
+;; Set by fdb during triggered calls. Nil during repl sessions, but that's what (arg) below is for.
+(def ^:dynamic *arg* nil)
+
+(defmacro arg
+  "The argument sent into trigger and reader calls.
+  Also available as a dynamic binding for triggers, readers, repl files, and
+  files loaded in fdbconfig.edn."
+  []
+  `(or
+    ;; Calls from triggers, readers, and repl files should have this set.
+    *arg*
+    ;; If it's not set, it must be a nrepl session.
+    ;; Watch should be running so we can get state from there.
+    ;; *file* should work from a repl session when it evals a file.
+    (merge {:self-path *file*}
+           @@(resolve 'fdb.state/*fdb))))
 
 (defn apply
   "Applies call-spec fn to call-arg.
-  Binds call-arg to fdb.call/*call-arg*."
+  Binds call-arg to fdb.call/*arg*."
   [call-spec call-arg]
-  (binding [*call-arg* call-arg]
+  (binding [*arg* call-arg]
     ((to-fn call-spec) call-arg)))
 
 ;; TODO:

@@ -100,7 +100,7 @@ You can run code over the db process with a file called `repl.fdb.clj`, or with 
 You can also connect your editor to the nrepl server that starts with `fdb watch`, it's on port 2525 by default.
 
 It starts in the `user` namespace but you can add whatever namespace form you want, and that's the ns it'll be eval'd in.
-You can find a call-arg like the one triggers receive in `fdb.call/*call-arg*` (more on this below).
+You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more on this below).
 
 You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at startup, and the functions you define here will be available for triggers and readers.
 
@@ -240,7 +240,7 @@ It looks like this:
 
 ``` edn
 ;; This is the format for call arg, which the function resolved for call-spec is called with.
-;; It's also acessible in fdb.call/*call-arg* for triggers, readers, repl files, and files loaded in fdbconfig.edn.
+;; It's also acessible in (fdb.call/arg) for triggers, readers, repl files, and files loaded in fdbconfig.edn.
 {:config      {,,,}                         ;; fdb config value
  :config-path "~/fdbconfig.json"            ;; on-disk path to config
  :node        {,,,}                         ;; xtdb database node
