@@ -39,7 +39,7 @@
                 :self-path "root/folder/foo.txt"
                 :doc       :adoc
                 :doc-path  "root/folder/foo.txt"
-                :on        [:on-foo {:doit true :call 2}]
+                :on        {:doit true :call 2}
                 :on-path   [:on-foo 1]
                 :didit     true}]
               [{:call-arg  true
@@ -47,7 +47,7 @@
                 :self-path "root/folder/foo.txt"
                 :doc       :adoc
                 :doc-path  "root/folder/foo.txt"
-                :on        [:on-bar 4]
+                :on        4
                 :on-path   [:on-bar]}]]
              (spy/calls call-spy))))))
 
