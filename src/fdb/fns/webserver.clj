@@ -22,3 +22,9 @@
 ;; - have to make it easier for third party libs to add routes
 ;; - blog is a cool example of a subset of your file library you might want to expose online
 ;; - Is rss just a folder file listing ordered by date and content, and content negotiated to be rss format? The folder could be real, or be full of symlinks, or even be a synthetic listing from the db.
+;; - simpler server model:
+;;   - map port to fn in config
+;;   - fn is ring thingy
+;;   - done
+;;   - the idea is to have webapps, plural, whatever they are
+;;   - make apps for your data
