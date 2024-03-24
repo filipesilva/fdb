@@ -34,21 +34,21 @@
                                :on-bar))
       (is (= [[{:call 1}] [{:doit true :call 2}] [3]]
              (spy/calls should-trigger?)))
-      (is (= [[{:call-arg  true
-                :self      self
-                :self-path "root/folder/foo.txt"
-                :doc       :adoc
-                :doc-path  "root/folder/foo.txt"
-                :on        {:doit true :call 2}
-                :on-path   [:on-foo 1]
-                :didit     true}]
-              [{:call-arg  true
-                :self      self
-                :self-path "root/folder/foo.txt"
-                :doc       :adoc
-                :doc-path  "root/folder/foo.txt"
-                :on        4
-                :on-path   [:on-bar]}]]
+      (is (= [[{:call-arg    true
+                :self        self
+                :self-path   "root/folder/foo.txt"
+                :target      :adoc
+                :target-path "root/folder/foo.txt"
+                :on          {:doit true :call 2}
+                :on-path     [:on-foo 1]
+                :didit       true}]
+              [{:call-arg    true
+                :self        self
+                :self-path   "root/folder/foo.txt"
+                :target      :adoc
+                :target-path "root/folder/foo.txt"
+                :on          4
+                :on-path     [:on-bar]}]]
              (spy/calls call-spy))))))
 
 (deftest docs-with-k-test

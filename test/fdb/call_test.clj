@@ -25,8 +25,8 @@
 (deftest shell-test
   (is (= "1 2 3\n"
          (with-out-str
-           ((sut/to-fn '[:sh "echo" config-path doc-path self-path])
-            {:config-path "1" :doc-path "2" :self-path "3"})))))
+           ((sut/to-fn '[:sh "echo" config-path target-path self-path])
+            {:config-path "1" :target-path "2" :self-path "3"})))))
 
 (deftest apply-test
   (is (= 43 (sut/apply 'inc 42))))

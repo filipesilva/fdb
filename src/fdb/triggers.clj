@@ -37,8 +37,8 @@
                                        [on-k])}
                          more)
         log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
-                       (if-some [doc-id (-> call-arg' :doc :xt/id)]
-                         (str " over " doc-id)
+                       (if-some [target-id (-> call-arg' :target :xt/id)]
+                         (str " over " target-id)
                          ""))
         f         (fn []
                     (u/maybe-timeout (:timeout trigger)
@@ -54,16 +54,16 @@
 
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
-  Merges call-arg with {:self self, :on-k on-k :doc doc} and return from should-trigger?."
-  ([call-arg doc self on-k]
-   (call-all-triggers call-arg doc self on-k (constantly true)))
-  ([{:keys [config-path config] :as call-arg} doc self on-k should-trigger?]
+  Merges call-arg with {:self self, :on-k on-k :target target} and return from should-trigger?."
+  ([call-arg target self on-k]
+   (call-all-triggers call-arg target self on-k (constantly true)))
+  ([{:keys [config-path config] :as call-arg} target self on-k should-trigger?]
    (run! (fn [[trigger-idx trigger]]
            (when-let [maybe-map (u/catch-log (should-trigger? trigger))]
              (call self on-k trigger trigger-idx call-arg
-                   (when doc
-                     {:doc      doc
-                      :doc-path (metadata/id->path config-path config (:xt/id self))})
+                   (when target
+                     {:target      target
+                      :target-path (metadata/id->path config-path config (:xt/id self))})
                    (when (map? maybe-map)
                      maybe-map))))
          (->> self on-k call/specs (map-indexed vector)))))
@@ -304,9 +304,9 @@
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
   [config-path config db id {:keys [q path]}]
-  (let [doc-path     (metadata/id->path config-path config id)
-        results-path (u/sibling-path doc-path path)]
-    (if (= doc-path results-path)
+  (let [target-path     (metadata/id->path config-path config id)
+        results-path (u/sibling-path target-path path)]
+    (if (= target-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
       (let [new-results (u/catch-log (xt/q db q))
             old-results (u/catch-log (u/slurp-edn results-path))]
@@ -343,8 +343,8 @@
    :on-path     get-in path inside self for trigger as [fdb.on/k 1]
    :self        the doc that has the trigger being called
    :self-path   on-disk path for self
-   :doc         the doc the trigger is being called over, if any
-   :doc-path    on-disk path for doc, if any
+   :target      the doc the trigger is being called over, if any
+   :target-path on-disk path for doc, if any
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"
   [config-path config node tx]

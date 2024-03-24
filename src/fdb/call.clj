@@ -30,7 +30,7 @@
   - list    Evaluates and returns the result
   - :sh     Runs shell command via babashka.process/shell
             You can use the shell option map, and the config-path,
-            doc-path and self-path bindings."
+            target-path and self-path bindings."
   (fn [call-spec]
     (if (and (vector? call-spec)
              (keyword? (first call-spec)))
@@ -60,11 +60,11 @@
 
 (defn eval-under-call-arg
   "Evaluates form under common call-arg bindings, i.e.
-  (fn [{:keys [config-path doc-path self-path] :as call-arg}]
+  (fn [{:keys [config-path target-path self-path] :as call-arg}]
     <form>)
   Useful to transform call-args from CLI."
   [call-arg form]
-  (let [bind-args-fn (eval (list 'fn '[{:keys [config-path doc-path self-path] :as call-arg}] form))]
+  (let [bind-args-fn (eval (list 'fn '[{:keys [config-path target-path self-path] :as call-arg}] form))]
     (bind-args-fn call-arg)))
 
 (defmethod to-fn :sh

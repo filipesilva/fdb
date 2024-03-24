@@ -9,8 +9,8 @@
  :on-path     [:fdb.on/modify]              ;; get-in path inside self for trigger
  :self        {:xt/id "/mount/foo.md" ,,,}  ;; the doc that has the trigger being called
  :self-path   "/path/foo.md"                ;; on-disk path for self
- :doc         {:xt/id "/mount/bar.md" ,,,}  ;; the doc the trigger is being called over, if any
- :doc-path    "/path/bar.md"                ;; on-disk path for doc, if any
+ :target      {:xt/id "/mount/bar.md" ,,,}  ;; the doc the trigger is being called over, if any
+ :target-path "/path/bar.md"                ;; on-disk path for doc, if any
  :results     {,,,}                         ;; query results, if any
  :timestamp   "2024-03-22T16:52:20.995717Z" ;; schedule timestamp, if any
  }

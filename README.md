@@ -227,7 +227,7 @@ clojure.core/println
 ;; A vector uses the first kw element to decide what to do.
 ;; The only built-in resolution is :sh, that calls a shell command and can use a few bindings from call-arg.
 ;; You can add your own with (defmethod fdb.call/to-fn :my-thing ...)
-[:sh "echo" config-path doc-path self-path]
+[:sh "echo" config-path target-path self-path]
 
 ;; A map containing :call, which is any of the above
 ;; You can put more data in this map, and since call-arg has the trigger iself in :on, you can use
@@ -258,8 +258,8 @@ It looks like this:
  :on-path     [:fdb.on/modify]              ;; get-in path inside self for trigger
  :self        {:xt/id "/mount/foo.md" ,,,}  ;; the doc that has the trigger being called
  :self-path   "/path/foo.md"                ;; on-disk path for self
- :doc         {:xt/id "/mount/bar.md" ,,,}  ;; the doc the trigger is being called over, if any
- :doc-path    "/path/bar.md"                ;; on-disk path for doc, if any
+ :target      {:xt/id "/mount/bar.md" ,,,}  ;; the doc the trigger is being called over, if any
+ :target-path "/path/bar.md"                ;; on-disk path for doc, if any
  :results     {,,,}                         ;; query results, if any
  :timestamp   "2024-03-22T16:52:20.995717Z" ;; schedule timestamp, if any
  }
