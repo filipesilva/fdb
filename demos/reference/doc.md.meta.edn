@@ -2,7 +2,7 @@
 ;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
 {;; ID is /mount/ followed by relative path on mount.
  ;; It is added automatically so you don't really add it.
- :xt/id           "/demo/reference/doc.md"
+ :xt/id           "/demos/reference/doc.md"
 
  ;; Modified is the most recent between doc.md and doc.md.meta.edn.
  ;; Added automatically in the db.
@@ -10,11 +10,11 @@
 
  ;; The ID of the parent of this ID, useful for recursive queries
  ;; Added automatically in the db.
- :fdb/parent      "/demo/reference"
+ :fdb/parent      "/demos/reference"
 
  ;; ID references and tags are useful enough in relating docs that they're first class.
- :fdb/refs        #{"/demo/reference/todo.md"
-                    "/demo/reference/ref-one.md"}
+ :fdb/refs        #{"/demos/reference/todo.md"
+                    "/demos/reference/ref-one.md"}
  :fdb/tags        #{"important" "not-very-important"}
 
  ;; Called when this file, or its metadata, is modified.
@@ -24,7 +24,7 @@
 
  ;; Called when any file that matches the glob changes.
  ;; It should match ./pattern-glob-match.md.
- :fdb.on/pattern  {:glob "/demo/reference/*glob*.md"
+ :fdb.on/pattern  {:glob "/demos/reference/*glob*.md"
                    :call print-call-arg}
 
  ;; Called when the files referenced in :fdb/refs change.

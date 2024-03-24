@@ -6,14 +6,14 @@
  :db-path      "./db"
 
  ;; These paths that will be mounted on the db.
- ;; If you have ~/fdb-demo mounted as :demo, and you have /demo/reference/repl.fdb.clj,
- ;; its id in the db will be /demo/reference/repl.fdb.clj.
- :mounts       {;; "./fdb-demo" is the same as {:path "./fdb-demo"}
-                :demo  "./fdb-demo/"
-                :notes {:path          "/path/to/obsidian/vault"
-                        ;; extra-readers will be added just to files in this mount.
-                        ;; You can also add :readers to overwrite the toplevel.
-                        :extra-readers {:md fdb.fns.obsidian/meta}}}
+ ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
+ ;; its id in the db will be /demos/reference/repl.fdb.clj.
+ :mounts       {;; "./fdb-demos" is the same as {:path "./fdb-demos"}
+                :demos  "./fdb-demos/"
+                :notes  {:path          "/path/to/obsidian/vault"
+                         ;; extra-readers will be added just to files in this mount.
+                         ;; You can also add :readers to overwrite the toplevel.
+                         :extra-readers {:md fdb.fns.obsidian/meta}}}
 
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
@@ -24,7 +24,7 @@
 
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/demo/reference/repl.fdb.clj"]
+ :load         ["/fdb-demos/reference/repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

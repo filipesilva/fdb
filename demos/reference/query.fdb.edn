@@ -12,4 +12,4 @@
 
 ;; Pull all data for files in this directory
 #_{:find  [(pull e [*])]
-   :where [[e :fdb/parent "/demo/reference"]]}
+   :where [[e :fdb/parent "/demos/reference"]]}

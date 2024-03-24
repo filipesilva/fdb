@@ -5,7 +5,7 @@ FileDB is a hackable database environment for your file library.
 It watches your files on disk and loads some of their data to a database.
 You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
 
-Take a look at the [Reference Demo](#reference-demo) to see what using FileDB looks like.
+Check the [Reference](#reference) to see what interacting with FileDB looks like, and [Demos](#demos) for examples of cool things to do with it.
 
 The database is wholly determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
 Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
@@ -65,21 +65,21 @@ Now you should be able to run `fdb help` from anywhere.
 
 ## Now how do I use it?
 
-Start by running `fdb init --demo`.
-This will create `~/fdbconfig.edn` and `~/fdb-demo/`.
-If you want to create the config and demo folder in the current (or some other) dir, do `fdb init --demo .`.
-If you don't want the demo files, omit `--demo`.
+Start by running `fdb init --demos`.
+This will create `~/fdbconfig.edn` and `~/fdb-demos/`.
+If you want to create the config and demos folder in the current (or some other) dir, do `fdb init --demos .`.
+If you don't want the demos files, omit `--demos`.
 
 Then run `fdb watch`.
 You can edit the config anytime, for instance to add new mounts, and the watcher will restart automatically.
-It starts a [nREPL server]( https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
+It starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
 
 It will watch folders under the `:mount` key in `fdbconfig.edn`.
 Modified date, parent, and path for each file on mounts will be added to the db.
-If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will be added to the db's `dc.md` id.
+If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will be added to the db's `doc.md` id.
 You can put triggers and whatever else you want in this edn file.
 
-The [Reference Demo](#reference-demo) is in the demo and contains examples of how things work.
+The [Reference](#reference) is in `~/fdb-demos/reference` and contains examples of how things work.
 
 You can also run `fdb sync` to do a one-shot sync.
 This is useful when you have some automation you want to run manually.
@@ -88,9 +88,17 @@ This is useful when you have some automation you want to run manually.
 This is useful when you add or update readers and want to re-read those files.
 
 
-## Reference Demo
+## Demos
 
-These files are in `~/fdb-demo/reference` folder if you used the `fdb init --demo`, mounted in `/demo/reference/`.
+Here's some cool stuff that you can do with FileDB:
+- [make your own nutrition tracking system](./demos/nutrition/README.md)
+
+I'm still working on more demos, mostly around my own usecases. I'll add them here when they are done.
+
+
+## Reference
+
+These files are in `~/fdb-demos/reference` folder if you used the `fdb init --demos`, mounted in `/demos/reference/`.
 I've also gathered them here to give a nice overview of what you can do, and so its easy to search over them.
 
 ### Repl and Query files
@@ -106,7 +114,7 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; It was added to the load vector when used `fdb init --demo`
+;; It was added to the load vector when used `fdb init --demos`
 ;; so it's acessible on first load.
 (defn print-call-arg
   "Simple fn to see which triggers are called."
@@ -118,7 +126,7 @@ Will append the evaluated code with output in a comment to `repl-results.fdb.clj
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; It was added to the load vector when used `fdb init --demo`
+;; It was added to the load vector when used `fdb init --demos`
 ;; so it's acessible on first load.
 (defn print-call-arg
   "Simple fn to see which triggers are called."
@@ -140,7 +148,7 @@ See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) fo
 Will output to `query-results.fdb.edn`:
 
 ``` edn
-#{["/demo/reference/todo.md"] ["/demo/reference/doc.md"]}
+#{["/demos/reference/todo.md"] ["/demos/reference/doc.md"]}
 ```
 
 
@@ -155,14 +163,14 @@ Will output to `query-results.fdb.edn`:
  :db-path      "./db"
  
  ;; These paths that will be mounted on the db.
- ;; If you have ~/fdb-demo mounted as :demo, and you have /demo/reference/repl.fdb.clj,
- ;; its id in the db will be /demo/reference/repl.fdb.clj.
- :mounts       {;; "./fdb-demo" is the same as {:path "./fdb-demo"}
-                :demo  "./fdb-demo/"
-                :notes {:path          "/path/to/obsidian/vault"
-                        ;; extra-readers will be added just to files in this mount.
-                        ;; You can also add :readers to overwrite the toplevel.
-                        :extra-readers {:md fdb.fns.obsidian/meta}}}
+ ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
+ ;; its id in the db will be /demos/reference/repl.fdb.clj.
+ :mounts       {;; "./fdb-demos" is the same as {:path "./fdb-demos"}
+                :demos  "./fdb-demos/"
+                :notes  {:path          "/path/to/obsidian/vault"
+                         ;; extra-readers will be added just to files in this mount.
+                         ;; You can also add :readers to overwrite the toplevel.
+                         :extra-readers {:md fdb.fns.obsidian/meta}}}
  
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
@@ -173,7 +181,7 @@ Will output to `query-results.fdb.edn`:
  
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/demo/reference/repl.fdb.clj"]
+ :load         ["/demos/reference/repl.fdb.clj"]
  
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.
@@ -267,7 +275,7 @@ It looks like this:
 ;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
 {;; ID is /mount/ followed by relative path on mount.
  ;; It is added automatically so you don't really add it.
- :xt/id           "/demo/reference/doc.md"
+ :xt/id           "/demos/reference/doc.md"
 
  ;; Modified is the most recent between doc.md and doc.md.meta.edn.
  ;; Added automatically in the db.
@@ -275,11 +283,11 @@ It looks like this:
 
  ;; The ID of the parent of this ID, useful for recursive queries
  ;; Added automatically in the db.
- :fdb/parent      "/demo/reference"
+ :fdb/parent      "/demos/reference"
 
  ;; ID references and tags are useful enough in relating docs that they're first class.
- :fdb/refs        #{"/demo/reference/todo.md"
-                    "/demo/reference/ref-one.md"}
+ :fdb/refs        #{"/demos/reference/todo.md"
+                    "/demos/reference/ref-one.md"}
  :fdb/tags        #{"important" "not-very-important"}
 
  ;; Called when this file, or its metadata, is modified.
@@ -289,7 +297,7 @@ It looks like this:
 
  ;; Called when any file that matches the glob changes.
  ;; It should match ./pattern-glob-match.md.
- :fdb.on/pattern  {:glob "/demo/reference/*glob*.md"
+ :fdb.on/pattern  {:glob "/demos/reference/*glob*.md"
                    :call print-call-arg}
 
  ;; Called when the files referenced in :fdb/refs change.
@@ -321,16 +329,12 @@ It looks like this:
  :fdb.on/tx       print-call-arg}
 ```
 
-## More demos
-
-I'm still working on more demos, mostly around my own usecases. I'll add them here when they are done.
-
 
 ## Hacking on FileDB
 
 [ARCHITECTURE.md](ARCHITECTURE.md) has an overview of the main namespaces in FileDB and how they interact.
 
 `fdb watch --debug` starts fdb with some extra debug logging.
-Connect to the [nrepl server](https://nrepl.org/nrepl/1.1/index.html) on port 2525 by default, and change stuff.
+Connect to the [nREPL server](https://nrepl.org/nrepl/1.1/index.html) on port 2525 by default, and change stuff.
 Call `(clojure.tools.namespace.repl/refresh)` to reload code as you change it, and `(fdb.core/restart-watch-config!)` if you want the watcher to restart too.
 

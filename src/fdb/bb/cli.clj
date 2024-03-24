@@ -54,25 +54,25 @@
     (log/info "config found at" config-path)
     config-path))
 
-(defn init [{{:keys [dir demo]} :opts}]
+(defn init [{{:keys [dir demos]} :opts}]
   (let [path (config/new-path dir)]
     (if (fs/exists? path)
       (do
         (log/error path "already exists!")
         (System/exit 1))
-      (let [fdb-demo-path (fs/path (u/fdb-root) "demo")
-            demo-path     (u/sibling-path path "fdb-demo")]
-        (when demo
-          (fs/copy-tree fdb-demo-path demo-path {:replace-existing true})
-          (log/info "created demo folder at" demo-path))
+      (let [fdb-demos-path (fs/path (u/fdb-root) "demos")
+            demos-path     (u/sibling-path path "fdb-demos")]
+        (when demos
+          (fs/copy-tree fdb-demos-path demos-path {:replace-existing true})
+          (log/info "created demos folder at" demos-path))
         (u/spit-edn path (cond-> {:db-path    "./db"
                                   :mounts     {}
                                   :readers    {}
                                   :extra-deps {}
                                   :load       []}
-                           demo (-> (assoc-in [:mounts :demo] demo-path)
-                                    (update :load conj
-                                            (str (fs/path demo-path "reference/repl.fdb.clj"))))))
+                           demos (-> (assoc-in [:mounts :demos] demos-path)
+                                     (update :load conj
+                                             (str (fs/path demos-path "reference/repl.fdb.clj"))))))
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]
@@ -97,14 +97,14 @@
                     :default false
                     :coerce  :boolean}})
 
-(defn help [m]
+(defn help [ms]
   (println (format
             "FileDB is a hackable database environment for your file library.
 Local docs at %s/README.md.
 Repo at https://github.com/filipesilva/fdb.
 
 Available commands:
-  fdb init <path-to-dir>    Add a empty fdbconfig.edn at path-to-dir or ~ if omitted, --demo adds demo mount.
+  fdb init <path-to-dir>    Add a empty fdbconfig.edn at path-to-dir or ~ if omitted, --demos adds demos mount.
   fdb watch                 Start fdb in watch mode, reacting to file changes as they happen.
   fdb sync                  Run fdb once, updating db to current file state and calling any triggers.
   fdb read <glob-pattern>   Read all files matched by glob-pattern. Use after changing readers.
