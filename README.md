@@ -336,5 +336,5 @@ It looks like this:
 
 `fdb watch --debug` starts fdb with some extra debug logging.
 Connect to the [nREPL server](https://nrepl.org/nrepl/1.1/index.html) on port 2525 by default, and change stuff.
-Call `(clojure.tools.namespace.repl/refresh)` to reload code as you change it, and `(fdb.core/restart-watch-config!)` if you want the watcher to restart too.
+Call `(clj-reload.core/reload)` to reload code as you change it, if you have a config watcher running it will restart as well.
 

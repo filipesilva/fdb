@@ -5,6 +5,7 @@
    hashp.core ;; keep at top to use everywhere
    [babashka.fs :as fs]
    [cider.nrepl :as cider-nrepl]
+   [clj-reload.core :as reload]
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -14,7 +15,6 @@
    [fdb.db :as db]
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
-   [fdb.state :as state]
    [fdb.triggers :as triggers]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
@@ -23,6 +23,9 @@
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
+
+;; Current running fdb. Set by watch.
+(defonce *fdb (atom nil))
 
 (defn set-dynamic-classloader!
   "Set dynamic classloader to current thread."
@@ -33,8 +36,8 @@
       (.setContextClassLoader (Thread/currentThread))))
 
 (defn node [config-path]
-  (when (= config-path (:config-path @state/*fdb))
-    (:node @state/*fdb)))
+  (when (= config-path (:config-path @*fdb))
+    (:node @*fdb)))
 
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
@@ -46,8 +49,8 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (with-open [node (or (when (= config-path (:config-path @state/*fdb))
-                           (-> @state/*fdb :node u/closeable))
+    (with-open [node (or (when (= config-path (:config-path @*fdb))
+                           (-> @*fdb :node u/closeable))
                          (db/node (u/sibling-path config-path db-path)))]
       (doseq [f load]
         (when-some [path (-> f fs/absolutize str)]
@@ -182,7 +185,7 @@
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
                                        u/closeable-seq))
-                _state          (u/closeable-atom state/*fdb
+                _state          (u/closeable-atom *fdb
                                                   {:config-path config-path
                                                    :config      config
                                                    :node        node})]
@@ -200,9 +203,11 @@
   [[config-path node] & body]
   `(watch ~config-path (fn [~node] ~@body)))
 
+(defonce *config-watcher (atom nil))
+
 (defn watch-config!
   "Watch config-path and restart fdb on changes.
-  Blocks, saves a closeable on state/*config-watcher that will stop it."
+  Blocks, saves a closeable on *config-watcher that will stop it."
   [config-path]
   (let [control-ch (chan (sliding-buffer 1))
         restart!   (fn [_]
@@ -223,16 +228,16 @@
         stop!      (fn [_]
                      (close! control-ch)
                      (<!! process-ch))]
-    (reset! state/*config-watcher (u/closeable process-ch stop!))
+    (reset! *config-watcher (u/closeable process-ch stop!))
     (<!! process-ch)))
 
-(defn restart-watch-config!
-  "Restarts watch-config! with current config-path.
-  Useful after a code reload."
+(defn after-ns-reload
+  "Restarts watch-config! with current config-path after (clj-reload/reload)."
   []
-  (let [config-path (:config-path @state/*fdb)]
-    (some-> @state/*config-watcher .close)
-    (future (watch-config! config-path))))
+  (when-let [config-path (:config-path @*fdb)]
+    (future
+      (some-> @*config-watcher .close)
+      (watch-config! config-path))))
 
 (defn read
   "Force a read of pattern on root. Useful when updating readers."
@@ -253,7 +258,7 @@
   (.addShutdownHook (Runtime/getRuntime)
                     (Thread. (fn []
                                ;; Close and wait for the config watcher on exit, if any.
-                               (some-> @state/*config-watcher .close)
+                               (some-> @*config-watcher .close)
                                ;; Don't wait for 1m for futures thread to shut down.
                                ;; See https://clojuredocs.org/clojure.core/future
                                (shutdown-agents))))
@@ -267,6 +272,10 @@
     (log/info "nrepl server running at" (:port opts))
     (spit port-file (:port opts)))
   @(promise))
+
+(comment
+  ;; Reload code from disk, and restart watch with updated code (via after-ns-reload).
+  (reload/reload))
 
 ;; TODO:
 ;; - consider java-time.api instead of tick
@@ -313,3 +322,8 @@
 ;; - stale on-db should be deleting ignores
 ;; - maybe make a debug ns and put hashp and some others there, like trace
 ;; - a LSP server could provide interesting editor functionality
+;; - reload logging seems a bit weird
+;;   - when I have fdb watch running, and connect my editor repl to it, and call reload
+;;   - i see the shutdown and starting messages on editor, but only shutdown in fdb watch log
+;;   - if I change a file, like a repl file, I see it being updated in both editor and fdb watch logs
+;;   - so it seems to work but a little bit odd

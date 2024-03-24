@@ -3,7 +3,6 @@
          ;; keep in sync with the clojure version in fdb.bb.cli
          org.clojure/clojure         {:mvn/version "1.12.0-alpha5"}
          org.clojure/core.async      {:mvn/version "1.6.681"}
-         org.clojure/tools.namespace {:mvn/version "1.4.5"}
          hashp/hashp                 {:mvn/version "0.2.2"}
          com.xtdb/xtdb-core          {:mvn/version "1.24.0"}
          com.xtdb/xtdb-rocksdb       {:mvn/version "1.24.0"}
@@ -26,7 +25,8 @@
                                       :git/sha "f560a68bbad7b625b07b4025b240c2d0b5b610ad"}
          mvxcvi/puget                {:mvn/version "1.3.4"}
          ;; for xtdb, I guess, I don't care, I just want the startup error to go away
-         org.slf4j/slf4j-nop         {:mvn/version "2.0.9"}}
+         org.slf4j/slf4j-nop         {:mvn/version "2.0.9"}
+         io.github.tonsky/clj-reload {:mvn/version "0.4.3"}}
 
  :aliases
  {:neil {:project {:name fdb/fdb}}}}

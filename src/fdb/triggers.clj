@@ -7,7 +7,6 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.state :as state]
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
@@ -110,10 +109,12 @@
 
 ;; Schedules
 
+(defonce *schedules (atom {}))
+
 (defn update-schedules
   "Updates schedules for doc, scoped under config-path."
   [{:keys [config-path] :as call-arg} [op id doc]]
-  (swap! state/*schedules
+  (swap! *schedules
          (fn [schedules]
            ;; Start by stopping all schedules for this id, if any.
            (run! u/close (get-in schedules [config-path id]))
@@ -161,7 +162,7 @@
 (defn stop-config-path-schedules
   "Stop schedules for config-path."
   [config-path]
-  (swap! state/*schedules
+  (swap! *schedules
          (fn [schedules]
            (run! u/close (-> schedules (get config-path) vals flatten))
            (dissoc schedules config-path))))
@@ -169,7 +170,7 @@
 (defn stop-all-schedules
   "Stop all schedules."
   []
-  (swap! state/*schedules
+  (swap! *schedules
          (fn [schedules]
            (run! u/close (mapcat #(vals %) (vals schedules)))
            {})))

@@ -96,7 +96,7 @@
     ;; Watch should be running so we can get state from there.
     ;; *file* should work from a repl session when it evals a file.
     (merge {:self-path *file*}
-           @@(resolve 'fdb.state/*fdb))))
+           @@(resolve 'fdb.core/*fdb))))
 
 (defn apply
   "Applies call-spec fn to call-arg.

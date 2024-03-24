@@ -228,7 +228,7 @@ I didn't make the code I put here right on the first try, but I did iterate and 
 ## Chart a course
 
 Now I feel pretty confident about what I want to extract from these CSVs.
-What do I want to do with the data though?
+What do I do with the data after extracting it though?
 
 I want to:
 1. look it up offline on both desktop and mobile
