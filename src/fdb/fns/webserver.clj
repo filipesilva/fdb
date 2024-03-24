@@ -28,3 +28,5 @@
 ;;   - done
 ;;   - the idea is to have webapps, plural, whatever they are
 ;;   - make apps for your data
+;; - can I make some auto-PWA thing work?
+;;   - that'd make these real personal apps

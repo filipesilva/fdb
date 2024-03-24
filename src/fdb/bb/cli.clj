@@ -134,3 +134,5 @@ All commands take the following options:
 ;;   - atm I'm auto-adding cider stuff
 ;;   - maybe I can just add them in my own fdbconfig.json
 ;;   - maybe I can do something fancy with deps alias and config merging from fdbconfig.edn
+;;   - actually, global clojure deps should work for defining aliases
+;;   - so just a way to chose an alias for the project, I guess --aliases flag on all args

@@ -230,16 +230,16 @@ I didn't make the code I put here right on the first try, but I did iterate and 
 Now I feel pretty confident about what I want to extract from these CSVs.
 What do I want to do with the data though?
 
-I'd want to:
+I want to:
 1. look it up offline on both desktop and mobile
 2. reference it
-3. calculate meal, daily, and weekly nutrition totals``
+3. calculate meal, daily, and weekly nutrition totals
 
 I've been able to do some of these things from apps but never all of these things.
 Point 2 is particularly hard since apps are so isolated and I don't really own my data in most of them.
 
 I'm a heavy [Obsidian](https://obsidian.md) user so my thinking right now is that I should make a markdown file for each foundation food with its nutrition data in [YML properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property%20format).
-Then I can reference it easily (point 2), and I have a little food database on desktop and mobile (point 2).
+Then I can reference it easily (point 1), and I have a little food database on desktop and mobile (point 2).
 
 I don't see any obvious way of calculating stuff (point 3) in Obsidian from YML properties though, nor from any data stored in markdown.
 But we have triggers so we should be able to somehow trigger the calculation and write back to the file.
@@ -255,4 +255,6 @@ Make it work for you.
 
 ## Make it happen
 
+TODO: lean into obsidian, put something that can be used as vault in demo, but work over md to allow everyone to follow
 TODO: put in md, reference, trigger compute
+TODO: some cool datalog queries for nutrition data, like foods with low carbs or high protein
