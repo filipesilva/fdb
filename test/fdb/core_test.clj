@@ -6,9 +6,9 @@
    [fdb.core :as fdb]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
+   [fdb.triggers :as triggers]
    [fdb.utils :as u]
-   [hashp.core]
-   [fdb.triggers :as triggers]))
+   [org.httpkit.client :as http]))
 
 (defmacro with-temp-fdb-config
   {:clj-kondo/ignore [:unresolved-symbol]}
@@ -281,6 +281,15 @@
       (fdb/sync config-path)
       (is (= (metadata/metadata-path->content-path f)
              (-> 'user/*load-test resolve deref deref))))))
+
+(deftest make-me-a-server
+  (with-temp-fdb-config [config-path mount-path]
+    (let [script (str (fs/path mount-path "script.clj"))]
+      (u/swap-edn-file! config-path assoc :load [script] :routes {"GET /" 'user/endpoint})
+      (spit script "(defn endpoint [_] {:status 200 :body {:a 1}})")
+      (fdb/with-fdb [config-path _ node]
+        (is (= {:status 200 :body "{\"a\":1}"}
+               (select-keys @(http/get "http://localhost:80/") [:status :body])))))))
 
 ;; TODO
 ;; - speed up tests if I can, it's 15s now because of the watch stuff

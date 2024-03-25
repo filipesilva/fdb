@@ -6,6 +6,7 @@
    [babashka.fs :as fs]
    [cider.nrepl :as cider-nrepl]
    [clj-reload.core :as reload]
+   [clj-simple-router.core :as router]
    [clojure.core.async :refer [<!! >!! chan close! go sliding-buffer]]
    [clojure.data :as data]
    [clojure.edn :as edn]
@@ -19,7 +20,9 @@
    [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
+   [muuntaja.middleware :as muuntaja]
    [nrepl.server :as nrepl-server]
+   [org.httpkit.server :as httpkit-server]
    [taoensso.timbre :as log]
    [tick.core :as t]
    [xtdb.api :as xt]))
@@ -35,9 +38,29 @@
       (clojure.lang.DynamicClassLoader.)
       (.setContextClassLoader (Thread/currentThread))))
 
-(defn node [config-path]
-  (when (= config-path (:config-path @*fdb))
-    (:node @*fdb)))
+(defn closeable-server
+  "Returns a closeable server for config.
+  Uses :server as httpkit server options, or default {:port 8080}.
+  Uses :routes as clj-simple-router routes, wrapped in muuntaja content negotiation.
+  Route fn is resolved as call-spec."
+  [{:keys [routes server]}]
+  (u/closeable
+   (when routes
+     (let [opts    (merge {:port 80}
+                          server
+                          {:legacy-return-value? false
+                           :event-logger         #(log/debug %)
+                           :warn-logger          #(log/warn %1 %2)
+                           :error-logger         #(log/error %1 %2)})
+           handler (-> routes
+                       (update-vals (fn [call-spec]
+                                      (fn [req]
+                                        ((call/to-fn call-spec) req))))
+                       router/router
+                       muuntaja/wrap-format)]
+       (log/info "serving routes at" (:port opts))
+       (httpkit-server/run-server handler opts)))
+   #(some-> % httpkit-server/server-stop!)))
 
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
@@ -49,9 +72,10 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (with-open [node (or (when (= config-path (:config-path @*fdb))
-                           (-> @*fdb :node u/closeable))
-                         (db/node (u/sibling-path config-path db-path)))]
+    (with-open [node    (or (when (= config-path (:config-path @*fdb))
+                              (-> @*fdb :node u/closeable))
+                            (db/node (u/sibling-path config-path db-path)))
+                _server (closeable-server config)]
       (doseq [f load]
         (when-some [path (-> f fs/absolutize str)]
           (binding [*ns*       (create-ns 'user)
@@ -327,3 +351,4 @@
 ;;   - i see the shutdown and starting messages on editor, but only shutdown in fdb watch log
 ;;   - if I change a file, like a repl file, I see it being updated in both editor and fdb watch logs
 ;;   - so it seems to work but a little bit odd
+;;   - is it related to the reload itself or to the config restart hook?

@@ -13,14 +13,14 @@
                 :notes  {:path          "/path/to/obsidian/vault"
                          ;; extra-readers will be added just to files in this mount.
                          ;; You can also add :readers to overwrite the toplevel.
-                         :extra-readers {:md fdb.fns.obsidian/meta}}}
+                         :extra-readers {:md user/read-obsidian}}}
 
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
  ;; The key is the file extension.
  ;; They are called with the call-arg (see below) just like triggers.
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
- :readers      {:eml fdb.fns.email.eml/meta}
+ :readers      {:eml user/read-eml}
 
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
@@ -33,6 +33,18 @@
                 org.clojure/data.json {:git/url "https://github.com/clojure/data.json"
                                        :git/sha "e9e57296e12750512788b723e49ba7f9abb323f9"}
                 my-local-lib          {:local/root "/path/to/lib"}}
+
+ ;; Map from route to call-spec (see below).
+ ;; Route format is from https://github.com/tonsky/clj-simple-router.
+ ;; Served on 80 by default.
+ ;; Use with https://ngrok.com to make a public server.
+ :routes       {"GET /"        user/get-root
+                "GET /stuff/*" user/get-stuff}
+
+ ;; Server options for https://github.com/http-kit/http-kit.
+ ;; Defaults to {:port 80}.
+ ;; Only used if routes are present.
+ :server       {:port 8081}
 
  ;; Files and folders to ignore when watching for changes.
  ;; default is [".DS_Store" ".git" ".gitignore" ".obsidian" ".vscode" "node_modules" "target" ".cpcache"]

@@ -161,7 +161,7 @@ Will output to `query-results.fdb.edn`:
  ;; You'll lose time-travel data if you delete it though.
  ;; See more about xtdb time travel in https://v1-docs.xtdb.com/concepts/bitemporality/.
  :db-path      "./db"
- 
+
  ;; These paths that will be mounted on the db.
  ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
  ;; its id in the db will be /demos/reference/repl.fdb.clj.
@@ -170,19 +170,19 @@ Will output to `query-results.fdb.edn`:
                 :notes  {:path          "/path/to/obsidian/vault"
                          ;; extra-readers will be added just to files in this mount.
                          ;; You can also add :readers to overwrite the toplevel.
-                         :extra-readers {:md fdb.fns.obsidian/meta}}}
- 
+                         :extra-readers {:md user/read-obsidian}}}
+
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
  ;; The key is the file extension.
  ;; They are called with the call-arg (see below) just like triggers.
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
- :readers      {:eml fdb.fns.email.eml/meta}
- 
+ :readers      {:eml user/read-eml}
+
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/demos/reference/repl.fdb.clj"]
- 
+ :load         ["/fdb-demos/reference/repl.fdb.clj"]
+
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.
  ;; See https://clojure.org/guides/deps_and_cli for more about deps.
@@ -190,19 +190,31 @@ Will output to `query-results.fdb.edn`:
                 org.clojure/data.json {:git/url "https://github.com/clojure/data.json"
                                        :git/sha "e9e57296e12750512788b723e49ba7f9abb323f9"}
                 my-local-lib          {:local/root "/path/to/lib"}}
- 
+
+ ;; Map from route to call-spec (see below).
+ ;; Route format is from https://github.com/tonsky/clj-simple-router.
+ ;; Served on 80 by default.
+ ;; Use with https://ngrok.com to make a public server.
+ :routes       {"GET /"        user/get-root
+                "GET /stuff/*" user/get-stuff}
+
+ ;; Server options for https://github.com/http-kit/http-kit
+ ;; Defaults to {:port 80}.
+ ;; Only used if routes are present.
+ :server       {:port 8081}
+
  ;; Files and folders to ignore when watching for changes.
  ;; default is [".DS_Store" ".git" ".gitignore" ".obsidian" ".vscode" "node_modules" "target" ".cpcache"]
  ;; You can add to the defaults with :extra-ignore, or overwrite it with :ignore.
  ;; You can also use :ignore and :extra-ignore on the mount map definition.
  :extra-ignore [".obsidian"]
- 
+
  ;; nRepl options, port defaults to 2525.
  ;; Started automatically on watch, lets you connect directly from your editor to the fdb process.
  ;; Also used by the fdb cli to connnect to the background clojure process.
  ;; See https://nrepl.org/nrepl/usage/server.html#server-options for more.
  :repl         {}
- 
+
  ;; You can add your own stuff here, and since the call-arg gets the config you will
  ;; be able to look up your config items on triggers and readers.
  :my-stuff     "very personal"}
