@@ -27,9 +27,6 @@
    [tick.core :as t]
    [xtdb.api :as xt]))
 
-;; Current running fdb. Set by watch.
-(defonce *fdb (atom nil))
-
 (defn set-dynamic-classloader!
   "Set dynamic classloader to current thread."
   []
@@ -73,8 +70,8 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (with-open [node (or (when (= config-path (:config-path @*fdb))
-                           (-> @*fdb :node u/closeable))
+    (with-open [node (or (when (= config-path (:config-path @call/*arg-from-watch))
+                           (-> @call/*arg-from-watch :node u/closeable))
                          (db/node (u/sibling-path config-path db-path)))]
       (call/with-arg {:config-path config-path
                       :config      config
@@ -190,7 +187,6 @@
   [config-path f]
   (log/info "starting fdb in watch mode")
   (with-fdb [config-path {:keys [mounts repl] :as config} node]
-    (reset! call/*arg-from-watch call/*arg*)
     (triggers/call-all-k node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
                                            {::xt/event-type ::xt/indexed-tx

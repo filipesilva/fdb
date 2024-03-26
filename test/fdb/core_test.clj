@@ -293,3 +293,7 @@
 
 ;; TODO
 ;; - speed up tests if I can, it's 15s now because of the watch stuff
+;;   - on tests that don't start/stop fdb I can use in-memory xtdb, but that doesn't persist
+;;   - might be able to stop it from closing during fdb usage and just leave it open all the time
+;;   - got it open all the time but couldn't prevent it from being closed in fdb while
+;;     still being able to use it as a xtdb node

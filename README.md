@@ -42,7 +42,7 @@ You know what's really easy to sync and open though?
 
 Files.
 
-You have iCloud, Google Drive, Syncthing, and a ton of other stuff to sync.
+You have iCloud, Google Drive, Syncthing, Git, and a ton of other stuff to sync.
 You have apps that open your on-disk files.
 Lots of these cloud services give you some way to download all of your stuff.
 
