@@ -83,6 +83,14 @@
 
 ;; Set by fdb during triggered calls. Nil during repl sessions, but that's what (arg) below is for.
 (def ^:dynamic *arg* nil)
+;; Set by watch so repl sessions can also get a call-arg, and for restarts after code reload.
+(defonce *arg-from-watch (atom nil))
+
+(defmacro with-arg
+  "Run body with m merged into current *arg*."
+  [m & body]
+  `(binding [*arg* (merge *arg* ~m)]
+     ~@body))
 
 (defmacro arg
   "The argument sent into trigger and reader calls.
@@ -95,15 +103,14 @@
     ;; If it's not set, it must be a nrepl session.
     ;; Watch should be running so we can get state from there.
     ;; *file* should work from a repl session when it evals a file.
-    (merge {:self-path *file*}
-           @@(resolve 'fdb.core/*fdb))))
+    (merge {:self-path *file*} @arg-from-watch)))
 
 (defn apply
-  "Applies call-spec fn to call-arg.
-  Binds call-arg to fdb.call/*arg*."
-  [call-spec call-arg]
-  (binding [*arg* call-arg]
-    ((to-fn call-spec) call-arg)))
+  "Applies call-spec fn to call-arg, defaulting to current *call*. "
+  ([call-spec]
+   (apply call-spec *arg*))
+  ([call-spec call-arg]
+   ((to-fn call-spec) call-arg)))
 
 ;; TODO:
 ;; - maybe get rid of eval-under-call-args and just replace bindings with kws

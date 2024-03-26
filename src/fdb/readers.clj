@@ -17,10 +17,11 @@
     (get readers ext-k)))
 
 (defn read
-  [{:keys [config self] :as call-arg}]
-  (->> (id->readers config (:xt/id self))
+  [config id]
+  (->> (id->readers config id)
        (map (fn [call-spec]
-              (call/apply call-spec (assoc call-arg :on [:fdb.on/read call-spec]))))
+              (call/with-arg {:on [:fdb.on/read call-spec]}
+                (call/apply call-spec))))
        (reduce merge {})))
 
 

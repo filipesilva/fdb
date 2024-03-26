@@ -190,9 +190,9 @@
                                        :count 1}})
         (is (u/eventually (= 1 @ignore-calls)))
 
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
-        (metadata/silent-swap! f config-path id update-in [:fdb.on/modify :count] inc)
+        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
+        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
+        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
 
         ;; wait to see if it gets there
         (u/eventually (= 4 @ignore-calls))

@@ -58,6 +58,7 @@ Lets take it for a spin in `~/fdb-demo/reference/nutrition/fdb.repl.edn`:
      (csv-data->maps (csv/read-csv reader)))))
 
 ;; defonce so we don't do this again each time we eval
+;; if you need to reset them, just change it to def
 (defonce food          (read-csv "food.csv"))
 (defonce nutrient      (read-csv "nutrient.csv"))
 (defonce food-nutrient (read-csv "food-nutrient.csv"))

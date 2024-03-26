@@ -3,6 +3,7 @@
   (:require
    [babashka.fs :as fs :refer [with-temp-dir]]
    [clojure.test :refer [deftest is]]
+   [fdb.call :as call]
    [fdb.readers :as sut]
    [fdb.utils :as u]))
 
@@ -36,4 +37,5 @@
       (u/spit-edn f {:foo "bar"})
       (is (= {:foo "bar"
               :bar "baz"}
-             (sut/read call-arg))))))
+             (call/with-arg call-arg
+               (sut/read config "/test/f.edn")))))))

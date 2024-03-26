@@ -23,28 +23,28 @@
 (defn call
   "Call trigger with call-arg.
   Merges call-arg with {:self self, :on-k on-k} and any extra args."
-  [self on-k trigger trigger-idx {:keys [config-path config] :as call-arg} & more]
-  (let [call-arg' (apply merge
-                         call-arg
-                         {:self      self
-                          :self-path (metadata/id->path config-path config (:xt/id self))
-                          :on        trigger
-                          ;; trigger-idx might be 0, but on-k might not be a vec because
-                          ;; call-all-triggers and update-schedules do map-indexed over one-or-many
-                          :on-path   (if (vector? (get self on-k))
-                                       [on-k trigger-idx]
-                                       [on-k])}
-                         more)
-        log-str   (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
-                       (if-some [target-id (-> call-arg' :target :xt/id)]
-                         (str " over " target-id)
-                         ""))
-        f         (fn []
+  [self on-k trigger trigger-idx & more]
+  (let [log-str (str (:xt/id self) " " on-k " " (u/ellipsis (str trigger))
+                     (if-some [target-id (-> call/*arg* :target :xt/id)]
+                       (str " over " target-id)
+                       ""))
+        f       (fn []
+                  (call/with-arg (apply
+                                  merge
+                                  {:self      self
+                                   :self-path (metadata/id->path (:xt/id self))
+                                   :on        trigger
+                                   ;; trigger-idx might be 0, but on-k might not be a vec because
+                                   ;; call-all-triggers and update-schedules do map-indexed over one-or-many
+                                   :on-path   (if (vector? (get self on-k))
+                                                [on-k trigger-idx]
+                                                [on-k])}
+                                  more)
                     (u/maybe-timeout (:timeout trigger)
                                      (fn []
                                        (u/with-time [t-ms #(log/debug "call" log-str "took" (t-ms) "ms")]
                                          (u/catch-log
-                                          (call/apply trigger call-arg'))))))]
+                                          (call/apply trigger)))))))]
 
     (log/info "calling" log-str)
     (if *sync*
@@ -54,15 +54,15 @@
 (defn call-all-triggers
   "Call all on-k triggers in self if should-trigger? returns truthy.
   Merges call-arg with {:self self, :on-k on-k :target target} and return from should-trigger?."
-  ([call-arg target self on-k]
-   (call-all-triggers call-arg target self on-k (constantly true)))
-  ([{:keys [config-path config] :as call-arg} target self on-k should-trigger?]
+  ([target self on-k]
+   (call-all-triggers target self on-k (constantly true)))
+  ([target self on-k should-trigger?]
    (run! (fn [[trigger-idx trigger]]
            (when-let [maybe-map (u/catch-log (should-trigger? trigger))]
-             (call self on-k trigger trigger-idx call-arg
+             (call self on-k trigger trigger-idx
                    (when target
                      {:target      target
-                      :target-path (metadata/id->path config-path config (:xt/id self))})
+                      :target-path (metadata/id->path (:xt/id target))})
                    (when (map? maybe-map)
                      maybe-map))))
          (->> self on-k call/specs (map-indexed vector)))))
@@ -80,15 +80,12 @@
 (defn call-all-k
   "Call all existing k triggers.
   Mainly for :fdb.on/startup and :fdb.on/shutdown."
-  [config-path config node k]
+  [node k]
   (u/with-time [t-ms #(log/debug "call all" k "took" (t-ms) "ms")]
-    (let [db       (xt/db node)
-          call-arg {:config-path config-path
-                    :config      config
-                    :node        node
-                    :db          db}]
-      (run! #(call-all-triggers call-arg % % k)
-            (docs-with-k db k)))))
+    (let [db (xt/db node)]
+      (call/with-arg {:db db}
+        (run! #(call-all-triggers % % k)
+              (docs-with-k db k))))))
 
 (defn massage-ops
   "Process ops to pass in to call handlers.
@@ -109,70 +106,59 @@
 
 ;; Schedules
 
+;; Reset to {} during watch start.
 (defonce *schedules (atom {}))
 
 (defn update-schedules
   "Updates schedules for doc, scoped under config-path."
-  [{:keys [config-path] :as call-arg} [op id doc]]
+  [[op id doc]]
   (swap! *schedules
          (fn [schedules]
            ;; Start by stopping all schedules for this id, if any.
-           (run! u/close (get-in schedules [config-path id]))
+           (run! u/close (get schedules id))
            (cond
              ;; Remove schedule if id was deleted.
              (and (= op ::xt/delete)
-                  (get-in schedules [config-path id]))
+                  (get schedules id))
              (do (log/debug "removing schedules for" id)
-                 (update schedules config-path dissoc id))
+                 (dissoc schedules id))
 
              ;; Add new schedules for this id if any.
              (:fdb.on/schedule doc)
              (do (log/debug "adding schedules for" id)
-                 (assoc-in schedules [config-path id]
-                           (doall
-                            (map-indexed
-                             (fn [trigger-idx {:keys [cron every] :as trigger}]
-                               (when-some [time-seq (u/catch-log
-                                                     (cond
-                                                       cron  (cron/times cron)
-                                                       every (chime/periodic-seq
-                                                              (t/now) (-> every u/duration-ms t/of-millis))))]
-                                 (chime/chime-at time-seq
-                                                 (fn [timestamp]
-                                                   (call doc :fdb.on/schedule trigger trigger-idx
-                                                         call-arg {:timestamp (str timestamp)})
-                                                   ;; Never cancel schedule from fn.
-                                                   true))))
-                             (-> doc :fdb.on/schedule call/specs)))))
+                 (assoc schedules id
+                        (doall
+                         (map-indexed
+                          (fn [trigger-idx {:keys [cron every] :as trigger}]
+                            (when-some [time-seq (u/catch-log
+                                                  (cond
+                                                    cron  (cron/times cron)
+                                                    every (chime/periodic-seq
+                                                           (t/now) (-> every u/duration-ms t/of-millis))))]
+                              (chime/chime-at time-seq
+                                              (fn [timestamp]
+                                                (call/with-arg {:timestamp (str timestamp)}
+                                                  (call doc :fdb.on/schedule trigger trigger-idx))
+                                                ;; Never cancel schedule from fn.
+                                                true))))
+                          (-> doc :fdb.on/schedule call/specs)))))
 
              ;; There's no schedules for this doc, nothing to do.
              :else
              schedules))))
 
-(defn start-all-schedules
-  [config-path config node]
-  (let [db       (xt/db node)
-        call-arg {:config-path config-path
-                  :config      config
-                  :node        node
-                  :db          db}]
-    (run! #(update-schedules call-arg [nil (:xt/id %) %])
-          (docs-with-k db :fdb.on/schedule))))
+(defn start-schedules!
+  [node]
+  (let [db (xt/db node)]
+    (call/with-arg {:db db}
+      (run! #(update-schedules [nil (:xt/id %) %])
+            (docs-with-k db :fdb.on/schedule)))))
 
-(defn stop-config-path-schedules
-  "Stop schedules for config-path."
-  [config-path]
-  (swap! *schedules
-         (fn [schedules]
-           (run! u/close (-> schedules (get config-path) vals flatten))
-           (dissoc schedules config-path))))
-
-(defn stop-all-schedules
-  "Stop all schedules."
+(defn stop-schedules!
   []
   (swap! *schedules
          (fn [schedules]
-           (run! u/close (mapcat #(vals %) (vals schedules)))
+           (run! u/close (mapcat identity (vals schedules)))
            {})))
 
 
@@ -180,9 +166,9 @@
 
 (defn out-file
   [id in out ext]
-  (when-some[[_ prefix] (re-matches
-                         (re-pattern (str ".*/([^/]*)" in "\\.fdb\\." ext "$"))
-                         id)]
+  (when-some [[_ prefix] (re-matches
+                          (re-pattern (str ".*/([^/]*)" in "\\.fdb\\." ext "$"))
+                          id)]
     (str prefix in "-" out ".fdb." ext)))
 
 (defn unwrap-md-codeblock
@@ -202,11 +188,11 @@
 
 (defn rep-ext-or-codeblock
   "Read eval print helper for query and repl files."
-  [config-path config id in out ext append? log-f f]
+  [id in out ext append? log-f f]
   (let [codeblock? (str/ends-with? id ".md")]
     (when-some [out-file' (out-file id in out (if codeblock? "md" ext))]
       (log-f out-file')
-      (let [in-path  (metadata/id->path config-path config id)
+      (let [in-path  (metadata/id->path id)
             out-path (u/sibling-path in-path out-file')
             content  (u/slurp in-path)
             lang     (ext->codeblock-lang ext)]
@@ -224,36 +210,34 @@
 (defn call-on-query-file
   "If id matches in /*query.fdb.edn, query with content and output
   results to sibling /*results.fdb.edn file."
-  [{:keys [db config-path config]} [op id]]
+  [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     config-path config id
-     "query" "results" "edn" false
+     id "query" "results" "edn" false
      #(log/info "querying" id "to" %)
-     #(try (u/edn-str (xt/q db (u/read-edn %)))
+     #(try (u/edn-str (xt/q (:db call/*arg*) (u/read-edn %)))
            (catch Exception e
              {:error (ex-message e)})))))
 
 (defn call-on-repl-file
   "If id matches in /*repl.fdb.clj, call repl with content and print
   output to sibling /*outputs.fdb.clj file."
-  [{:keys [config-path config] :as call-arg} [op id]]
+  [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     config-path config id
-     "repl" "outputs" "clj" true
+     id "repl" "outputs" "clj" true
      #(log/info "sending" id "to repl, outputs in" %)
      #(str % "\n"
-           (binding [*ns*       (create-ns 'user)
-                     call/*arg* (assoc call-arg :self-path (metadata/id->path config-path config id))]
-             (u/eval-to-comment %))
+           (binding [*ns* (create-ns 'user)]
+             (call/with-arg {:self-path (metadata/id->path id)}
+               (u/eval-to-comment %)))
            "\n"))))
 
 (defn call-on-modify
   "Call all :fdb.on/modify triggers in doc."
-  [call-arg [_op _id {:fdb.on/keys [modify] :as doc}]]
+  [[_op _id {:fdb.on/keys [modify] :as doc}]]
   (when modify
-    (call-all-triggers call-arg doc doc :fdb.on/modify)))
+    (call-all-triggers doc doc :fdb.on/modify)))
 
 (defn recursive-pull-k
   "Recursively pull k from doc.
@@ -275,10 +259,10 @@
 
 (defn call-on-refs
   "Call all :fdb.on/refs triggers in docs that have doc in :fdb.on/refs."
-  [{:keys [db] :as call-arg} [_op _id doc]]
+  [db [_op _id doc]]
   (->> (recursive-pull-k db (:xt/id doc) :fdb/_refs)
        (filter :fdb.on/refs)
-       (run! #(call-all-triggers call-arg doc % :fdb.on/refs))))
+       (run! #(call-all-triggers doc % :fdb.on/refs))))
 
 (defn matches-glob?
   "Returns true if id matches glob."
@@ -289,8 +273,8 @@
 
 (defn call-on-pattern
   "Call all existing :fdb.on/pattern triggers that match id."
-  [{:keys [db] :as call-arg} [_op id doc]]
-  (run! #(call-all-triggers call-arg doc % :fdb.on/pattern
+  [db [_op id doc]]
+  (run! #(call-all-triggers doc % :fdb.on/pattern
                             (fn [trigger]
                               (matches-glob? id (:glob trigger))))
         (docs-with-k db :fdb.on/pattern)))
@@ -298,14 +282,14 @@
 (defn call-on-startup
   "Call all :fdb.on/startup triggers in doc.
   These run on startup but also must be ran when the doc changes."
-  [call-arg [_op _id {:fdb.on/keys [startup] :as doc}]]
+  [[_op _id {:fdb.on/keys [startup] :as doc}]]
   (when startup
-    (call-all-triggers call-arg doc doc :fdb.on/startup)))
+    (call-all-triggers doc doc :fdb.on/startup)))
 
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
-  [config-path config db id {:keys [q path]}]
-  (let [target-path     (metadata/id->path config-path config id)
+  [db id {:keys [q path]}]
+  (let [target-path  (metadata/id->path id)
         results-path (u/sibling-path target-path path)]
     (if (= target-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
@@ -317,18 +301,16 @@
 
 (defn call-all-on-query
   "Call all existing :fdb.on/query triggers, updating their results if changed."
-  [{:keys [config-path config db] :as call-arg}]
-  (run! #(call-all-triggers call-arg nil % :fdb.on/query
-                            (partial query-results-changed?
-                                     config-path config db (:xt/id %)))
+  [db]
+  (run! #(call-all-triggers nil % :fdb.on/query
+                            (partial query-results-changed? db (:xt/id %)))
         (docs-with-k db :fdb.on/query)))
 
 (defn call-all-on-tx
   "Call all existing :fdb.on/tx triggers."
-  [{:keys [db] :as call-arg}]
-  (run! #(call-all-triggers call-arg nil % :fdb.on/tx)
+  [db]
+  (run! #(call-all-triggers nil % :fdb.on/tx)
         (docs-with-k db :fdb.on/tx)))
-
 
 ;; tx listener
 
@@ -348,37 +330,35 @@
    :target-path on-disk path for doc, if any
    :results     query results, if any
    :timestamp   schedule timestamp, if any}"
-  [config-path config node tx]
+  [call-arg node tx]
   (u/catch-log
    (when-not (false? (:committed? tx)) ;; can be nil for txs retried from log directly
      (u/with-time [time-ms]
        (log/debug "processing tx" (::xt/tx-id tx))
-       (let [call-arg {:config-path config-path
-                       :config      config
-                       :node        node
-                       :db          (xt/db node {::xt/tx tx})
-                       :tx          tx}
-             ops      (->> tx
-                           ::xt/tx-ops
-                           (massage-ops node)
-                           (remove #(tr.ignore/ignore-and-remove? config-path (second %))))]
+       (let [db  (xt/db node {::xt/tx tx})
+             ops (->> tx
+                      ::xt/tx-ops
+                      (massage-ops node)
+                      (remove #(tr.ignore/ignore-and-remove? (second %))))]
+         (call/with-arg (merge call-arg
+                               {:db db
+                                :tx tx})
 
-         ;; Update schedules
-         (run! (partial update-schedules call-arg) ops)
+           ;; Update schedules
+           (run! update-schedules ops)
 
-         ;; Call triggers in order of "closeness"
-         (run! (partial call-on-repl-file call-arg) ops) ;; content
-         (run! (partial call-on-query-file call-arg) ops) ;; content
-         (run! (partial call-on-modify call-arg) ops)     ;; self metadata
-         (run! (partial call-on-refs call-arg) ops)       ;; direct ref
-         (run! (partial call-on-pattern call-arg) ops)    ;; pattern
-         (run! (partial call-on-startup call-arg) ops) ;; application lifecycle
+           ;; Call triggers in order of "closeness"
+           (run! call-on-repl-file ops)            ;; content
+           (run! call-on-query-file ops)           ;; content
+           (run! call-on-modify ops)               ;; self metadata
+           (run! (partial call-on-refs db) ops)    ;; direct ref
+           (run! (partial call-on-pattern db) ops) ;; pattern
+           (run! call-on-startup ops)              ;; application lifecycle
 
-         ;; Don't need ops, just needs to be called after every tx
-         (call-all-on-query call-arg)
-         (call-all-on-tx call-arg))
+           ;; Don't need ops, just needs to be called after every tx
+           (call-all-on-query db)
+           (call-all-on-tx db)))
        (log/debug "processed tx-id" (::xt/tx-id tx) "in" (time-ms) "ms")))))
-
 
 ;; TODO:
 ;; - make schedules play nice with sync

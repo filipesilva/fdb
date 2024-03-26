@@ -55,8 +55,8 @@
            handler (-> routes
                        (update-vals (fn [call-spec]
                                       (fn [req]
-                                        ((call/to-fn call-spec)
-                                         (assoc call/*arg* :req req)))))
+                                        (call/with-arg {:req req}
+                                          (call/apply call-spec)))))
                        router/router
                        muuntaja/wrap-format)]
        (log/info "serving routes at" (:port opts))
@@ -73,19 +73,19 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (with-open [node    (or (when (= config-path (:config-path @*fdb))
-                              (-> @*fdb :node u/closeable))
-                            (db/node (u/sibling-path config-path db-path)))]
-      (binding [call/*arg* {:config-path config-path
-                            :config      config
-                            :node        node}]
+    (with-open [node (or (when (= config-path (:config-path @*fdb))
+                           (-> @*fdb :node u/closeable))
+                         (db/node (u/sibling-path config-path db-path)))]
+      (call/with-arg {:config-path config-path
+                      :config      config
+                      :node        node}
         (with-open [_server (closeable-server serve)]
           (doseq [f load]
             (when-some [path (-> f fs/absolutize str)]
-              (binding [*ns*       (create-ns 'user)
-                        call/*arg* (assoc call/*arg* :self-path path)]
-                (log/info "loading" path)
-                (load-file path))))
+              (call/with-arg {:self-path path}
+                (binding [*ns* (create-ns 'user)]
+                  (log/info "loading" path)
+                  (load-file path)))))
           (f config-path config node))))))
 
 (defmacro with-fdb
@@ -98,36 +98,29 @@
   "Read id-or-ids from fs and update them in node. Returns tx without ops."
   [config-path config node id-or-ids]
   (u/with-time [t-ms #(log/debug "update! took" (t-ms) "ms")]
-    (let [call-arg {:config-path config-path
-                    :config      config
-                    :node        node
-                    :db          (xt/db node)}]
-      (some->> id-or-ids
-               u/one-or-many
-               not-empty
-               (u/side-effect->> (fn [ids]
-                                   (when-some [ids' (->> ids
-                                                         (remove (partial tr.ignore/ignoring? config-path))
-                                                         seq)]
-                                     (log/info "updating" (str/join ", " (take 5 ids'))
-                                               (if (> (count ids') 5)
-                                                 (str "and " (-> ids' count (- 5) str) " more")
-                                                 "")))))
-               (pmap (fn [id]
-                       (let [path (metadata/id->path config-path config id)]
-                         (if-some [metadata (metadata/read path)]
-                           (let [call-arg' (merge call-arg
-                                                  {:self      {:xt/id id}
-                                                   :self-path path})]
-                             [::xt/put (merge
-                                        ;; order matters: reader data, then metadata, then id
-                                        ;; metadata overrides reader data, id overrides all
-                                        (readers/read call-arg')
-                                        metadata
-                                        {:xt/id      id
-                                         :fdb/parent (-> id fs/parent str)})])
-                           [::xt/delete id]))))
-               (xt/submit-tx node)))))
+    (some->> id-or-ids
+             u/one-or-many
+             not-empty
+             (u/side-effect->> (fn [ids]
+                                 (when-some [ids' (remove tr.ignore/ignoring? ids)]
+                                   (log/info "updating" (str/join ", " (take 5 ids'))
+                                             (if (> (count ids') 5)
+                                               (str "and " (-> ids' count (- 5) str) " more")
+                                               "")))))
+             (pmap (fn [id]
+                     (let [path (metadata/id->path config-path config id)]
+                       (if-some [metadata (metadata/read path)]
+                         (call/with-arg {:self      {:xt/id id}
+                                         :self-path path}
+                           [::xt/put (merge
+                                      ;; order matters: reader data, then metadata, then id
+                                      ;; metadata overrides reader data, id overrides all
+                                      (readers/read config id)
+                                      metadata
+                                      {:xt/id      id
+                                       :fdb/parent (-> id fs/parent str)})])
+                         [::xt/delete id]))))
+             (xt/submit-tx node))))
 
 (defn stale
   "Returns all ids that are out of sync between fs and node."
@@ -174,14 +167,14 @@
   ;; Call triggers synchronously
   (binding [triggers/*sync* true]
     (with-fdb [config-path {:keys [mounts] :as config} node]
-      (triggers/call-all-k config-path config node :fdb.on/startup)
+      (triggers/call-all-k node :fdb.on/startup)
       ;; Update stale files.
       (let [[stale-ids tx] (update-stale! config-path config node)]
         (when tx
           (xt/await-tx node tx)
           ;; TODO: sync call missed cron schedules
-          (triggers/on-tx config-path config node (db/tx-with-ops node tx)))
-        (triggers/call-all-k config-path config node :fdb.on/shutdown)
+          (triggers/on-tx call/*arg* node (db/tx-with-ops node tx)))
+        (triggers/call-all-k node :fdb.on/shutdown)
         stale-ids))))
 
 (defn mount->watch-spec
@@ -197,12 +190,14 @@
   [config-path f]
   (log/info "starting fdb in watch mode")
   (with-fdb [config-path {:keys [mounts repl] :as config} node]
-    (tr.ignore/clear config-path)
-    (triggers/call-all-k config-path config node :fdb.on/startup)
+    (reset! call/*arg-from-watch call/*arg*)
+    (triggers/call-all-k node :fdb.on/startup)
     (with-open [_tx-listener    (xt/listen node
                                            {::xt/event-type ::xt/indexed-tx
                                             :with-tx-ops?   true}
-                                           (partial triggers/on-tx config-path config node))
+                                           ;; binding isn't in the listener thread
+                                           ;; need to pass it in and rebind
+                                           (partial triggers/on-tx call/*arg* node))
                 ;; Start watching before the stale check, so no change is lost.
                 ;; TODO: don't tx anything before the stale update
                 _mount-watchers (u/with-time [t-ms #(log/debug "watch took" (t-ms) "ms")]
@@ -210,16 +205,15 @@
                                        (map (partial mount->watch-spec config config-path node))
                                        watcher/watch-many
                                        u/closeable-seq))
-                _state          (u/closeable-atom *fdb
-                                                  {:config-path config-path
-                                                   :config      config
-                                                   :node        node})]
+                _schedules      (u/closeable-atom triggers/*schedules {})
+                _ignores        (u/closeable-atom tr.ignore/*ids #{})
+                _arg-from-watch (u/closeable-atom call/*arg-from-watch nil)]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
-      (triggers/start-all-schedules config-path config node)
+      (triggers/start-schedules! node)
       (let [return (f node)]
-        (triggers/stop-config-path-schedules config-path)
-        (triggers/call-all-k config-path config node :fdb.on/shutdown)
+        (triggers/stop-schedules!)
+        (triggers/call-all-k node :fdb.on/shutdown)
         return))))
 
 (defmacro with-watch
@@ -259,7 +253,7 @@
 (defn after-ns-reload
   "Restarts watch-config! with current config-path after (clj-reload/reload)."
   []
-  (when-let [config-path (:config-path @*fdb)]
+  (when-let [config-path (:config-path @call/*arg-from-watch)]
     (future
       (some-> @*config-watcher .close)
       (watch-config! config-path))))
@@ -354,5 +348,3 @@
 ;;   - so it seems to work but a little bit odd
 ;;   - is it related to the reload itself or to the config restart hook?
 ;; - support one-or-many for servers, maybe
-;; - keep an eye out for that progressive binding call/*arg* pattern
-;;   - might be worth using in triggers and readers too

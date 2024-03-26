@@ -23,15 +23,14 @@
     (with-redefs [call/to-fn        (fn [_] call-spy)
                   metadata/id->path (spy/stub "root/folder/foo.txt")]
       (binding [sut/*sync* true]
-        (sut/call-all-triggers {:call-arg true}
-                               :adoc
-                               self
-                               :on-foo
-                               should-trigger?)
-        (sut/call-all-triggers {:call-arg true}
-                               :adoc
-                               self
-                               :on-bar))
+        (call/with-arg {:call-arg true}
+          (sut/call-all-triggers :adoc
+                                 self
+                                 :on-foo
+                                 should-trigger?)
+          (sut/call-all-triggers :adoc
+                                 self
+                                 :on-bar)))
       (is (= [[{:call 1}] [{:doit true :call 2}] [3]]
              (spy/calls should-trigger?)))
       (is (= [[{:call-arg    true
@@ -97,24 +96,24 @@
   (is (not (sut/matches-glob? "/root/folder/foo.txt" "**.log"))))
 
 (deftest query-results-changed?-test
-  (let [config-path "/root/one/two/config.edn"
-        config      {:mounts {:test "test"}}
-        id          "/test/folder/foo.txt"]
+  (let [id "/test/folder/foo.txt"]
     (with-redefs [xt/q        (spy/spy (fn [_ q] (if (= q :gimme-new)
                                                    {:v 2}
                                                    {:v 1})))
                   u/slurp-edn (spy/stub {:v 1})
                   spit        (spy/spy)]
-      (is (= {:results {:v 2}}
-             (sut/query-results-changed? config-path config nil id
-                                         {:q    :gimme-new
-                                          :path "results.edn"})))
-      (is (nil? (sut/query-results-changed? config-path config nil id
-                                            {:q    :foo
-                                             :path "results.edn"})))
+      (call/with-arg {:config-path "/root/one/two/config.edn"
+                      :config      {:mounts {:test "test"}}}
+        (is (= {:results {:v 2}}
+               (sut/query-results-changed? nil id
+                                           {:q    :gimme-new
+                                            :path "results.edn"})))
+        (is (nil? (sut/query-results-changed? nil id
+                                              {:q    :foo
+                                               :path "results.edn"})))
 
-      (is (= [["/root/one/two/test/folder/results.edn" "{:v 2}"]]
-             (spy/calls spit))))))
+        (is (= [["/root/one/two/test/folder/results.edn" "{:v 2}"]]
+               (spy/calls spit)))))))
 
 (deftest massage-ops-test
   (with-redefs [db/xtdb-id->xt-id (spy/stub "/test/deleted.txt")]
