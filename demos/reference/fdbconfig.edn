@@ -34,17 +34,15 @@
                                        :git/sha "e9e57296e12750512788b723e49ba7f9abb323f9"}
                 my-local-lib          {:local/root "/path/to/lib"}}
 
- ;; Map from route to call-spec (see below).
- ;; Route format is from https://github.com/tonsky/clj-simple-router.
- ;; Served on 80 by default.
- ;; Use with https://ngrok.com to make a public server.
- :routes       {"GET /"        user/get-root
-                "GET /stuff/*" user/get-stuff}
-
- ;; Server options for https://github.com/http-kit/http-kit.
- ;; Defaults to {:port 80}.
- ;; Only used if routes are present.
- :server       {:port 8081}
+ ;; Serve call-specs (see below) from fdb.
+ ;; Use with https://ngrok.com or https://github.com/localtunnel/localtunnel to make a public server.
+ :serve        {;; Map from route to call-spec, req will be within call-arg as :req.
+                ;; Route format is from https://github.com/tonsky/clj-simple-router.
+                :routes {"GET /"        user/get-root
+                         "GET /stuff/*" user/get-stuff}
+                ;; Server options for https://github.com/http-kit/http-kit.
+                ;; Defaults to {:port 80}.
+                :opts   {:port 8081}}
 
  ;; Files and folders to ignore when watching for changes.
  ;; default is [".DS_Store" ".git" ".gitignore" ".obsidian" ".vscode" "node_modules" "target" ".cpcache"]

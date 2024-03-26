@@ -13,4 +13,5 @@
  :target-path "/path/bar.md"                ;; on-disk path for doc, if any
  :results     {,,,}                         ;; query results, if any
  :timestamp   "2024-03-22T16:52:20.995717Z" ;; schedule timestamp, if any
+ :req         {:path-params ["42"] ,,,}     ;; http request, if any
  }

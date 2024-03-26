@@ -285,7 +285,7 @@
 (deftest make-me-a-server
   (with-temp-fdb-config [config-path mount-path]
     (let [script (str (fs/path mount-path "script.clj"))]
-      (u/swap-edn-file! config-path assoc :load [script] :routes {"GET /" 'user/endpoint})
+      (u/swap-edn-file! config-path assoc :load [script] :serve {:routes {"GET /" 'user/endpoint}})
       (spit script "(defn endpoint [_] {:status 200 :body {:a 1}})")
       (fdb/with-fdb [config-path _ node]
         (is (= {:status 200 :body "{\"a\":1}"}

@@ -43,11 +43,11 @@
   Uses :server as httpkit server options, or default {:port 8080}.
   Uses :routes as clj-simple-router routes, wrapped in muuntaja content negotiation.
   Route fn is resolved as call-spec."
-  [{:keys [routes server]}]
+  [{:keys [routes opts]}]
   (u/closeable
    (when routes
      (let [opts    (merge {:port 80}
-                          server
+                          opts
                           {:legacy-return-value? false
                            :event-logger         #(log/debug %)
                            :warn-logger          #(log/warn %1 %2)
@@ -55,7 +55,8 @@
            handler (-> routes
                        (update-vals (fn [call-spec]
                                       (fn [req]
-                                        ((call/to-fn call-spec) req))))
+                                        ((call/to-fn call-spec)
+                                         (assoc call/*arg* :req req)))))
                        router/router
                        muuntaja/wrap-format)]
        (log/info "serving routes at" (:port opts))
@@ -65,7 +66,7 @@
 (defn do-with-fdb
   "Call f over an initialized fdb. Uses repl xtdb node if available, otherwise creates a new one."
   [config-path f]
-  (let [{:keys [db-path extra-deps load] :as config} (-> config-path slurp edn/read-string)]
+  (let [{:keys [db-path extra-deps load serve] :as config} (-> config-path slurp edn/read-string)]
     (when extra-deps
       (binding [clojure.core/*repl* true]
         ;; Needs dynamic classloader when running from cli
@@ -74,18 +75,18 @@
         (deps/add-libs extra-deps)))
     (with-open [node    (or (when (= config-path (:config-path @*fdb))
                               (-> @*fdb :node u/closeable))
-                            (db/node (u/sibling-path config-path db-path)))
-                _server (closeable-server config)]
-      (doseq [f load]
-        (when-some [path (-> f fs/absolutize str)]
-          (binding [*ns*       (create-ns 'user)
-                    call/*arg* {:config-path config-path
-                                :config      config
-                                :node        node
-                                :self-path   path}]
-            (log/info "loading" path)
-            (load-file path))))
-      (f config-path config node))))
+                            (db/node (u/sibling-path config-path db-path)))]
+      (binding [call/*arg* {:config-path config-path
+                            :config      config
+                            :node        node}]
+        (with-open [_server (closeable-server serve)]
+          (doseq [f load]
+            (when-some [path (-> f fs/absolutize str)]
+              (binding [*ns*       (create-ns 'user)
+                        call/*arg* (assoc call/*arg* :self-path path)]
+                (log/info "loading" path)
+                (load-file path))))
+          (f config-path config node))))))
 
 (defmacro with-fdb
   "Call body with over fdb configured with config-path."
@@ -352,3 +353,6 @@
 ;;   - if I change a file, like a repl file, I see it being updated in both editor and fdb watch logs
 ;;   - so it seems to work but a little bit odd
 ;;   - is it related to the reload itself or to the config restart hook?
+;; - support one-or-many for servers, maybe
+;; - keep an eye out for that progressive binding call/*arg* pattern
+;;   - might be worth using in triggers and readers too
