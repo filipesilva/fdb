@@ -3,7 +3,7 @@
  ;; You can delete this at any time, and the latest state will be recreated from the mount files.
  ;; You'll lose time-travel data if you delete it though.
  ;; See more about xtdb time travel in https://v1-docs.xtdb.com/concepts/bitemporality/.
- :db-path      "./db"
+ :db-path      "./fdb"
 
  ;; These paths that will be mounted on the db.
  ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,

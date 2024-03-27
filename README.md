@@ -24,6 +24,7 @@ FileDB should let you hack your own setup.
 - trigger: fn in metadata called reactively as the db changes
 - call spec/arg: how fns are specified for readers and triggers, and the argument they take
 
+
 ## But why?
 
 Because I think it's silly that I own a really powerful laptop and a really powerful phone, and yet my data is sequestered away on cloud servers, where I pay for the privilege of accessing it and using it in a silo.
@@ -169,7 +170,7 @@ Will output to `query-results.fdb.edn`:
  ;; You can delete this at any time, and the latest state will be recreated from the mount files.
  ;; You'll lose time-travel data if you delete it though.
  ;; See more about xtdb time travel in https://v1-docs.xtdb.com/concepts/bitemporality/.
- :db-path      "./db"
+ :db-path      "./fdb"
 
  ;; These paths that will be mounted on the db.
  ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,

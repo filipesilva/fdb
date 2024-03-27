@@ -65,7 +65,7 @@
         (when demos
           (fs/copy-tree fdb-demos-path demos-path {:replace-existing true})
           (log/info "created demos folder at" demos-path))
-        (u/spit-edn path (cond-> {:db-path    "./db"
+        (u/spit-edn path (cond-> {:db-path    "./fdb"
                                   :mounts     {}
                                   :readers    {}
                                   :extra-deps {}

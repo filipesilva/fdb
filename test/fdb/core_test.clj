@@ -17,7 +17,7 @@
      (let [~mount-path  (str dir# "/test")
            ~config-path (str dir# "/meta.edn")]
        (fs/create-dirs ~mount-path)
-       (u/spit ~config-path {:db-path "./db"
+       (u/spit ~config-path {:db-path "./fdb"
                              :mounts  {:test "./test"}
                              :repl    false})
        ~@body)))
