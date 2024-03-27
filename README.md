@@ -10,10 +10,19 @@ Check the [Reference](#reference) to see what interacting with FileDB looks like
 The database is wholly determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
 Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
 
-I use to to hack together code and automations for my own usecases.
+I use it to hack together code and automations for my own usecases.
 I like using markdown files on [Obsidian](https://obsidian.md) as my main readable files, but I don't think that matters.
 FileDB should let you hack your own setup.
 
+
+## What are the main ideas in it?
+
+- mount: the name a folder on disk has on the db
+- repl/query file: evaluates code or db queries on file save, outputs result to a sibling file
+- metadata: extra data about a file you add in a sibling .meta.edn file
+- reader: a fn that take a file and returns data from it as edn
+- trigger: fn in metadata called reactively as the db changes
+- call spec/arg: how fns are specified for readers and triggers, and the argument they take
 
 ## But why?
 
