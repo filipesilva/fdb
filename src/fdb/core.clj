@@ -25,7 +25,9 @@
    [org.httpkit.server :as httpkit-server]
    [taoensso.timbre :as log]
    [tick.core :as t]
-   [xtdb.api :as xt]))
+   [xtdb.api :as xt])
+  (:import
+   (java.net NetworkInterface Inet4Address)))
 
 (defn set-dynamic-classloader!
   "Set dynamic classloader to current thread."
@@ -34,6 +36,17 @@
       (.getContextClassLoader)
       (clojure.lang.DynamicClassLoader.)
       (.setContextClassLoader (Thread/currentThread))))
+
+(defn ips
+    "Returns all ips for this machine.
+  From http://software-ninja-ninja.blogspot.com/2013/05/clojure-what-is-my-ip-address.html"
+    []
+    (->> (NetworkInterface/getNetworkInterfaces)
+         enumeration-seq
+         (filter #(and (.isUp %) (not (.isVirtual %))))
+         (mapcat #(enumeration-seq (.getInetAddresses %)))
+         (filter #(instance? Inet4Address %))
+         (map #(.getHostAddress %1))))
 
 (defn closeable-server
   "Returns a closeable server for config.
@@ -56,7 +69,9 @@
                                           (call/apply call-spec)))))
                        router/router
                        muuntaja/wrap-format)]
-       (log/info "serving routes at" (:port opts))
+       (log/info "serving routes at" (->> (ips)
+                                          (map #(str "http://" % ":" (:port opts)))
+                                          (str/join ", ")))
        (httpkit-server/run-server handler opts)))
    #(some-> % httpkit-server/server-stop!)))
 
