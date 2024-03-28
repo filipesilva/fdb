@@ -347,7 +347,9 @@ It looks like this:
 
  ;; Called on every db transaction via https://v1-docs.xtdb.com/clients/clojure/#_listen
  ;; This is how every other trigger is made, so you can make your own triggers.
- :fdb.on/tx       print-call-arg}
+ ;; Not enabled because it is a bit noisy during demos!
+ ;; :fdb.on/tx       print-call-arg
+ }
 ```
 
 
