@@ -132,7 +132,7 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
   (println "=== called" (first on-path) "==="))
 ```
 
-Will append the evaluated code with output in a comment to `repl-results.fdb.clj`:
+Will write the evaluated code with output in a comment to `repl-results.fdb.clj`:
 
 ``` clojure
 ;; We'll use this fn later in triggers.

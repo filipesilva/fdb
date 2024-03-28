@@ -188,7 +188,7 @@
 
 (defn rep-ext-or-codeblock
   "Read eval print helper for query and repl files."
-  [id in out ext append? log-f f]
+  [id in out ext log-f f]
   (let [codeblock? (str/ends-with? id ".md")]
     (when-some [out-file' (out-file id in out (if codeblock? "md" ext))]
       (log-f out-file')
@@ -204,7 +204,7 @@
                                (wrap-md-codeblock lang))
                       (f content))]
             (cond
-              ret (apply spit out-path ret (when append? [:append true]))
+              ret (spit out-path ret)
               codeblock? (log/info "no solo" lang "codeblock found in" id))))))))
 
 (defn call-on-query-file
@@ -213,7 +213,7 @@
   [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     id "query" "results" "edn" false
+     id "query" "results" "edn"
      #(log/info "querying" id "to" %)
      #(try (u/edn-str (xt/q (:db call/*arg*) (u/read-edn %)))
            (catch Exception e
@@ -225,7 +225,7 @@
   [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     id "repl" "outputs" "clj" true
+     id "repl" "outputs" "clj"
      #(log/info "sending" id "to repl, outputs in" %)
      #(str % "\n"
            (binding [*ns* (create-ns 'user)]
@@ -374,4 +374,3 @@
 ;; - some way to replay the log for repl filesq
 ;; - maybe :fdb/tags and :fdb.on/tags? cool with readers adding tags
 ;; - would be cool to render ids in markdown for markdown query
-;; - add timestamp to repl output, and prepend instead of append
