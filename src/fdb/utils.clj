@@ -111,9 +111,9 @@
   (closeable coll #(run! close %)))
 
 (defn closeable-atom
-  "Returns a closeable, which resets an atom to value and back to value on close."
-  [atom value]
-  (closeable (reset! atom value) (fn [_] (reset! atom value))))
+  "Returns a closeable, which resets an atom to `value` on open and to `back` (defaults to `to`) on close."
+  [atom value & {:keys [back]}]
+  (closeable (reset! atom value) (fn [_] (reset! atom (or back value)))))
 
 (defn do-eventually
   "Repeatedly calls f ever interval-ms until it returns a truthy value, or timeout-ms has passed.

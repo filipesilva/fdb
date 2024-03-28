@@ -218,7 +218,7 @@
                                        u/closeable-seq))
                 _schedules      (u/closeable-atom triggers/*schedules {})
                 _ignores        (u/closeable-atom tr.ignore/*ids #{})
-                _arg-from-watch (u/closeable-atom call/*arg-from-watch nil)]
+                _arg-from-watch (u/closeable-atom call/*arg-from-watch call/*arg* :back {})]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
       (triggers/start-schedules! node)
@@ -265,6 +265,7 @@
   "Restarts watch-config! with current config-path after (clj-reload/reload)."
   []
   (when-let [config-path (:config-path @call/*arg-from-watch)]
+    (log/info "restarting watch after code reload")
     (future
       (some-> @*config-watcher .close)
       (watch-config! config-path))))
