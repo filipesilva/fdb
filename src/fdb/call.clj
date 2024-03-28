@@ -103,7 +103,7 @@
     ;; If it's not set, it must be a nrepl session.
     ;; Watch should be running so we can get state from there.
     ;; *file* should work from a repl session when it evals a file.
-    (merge {:self-path *file*} @arg-from-watch)))
+    (merge {:self-path *file*} @*arg-from-watch)))
 
 (defn apply
   "Applies call-spec fn to call-arg, defaulting to current *call*. "
