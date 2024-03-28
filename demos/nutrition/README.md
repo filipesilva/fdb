@@ -214,10 +214,30 @@ The pull projection is a bit gnarly:
 
 It means:
 - for the entity (each foundation food) get `:description` and what's in the `{}`
-- `:_fdc_id` pulls all references back to this entity through the `:fdc_id` key
+- `:_fdc_id` pulls all references back to this entity through the `:fdc_id` key (you can do this with any key by prefixing it with `_`)
 - for those we're getting `:amount` what's in the `{}`
 - `:nutrient_id` pulls what's referenced in this entity in the `:nutrient_id` key
 - for those we're getting `:name` and `:amount`
+
+It's a bit easier if we look at it as built iteratively, each time replacing one of the pulled keys by `{:key pull-pattern}`:
+
+``` edn
+;; pull description and all the id of all the entities that references ?e (backrefs) via the :fdc_id key
+;; NB: this won't actually return the backrefs ids, it's just easier to think about
+(pull ?e [:description
+          :_fdc_id])
+
+;; now for those entities, pull :amount and :nutrient_id keys
+(pull ?e [:description
+          {:_fdc_id [:amount
+                     :nutrient_id]}])
+
+;; for the entity referenced in :nutrient_id, pull :name and :unit_name
+(pull ?e [:description
+          {:_fdc_id [:amount
+                     {:nutrient_id [:name
+                                    :unit_name]}]}])
+```
 
 It might feel daunting but at the end of the day it's an impressive amount of power and expressiveness in 4 lines.
 This is exactly what I'm looking for when hacking together my own tools.
