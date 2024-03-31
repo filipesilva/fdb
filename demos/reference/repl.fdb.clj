@@ -4,4 +4,4 @@
 (defn print-call-arg
   "Simple fn to see which triggers are called."
   [{:keys [on-path]}]
-  (println "=== called" (first on-path) "==="))
+  #_(println "=== called" (first on-path) "==="))

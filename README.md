@@ -136,7 +136,7 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
 (defn print-call-arg
   "Simple fn to see which triggers are called."
   [{:keys [on-path]}]
-  (println "=== called" (first on-path) "==="))
+  #_(println "=== called" (first on-path) "==="))
 ```
 
 Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
@@ -148,7 +148,7 @@ Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 (defn print-call-arg
   "Simple fn to see which triggers are called."
   [{:keys [on-path]}]
-  (println "=== called" (first on-path) "==="))
+  #_(println "=== called" (first on-path) "==="))
 
 ;; => #'user/print-call-arg
 ```
