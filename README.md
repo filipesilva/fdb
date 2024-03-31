@@ -25,10 +25,10 @@ FileDB should let you hack your own setup.
 - call spec/arg: how fns are specified for readers and triggers, and the argument they take
 
 ```
-mount --> file change --> db --> triggers
-            ^                       |
-            |                       |
-            -------------------------
+mount --> file change --> readers+metadata -> db --> triggers
+            ^                                           |
+            |                                           |
+            ---------------------------------------------
 ```
 
 
@@ -278,7 +278,7 @@ It looks like this:
 ;; This is the format for call arg, which the function resolved for call-spec is called with.
 ;; It's also acessible in (fdb.call/arg) for triggers, readers, repl files, and files loaded in fdbconfig.edn.
 {:config      {,,,}                         ;; fdb config value
- :config-path "~/fdbconfig.json"            ;; on-disk path to config
+ :config-path "~/fdb/fdbconfig.json"        ;; on-disk path to config
  :node        {,,,}                         ;; xtdb database node
  :db          {,,,}                         ;; xtdb db value at the time of the tx
  :tx          {:xtdb.api/id 1 ,,,}          ;; the tx
