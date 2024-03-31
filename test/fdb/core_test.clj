@@ -15,7 +15,7 @@
   [[config-path mount-path] & body]
   `(with-temp-dir [dir# {}]
      (let [~mount-path  (str dir# "/test")
-           ~config-path (str dir# "/meta.edn")]
+           ~config-path (str dir# "/fdbconfig.edn")]
        (fs/create-dirs ~mount-path)
        (u/spit ~config-path {:db-path "./fdb"
                              :mounts  {:test "./test"}

@@ -12,7 +12,8 @@
    [taoensso.timbre :as log]
    [tick.core :as t])
   (:import
-   (java.io RandomAccessFile)))
+   (java.io RandomAccessFile)
+   (java.net URLDecoder URLEncoder)))
 
 (defn one-or-many
   "Returns x if it's a set, sequential, or nil, otherwise [x]."
@@ -304,6 +305,19 @@
        (as-comments (with-out-str (pprint/pprint @*val)) :prefix "=> ")))
     (catch Exception e
       (as-comments (with-out-str (pprint/pprint e))))))
+
+(defn url-encode
+  "Like JS encodeURI."
+  [s]
+  (-> s
+      (URLEncoder/encode)
+      (.replace "+" "%20")
+      (.replace "%2F" "/")))
+
+(defn url-decode
+  "Like JS decodeURI."
+  [s]
+  (URLDecoder/decode s))
 
 ;; TODO:
 ;; - str-path fn

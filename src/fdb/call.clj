@@ -26,7 +26,8 @@
   call-specs are dispatched by type of x, or by keyword if it's
   a vector with a keyword first element:
   - map     Use :call key to resolve fn
-  - symbol  Resolves and returns the var
+  - symbol  Resolves and returns the sym
+  - var     Calls var-get on var
   - list    Evaluates and returns the result
   - :sh     Runs shell command via babashka.process/shell
             You can use the shell option map, and the config-path,
@@ -52,6 +53,10 @@
     (if (qualified-symbol? sym)
       (requiring-resolve sym)
       (resolve sym))))
+
+(defmethod to-fn clojure.lang.Var
+  [var]
+  (var-get var))
 
 (defmethod to-fn clojure.lang.PersistentList
   [sexp]

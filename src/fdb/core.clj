@@ -192,9 +192,11 @@
 (defn mount->watch-spec
   [config config-path node [mount-id mount-spec]]
   (let [mount-path (metadata/mount-path config-path mount-spec)
-        update-fn  #(->> %
-                         (metadata/id mount-id)
-                         (update! config-path config node))]
+        call-arg   call/*arg*
+        update-fn  #(call/with-arg call-arg
+                      (->> %
+                           (metadata/id mount-id)
+                           (update! config-path config node)))]
     [config mount-path update-fn]))
 
 (defn watch

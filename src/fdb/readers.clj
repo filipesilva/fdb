@@ -1,16 +1,26 @@
 (ns fdb.readers
   (:refer-clojure :exclude [read])
   (:require
-   [fdb.call :as call]
    [babashka.fs :as fs]
-   [fdb.metadata :as metadata]))
+   [fdb.call :as call]
+   [fdb.metadata :as metadata]
+   [fdb.readers.edn :as readers-edn]
+   [fdb.readers.eml :as readers-eml]
+   [fdb.readers.md :as readers-md]
+   [fdb.utils :as u]))
+
+(def default-readers
+  {:edn #'readers-edn/read
+   :eml #'readers-eml/read
+   :md  #'readers-md/read})
 
 (defn id->readers
   [config id]
   (let [ext-k      (-> id fs/split-ext second keyword)
         mount-spec (metadata/id->mount-spec config id)
         readers    (->> [(or (:readers mount-spec)
-                             (:readers config))
+                             (:readers config)
+                             default-readers)
                          (:extra-readers mount-spec)]
                         (map #(update-vals % call/specs))
                         (apply merge-with into))]
@@ -21,9 +31,10 @@
   (->> (id->readers config id)
        (map (fn [call-spec]
               (call/with-arg {:on [:fdb.on/read call-spec]}
-                (call/apply call-spec))))
+                (u/catch-log
+                 (call/apply call-spec)))))
+       (remove (comp not map?))
        (reduce merge {})))
-
 
 ;; TODO:
 ;; - glob reader ks

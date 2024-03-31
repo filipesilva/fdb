@@ -20,7 +20,8 @@
  ;; The key is the file extension.
  ;; They are called with the call-arg (see below) just like triggers.
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
- :readers      {:eml user/read-eml}
+ ;; Defaults to :edn, :md, and :eml readers in fdb/src/readers.
+ :readers      {:txt user/read-txt}
 
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
