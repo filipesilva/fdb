@@ -165,11 +165,11 @@
 ;; Triggers
 
 (defn out-file
-  [id in out ext]
+  [id in ext]
   (when-some [[_ prefix] (re-matches
                           (re-pattern (str ".*/([^/]*)" in "\\.fdb\\." ext "$"))
                           id)]
-    (str prefix in "-" out ".fdb." ext)))
+    (str prefix in "-out" ".fdb." ext)))
 
 (defn unwrap-md-codeblock
   [lang s]
@@ -188,9 +188,9 @@
 
 (defn rep-ext-or-codeblock
   "Read eval print helper for query and repl files."
-  [id in out ext log-f f]
+  [id in ext log-f f]
   (let [codeblock? (str/ends-with? id ".md")]
-    (when-some [out-file' (out-file id in out (if codeblock? "md" ext))]
+    (when-some [out-file' (out-file id in (if codeblock? "md" ext))]
       (log-f out-file')
       (let [in-path  (metadata/id->path id)
             out-path (u/sibling-path in-path out-file')
@@ -213,7 +213,7 @@
   [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     id "query" "results" "edn"
+     id "query" "edn"
      #(log/info "querying" id "to" %)
      #(try (u/edn-str (xt/q (:db call/*arg*) (u/read-edn %)))
            (catch Exception e
@@ -225,7 +225,7 @@
   [[op id]]
   (when (= op ::xt/put)
     (rep-ext-or-codeblock
-     id "repl" "outputs" "clj"
+     id "repl" "clj"
      #(log/info "sending" id "to repl, outputs in" %)
      #(str % "\n"
            (binding [*ns* (create-ns 'user)]

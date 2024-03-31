@@ -77,7 +77,7 @@
                :fdb.on/pattern  {:glob "**/*.md"
                                  :call 'fdb.core-test/log-call}
                :fdb.on/query    {:q    '[:find ?e :where [?e :xt/id]]
-                                 :path "./query-results.edn"
+                                 :path "./query-out.edn"
                                  :call 'fdb.core-test/log-call}
                :fdb.on/tx       'fdb.core-test/log-call
                :fdb.on/schedule [{:every [50 :millis]
@@ -99,8 +99,8 @@
                              ["/test/folder"]
                              ["/test/folder/two.md"]
                              ["/test/one.md"]
-                             ["/test/query-results.edn"]}
-                           (u/slurp-edn mount-path "query-results.edn"))))
+                             ["/test/query-out.edn"]}
+                           (u/slurp-edn mount-path "query-out.edn"))))
       (is (u/eventually (some #{:fdb.on/schedule} @calls))))
 
     ;; restart for startup/shutdown
@@ -128,31 +128,31 @@
       (u/spit mount-path "all-modified.query.fdb.edn"
               '[:find ?e ?modified
                 :where [?e :fdb/modified ?modified]])
-      (u/eventually (u/slurp mount-path "all-modified.query-results.fdb.edn"))
+      (u/eventually (u/slurp mount-path "all-modified.query-out.fdb.edn"))
       (is (= #{"/test/one.txt"
                "/test/folder"
                "/test/folder/two.txt"
                "/test/all-modified.query.fdb.edn"}
-             (->> (u/slurp-edn mount-path "all-modified.query-results.fdb.edn")
+             (->> (u/slurp-edn mount-path "all-modified.query-out.fdb.edn")
                   (map first)
                   set)))
       (u/spit mount-path "all-modified.query.fdb.edn" "foo")
-      (u/eventually (:error (u/slurp-edn mount-path "all-modified.query-results.fdb.edn")))
+      (u/eventually (:error (u/slurp-edn mount-path "all-modified.query-out.fdb.edn")))
       (is (= "Query didn't match expected structure"
-             (:error (u/slurp-edn mount-path "all-modified.query-results.fdb.edn"))))
+             (:error (u/slurp-edn mount-path "all-modified.query-out.fdb.edn"))))
       (u/spit mount-path "all-modified.query.fdb.md" "
 ```edn
 [:find ?e ?modified
  :where [?e :fdb/modified ?modified]]
 ```")
-      (u/eventually (u/slurp mount-path "all-modified.query-results.fdb.md"))
+      (u/eventually (u/slurp mount-path "all-modified.query-out.fdb.md"))
       (is (= #{"/test/one.txt"
                "/test/folder"
                "/test/folder/two.txt"
                "/test/all-modified.query.fdb.edn"
-               "/test/all-modified.query-results.fdb.edn"
+               "/test/all-modified.query-out.fdb.edn"
                "/test/all-modified.query.fdb.md"}
-             (->> (u/slurp mount-path "all-modified.query-results.fdb.md")
+             (->> (u/slurp mount-path "all-modified.query-out.fdb.md")
                   (triggers/unwrap-md-codeblock "edn")
                   u/read-edn
                   (map first)
@@ -162,18 +162,18 @@
   (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
       (u/spit mount-path "repl.fdb.clj" "(inc 1)")
-      (u/eventually (u/slurp mount-path "repl-outputs.fdb.clj"))
+      (u/eventually (u/slurp mount-path "repl-out.fdb.clj"))
       (is (= "(inc 1)\n;; => 2\n\n"
-             (u/slurp mount-path "repl-outputs.fdb.clj")))
+             (u/slurp mount-path "repl-out.fdb.clj")))
       (let [form-with-out-and-err "
 (println 1)
 (binding [*out* *err*]
   (println 2))
 (inc 2)"]
         (u/spit mount-path "2repl.fdb.clj" form-with-out-and-err)
-        (u/eventually (u/slurp mount-path "2repl-outputs.fdb.clj"))
+        (u/eventually (u/slurp mount-path "2repl-out.fdb.clj"))
         (is (= (str form-with-out-and-err "\n;; 1\n;; 2\n;; => 3\n\n")
-               (u/slurp mount-path "2repl-outputs.fdb.clj")))))))
+               (u/slurp mount-path "2repl-out.fdb.clj")))))))
 
 (def ignore-calls (atom 0))
 

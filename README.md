@@ -139,7 +139,7 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
   (println "=== called" (first on-path) "==="))
 ```
 
-Will write the evaluated code with output in a comment to `repl-results.fdb.clj`:
+Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 
 ``` clojure
 ;; We'll use this fn later in triggers.
@@ -162,7 +162,7 @@ See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) fo
  :where [?e :fdb/tags "important"]]
 ```
 
-Will output to `query-results.fdb.edn`:
+Will output to `query-out.fdb.edn`:
 
 ``` edn
 #{["/demos/reference/todo.md"] ["/demos/reference/doc.md"]}

@@ -116,3 +116,7 @@
 ;; TODO:
 ;; - lots of stuff here, mount stuff, should be in a config ns
 ;;   - cleaned up too, mount vs mount-spec
+;; - could probably do silent-swap with a tx-id on a :ignore-next k
+;;   - next time doc is tx'd, ignore and cache that you shouldn't ignore again
+;;   - weird for users to have that key tho
+;;   - could set on db directly

@@ -1,5 +1,5 @@
 ;; When you save this file it will be be used as a query, and the result will
-;; be printed to query-output.fdb.edn
+;; be printed to query-out.fdb.edn
 ;; See https://v1-docs.xtdb.com/language-reference/datalog-queries/ for query syntax
 
 ;; All files marked as important.
