@@ -10,7 +10,7 @@
   [path]
   (-> (if (u/catch-nil (fs/directory? path))
         path
-        (fs/home))
+        (fs/path (fs/home) "fdb"))
       (fs/path filename)
       fs/absolutize
       fs/normalize
@@ -18,12 +18,12 @@
 
 (defn path
   "Returns path if it's a file, otherwise looks for the config file in
-  path, current dir, and home dir. Returns nil if none was found"
+  path, current dir, and ~/fdb/. Returns nil if none was found"
   [path]
   (some->> [path
-            (str (fs/file path      filename))
-            (str (fs/file (fs/cwd)  filename))
-            (str (fs/file (fs/home) filename))]
+            (str (fs/file path filename))
+            (str (fs/file (fs/cwd) filename))
+            (str (fs/file (fs/home) "fdb" filename))]
            (filter #(u/catch-nil (fs/regular-file? %)))
            first
            fs/absolutize

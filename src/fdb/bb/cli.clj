@@ -61,12 +61,21 @@
         (log/error path "already exists!")
         (System/exit 1))
       (let [fdb-demos-path (fs/path (u/fdb-root) "demos")
-            demos-path     (u/sibling-path path "fdb-demos")]
+            user-path      (u/sibling-path path "user")
+            demos-path     (u/sibling-path path "demos")]
+        (fs/create-dirs user-path)
+        (spit (str (fs/path user-path "repl.fdb.clj"))
+              (str ";; Clojure code added here will be evaluated, output will show up in ./repl-out.fdb.clj\n"
+                   ";; Quick help: https://clojuredocs.org https://github.com/filipesilva/fdb#call-spec-and-call-arg\n"))
+        (spit (str (fs/path user-path "query.fdb.edn"))
+              (str ";; XTDB queryes added here will be evaluated, output will show up in ./query-out.fdb.edn\n"
+                   ";; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/\n"))
+        (log/info "created user folder at" user-path)
         (when demos
           (fs/copy-tree fdb-demos-path demos-path {:replace-existing true})
           (log/info "created demos folder at" demos-path))
-        (u/spit-edn path (cond-> {:db-path    "./fdb"
-                                  :mounts     {}
+        (u/spit-edn path (cond-> {:db-path    "./xtdb"
+                                  :mounts     {:user user-path}
                                   :readers    {}
                                   :extra-deps {}
                                   :load       []}
@@ -90,7 +99,7 @@
   (let [config-path (find-config-path config)]
     (eval-in-fdb config-path 'fdb.core/read config-path (str (fs/cwd)) pattern)))
 
-(def spec {:config {:desc    "The FileDB config file. Defaults to ~/fdbconfig.edn."
+(def spec {:config {:desc    "The FileDB config file. Defaults to ~/fdb/fdbconfig.edn."
                     :alias   :c}
            :debug  {:desc    "Print debug info."
                     :alias   :d

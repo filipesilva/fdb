@@ -83,9 +83,9 @@ Now you should be able to run `fdb help` from anywhere.
 ## Now how do I use it?
 
 Start by running `fdb init --demos`.
-This will create `~/fdbconfig.edn` and `~/fdb-demos/`.
-If you want to create the config and demos folder in the current (or some other) dir, do `fdb init --demos .`.
-If you don't want the demos files, omit `--demos`.
+This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
+If you want to create the `fdb` folder in the current (or some other) dir, do `fdb init --demos .`.
+If you don't want the demo folder, omit `--demos`.
 
 Then run `fdb watch`.
 You can edit the config anytime, for instance to add new mounts, and the watcher will restart automatically.
@@ -96,7 +96,7 @@ Modified date, parent, and path for each file on mounts will be added to the db.
 If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will be added to the db's `doc.md` id.
 You can put triggers and whatever else you want in this edn file.
 
-The [Reference](#reference) is in `~/fdb-demos/reference` and contains examples of how things work.
+The [Reference](#reference) is in `~/fdb/demos/reference` and contains examples of how things work.
 
 You can also run `fdb sync` to do a one-shot sync.
 This is useful when you have some automation you want to run manually.
@@ -115,7 +115,7 @@ I'm still working on more demos, mostly around my own usecases. I'll add them he
 
 ## Reference
 
-These files are in `~/fdb-demos/reference` folder if you used the `fdb init --demos`, mounted in `/demos/reference/`.
+These files are in `~/fdb/demos/reference` folder if you used the `fdb init --demos`, mounted in `/demos/reference/`.
 I've also gathered them here to give a nice overview of what you can do, and so its easy to search over them.
 
 ### Repl and Query files
@@ -180,10 +180,10 @@ Will output to `query-out.fdb.edn`:
  :db-path      "./fdb"
 
  ;; These paths that will be mounted on the db.
- ;; If you have ~/fdb-demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
+ ;; If you have ~/fdb/demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
  ;; its id in the db will be /demos/reference/repl.fdb.clj.
- :mounts       {;; "./fdb-demos" is the same as {:path "./fdb-demos"}
-                :demos  "./fdb-demos/"
+ :mounts       {;; "./demos" is the same as {:path "./demos"}
+                :demos  "./demos/"
                 :notes  {:path          "/path/to/obsidian/vault"
                          ;; extra-readers will be added just to files in this mount.
                          ;; You can also add :readers to overwrite the toplevel.
@@ -198,7 +198,7 @@ Will output to `query-out.fdb.edn`:
 
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/fdb-demos/reference/repl.fdb.clj"]
+ :load         ["/fdb/demos/reference/repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

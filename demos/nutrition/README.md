@@ -31,7 +31,7 @@ There's no need to restart `fdb watch`, it will see that `fdbconfig.edn` changed
  :extra-deps {org.clojure/data.csv {:mvn/version "1.1.0"}}
 ```
 
-Lets take it for a spin in `~/fdb-demo/reference/nutrition/fdb.repl.edn`:
+Lets take it for a spin in `~/fdb/demos/reference/nutrition/fdb.repl.edn`:
 
 ``` clojure
 (require '[babashka.fs :as fs]
@@ -67,7 +67,7 @@ Lets take it for a spin in `~/fdb-demo/reference/nutrition/fdb.repl.edn`:
 (take 5 food)
 ```
 
-You should see a some data printed in `~/fdb-demo/reference/nutrition/repl-outputs.fdb.clj`.
+You should see a some data printed in `~/fdb/demos/reference/nutrition/repl-out.fdb.clj`.
 If you have a code editor configured for Clojure development you can connect to the `fdb watch` nREPL server on port 2525 and eval the `fdb.repl.edn` there instead.
 
 ``` clojure
@@ -242,7 +242,7 @@ It's a bit easier if we look at it as built iteratively, each time replacing one
 It might feel daunting but at the end of the day it's an impressive amount of power and expressiveness in 4 lines.
 This is exactly what I'm looking for when hacking together my own tools.
 
-At this point we've ascertained we can get the data we want from the CSV sources, in about 60 lines of code and sub-second feedback cycles.
+At this point we've ascertained we can get the data we want from the CSV sources, in about 60 lines of code and pretty fast feedback cycles.
 I didn't make the code I put here right on the first try, but I did iterate and debug it with these fast feedback cycles until it was doing what I wanted, and it didn't take a long time.
 
 
@@ -262,6 +262,9 @@ Point 2 is particularly hard since apps are so isolated and I don't really own m
 I'm a heavy [Obsidian](https://obsidian.md) user so my thinking right now is that I should make a markdown file for each foundation food with its nutrition data in [YML properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property%20format).
 Then I can reference it easily (point 1), and I have a little food database on desktop and mobile (point 2).
 
+We could transact this data directly into the fdb node instead of putting it in a file.
+But that would mean we couldn't do point 1 or 2 as easily, and it wouldn't survive a database wipe or file sync to another machine. 
+
 I don't see any obvious way of calculating stuff (point 3) in Obsidian from YML properties though, nor from any data stored in markdown.
 But we have triggers so we should be able to somehow trigger the calculation and write back to the file.
 I'm a bit fuzzy on this part right now, but it seems doable, and it's a starting point.
@@ -276,6 +279,84 @@ Make it work for you.
 
 ## Make it happen
 
+Obsidian with YML is pretty straightforward: shove the yml into `---` fences at the start of the doc.
+Clojure has a first party yml lib we can use so we don't have to think too much about it, add it to `fdbconfig.edn` under `extra-deps`:
+
+``` edn
+clj-commons/clj-yaml {:mvn/version "1.0.27"}
+```
+
+And add this code to make a markdown file with yml:
+
+``` clojure
+(require '[clj-yaml.core :as yaml])
+
+(defonce foods
+  (->> '{:find [(pull ?e [:description
+                          {:_fdc_id [:amount
+                                     {:nutrient_id [:xt/id
+                                                    :name
+                                                    :unit_name]}]}])]
+         :where [[?e :data_type "foundation_food"]]}
+       (xt/q (xt/db node))
+       (map first)))
+
+(defonce nutrients #{"1003" "1004" "1005" "1008" "1063" "1079"})
+
+(defn to-markdown-yml [food]
+  (str "---\n"
+       (yaml/generate-string
+        (->> (:_fdc_id food)
+             (filter #(-> % :nutrient_id :xt/id nutrients))
+             (map (fn [{:keys [amount] {:keys [name unit_name]} :nutrient_id}]
+                    [(format "%s (%s)" name unit_name) (parse-double amount)]))
+             sort
+             (into {}))
+        :dumper-options {:flow-style :block})
+       "---\n"))
+
+(println (->> foods
+              first
+              to-markdown-yml))
+```
+
+This should print:
+
+``` clojure
+;; ---
+;; Carbohydrate, by difference (G): 4.91
+;; Energy (KCAL): 50.0
+;; Protein (G): 3.35
+;; Sugars, Total (G): 4.89
+;; Total lipid (fat) (G): 1.9
+;; ---
+```
+
+Which looks about right, considering the `;; ` are just from the output format.
+
+Now we write all these markdown files to disk.
+
+``` clojure
+(require '[fdb.utils :as u])
+
+(defonce food-folder (u/sibling-path (:self-path (call/arg)) "foods/"))
+(fs/create-dirs food-folder)
+
+(defn write-to-md
+  [{:keys [description] :as food}]
+  (spit (str food-folder "/" (u/filename-str description) ".md")
+        (to-markdown-yml food)))
+
+(run! write-to-md foods)
+```
+
+
+TODO: not all these foods have energy, but they seem to have protein/fat/carbs, maybe add a step to verify?
+think I need a fallback to the atwater ones 
+
+
+
 TODO: lean into obsidian, put something that can be used as vault in demo, but work over md to allow everyone to follow
 TODO: put in md, reference, trigger compute
-TODO: some cool datalog queries for nutrition data, like foods with low carbs or high protein
+TODO: u/file-replace, for regex replacement on files
+TODO: some cool datalog queries for nutrition data, like foods with low carbs or high protein (hard without md reader)
