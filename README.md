@@ -1,6 +1,6 @@
 # FileDB
 
-FileDB is a hackable database environment for your file library.
+FileDB is a reactive database environment for your files.
 
 It watches your files on disk and loads some of their data to a database.
 You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
@@ -17,12 +17,19 @@ FileDB should let you hack your own setup.
 
 ## What are the main ideas in it?
 
-- mount: the name a folder on disk has on the db
+- mount: the name a folder on disk has on the db, and that's being watched
 - repl/query file: evaluates code or db queries on file save, outputs result to a sibling file
 - metadata: extra data about a file you add in a sibling .meta.edn file
 - reader: a fn that take a file and returns data from it as edn
 - trigger: fn in metadata called reactively as the db changes
 - call spec/arg: how fns are specified for readers and triggers, and the argument they take
+
+```
+mount --> file change --> db --> triggers
+            ^                       |
+            |                       |
+            -------------------------
+```
 
 
 ## But why?

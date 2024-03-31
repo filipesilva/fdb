@@ -1,5 +1,5 @@
 (ns fdb.core
-  "A hackable database environment for your file library."
+  "A reactive database environment for your files."
   (:refer-clojure :exclude [sync read])
   (:require
    hashp.core ;; keep at top to use everywhere
