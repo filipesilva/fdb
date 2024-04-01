@@ -24,7 +24,7 @@ Install and start watching (make sure to have clojure and babashka):
 git clone https://github.com/filipesilva/fdb
 cd fdb
 ./symlink-fdb.sh
-fdb init --demos
+fdb init
 fdb watch
 ```
 
@@ -191,10 +191,9 @@ Now you should be able to run `fdb help` from anywhere.
 
 ## Now how do I use it?
 
-Start by running `fdb init --demos`.
+Start by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
-If you want to create the `fdb` folder in the current (or some other) dir, do `fdb init --demos .`.
-If you don't want the demo folder, omit `--demos`.
+If you want to create the `fdb` folder in the current (or some other) dir, do `fdb init .`.
 
 Then run `fdb watch`.
 You can edit the config anytime, for instance to add new mounts, and the watcher will restart automatically.
@@ -216,8 +215,10 @@ This is useful when you add or update readers and want to re-read those files.
 
 ## Demos
 
-Here's some cool stuff that you can do with FileDB:
-- [make your own nutrition tracking system](./demos/nutrition/README.md)
+Below is some cool stuff that you can do with FileDB.
+If you want to follow these demos, add their dir as a mount.
+
+- `demos/nutrition`: [make your own nutrition tracking system](./demos/nutrition/README.md)
 
 I'm still working on more demos, mostly around my own usecases.
 I'll add them here when they are done.
@@ -225,8 +226,19 @@ I'll add them here when they are done.
 
 ## Reference
 
-These files are in `~/fdb/demos/reference` folder if you used the `fdb init --demos`, mounted in `/demos/reference/`.
+These files are in `~/fdb/demos/reference` folder but are not mounted.
+You can mount them if you want.
 I've also gathered them here to give a nice overview of what you can do, and so its easy to search over them.
+
+### Readers
+
+FileDB comes with these default readers to make it easy to interact with common data:
+- `edn`: reads all data in edn files is loaded directly into the db
+- `md`: reads hashtags into `:fdb/tags`, links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
+- `eml:` reads common email keys from the email message headers, and tries to read body as text
+
+Triggers in the return return map work the same as those in metadata files.
+
 
 ### Repl and Query files
 
@@ -241,24 +253,24 @@ You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at 
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; It was added to the load vector when used `fdb init --demos`
+;; Add to the load vector if adding reference as a mount 
 ;; so it's acessible on first load.
 (defn print-call-arg
   "Simple fn to see which triggers are called."
   [{:keys [on-path]}]
-  #_(println "=== called" (first on-path) "==="))
+  (println "=== called" (first on-path) "==="))
 ```
 
 Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 
 ``` clojure
 ;; We'll use this fn later in triggers.
-;; It was added to the load vector when used `fdb init --demos`
+;; Add to the load vector if adding reference as a mount 
 ;; so it's acessible on first load.
 (defn print-call-arg
   "Simple fn to see which triggers are called."
   [{:keys [on-path]}]
-  #_(println "=== called" (first on-path) "==="))
+  (println "=== called" (first on-path) "==="))
 
 ;; => #'user/print-call-arg
 ```
@@ -277,16 +289,6 @@ Will output to `query-out.fdb.edn`:
 ``` edn
 #{["/demos/reference/todo.md"] ["/demos/reference/doc.md"]}
 ```
-
-
-### Readers
-
-FileDB comes with these default readers:
-- `edn`: reads all data in edn files is loaded directly into the db
-- `md`: reads hashtags into `:fdb/tags`, links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
-- `eml:` reads common email keys from the email message headers, and tries to read body as text
-
-Triggers in the return return map work the same as those in metadata files.
 
 
 ### `fdbconfig.edn`

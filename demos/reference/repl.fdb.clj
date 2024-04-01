@@ -1,5 +1,5 @@
-;; We can use this fn later in triggers or other repl files.
-;; It was added to the load vector when used `fdb init --demos`
+;; We'll use this fn later in triggers.
+;; Add to the load vector if adding reference as a mount
 ;; so it's acessible on first load.
 (defn print-call-arg
   "Simple fn to see which triggers are called."

@@ -56,13 +56,13 @@
     (log/info "config found at" config-path)
     config-path))
 
-(defn init [{{:keys [dir demos]} :opts}]
+(defn init [{{:keys [dir]} :opts}]
   (let [path (config/new-path dir)]
     (if (fs/exists? path)
       (do
         (log/error path "already exists!")
         (System/exit 1))
-      (let [fdb-demos-path (fs/path (u/fdb-root) "demos")
+      (let [src-demos-path (fs/path (u/fdb-root) "demos")
             user-path      (u/sibling-path path "user")
             demos-path     (u/sibling-path path "demos")]
         (fs/create-dirs user-path)
@@ -73,17 +73,13 @@
               (str ";; XTDB queryes added here will be evaluated, output will show up in ./query-out.fdb.edn\n"
                    ";; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/\n"))
         (log/info "created user folder at" user-path)
-        (when demos
-          (fs/copy-tree fdb-demos-path demos-path {:replace-existing true})
-          (log/info "created demos folder at" demos-path))
-        (u/spit-edn path (cond-> {:db-path       "./xtdb"
-                                  :mounts        {:user user-path}
-                                  :extra-deps    {}
-                                  :extra-readers {}
-                                  :load          []}
-                           demos (-> (assoc-in [:mounts :demos] demos-path)
-                                     (update :load conj (str (fs/path demos-path "reference/repl.fdb.clj")))
-                                     (assoc :extra-ignores ["reference/doc.txt.meta.edn"]))))
+        (fs/copy-tree src-demos-path demos-path {:replace-existing true})
+        (log/info "created demos folder at" demos-path)
+        (u/spit-edn path {:db-path       "./xtdb"
+                          :mounts        {:user user-path}
+                          :extra-deps    {}
+                          :extra-readers {}
+                          :load          []})
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]
@@ -108,14 +104,14 @@
                     :default false
                     :coerce  :boolean}})
 
-(defn help [ms]
+(defn help [_ms]
   (println (format
             "FileDB is a hackable database environment for your file library.
 Local docs at %s/README.md.
 Repo at https://github.com/filipesilva/fdb.
 
 Available commands:
-  fdb init <path-to-dir>    Add a empty fdbconfig.edn at path-to-dir or ~ if omitted, --demos adds demos mount.
+  fdb init <path-to-dir>    Add a empty fdbconfig.edn at path-to-dir or ~/fdb/ if omitted.
   fdb watch                 Start fdb in watch mode, reacting to file changes as they happen.
   fdb sync                  Run fdb once, updating db to current file state and calling any triggers.
   fdb read <glob-pattern>   Read all files matched by glob-pattern. Use after changing readers.
