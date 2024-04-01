@@ -5,7 +5,8 @@ FileDB is a reactive database environment for your files.
 It watches your files on disk and loads some of their data to a database.
 You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
 
-Check the [Reference](#reference) to see what interacting with FileDB looks like, and [Demos](#demos) for examples of cool things to do with it.
+Check the [Quickstar](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
+[Demos](#demos) has examples of cool things to do with it.
 
 The database is wholly determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
 Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
@@ -57,7 +58,7 @@ cat ~/fdb/user/clojuredocs-out.txt
 # (kv-reduce amap f init)
 # (coll-reduce coll f)
 # (coll-reduce coll f val)
-# (ensure-reduced x)⏎
+# (ensure-reduced x)
 ```
 
 ``` sh
@@ -218,7 +219,8 @@ This is useful when you add or update readers and want to re-read those files.
 Here's some cool stuff that you can do with FileDB:
 - [make your own nutrition tracking system](./demos/nutrition/README.md)
 
-I'm still working on more demos, mostly around my own usecases. I'll add them here when they are done.
+I'm still working on more demos, mostly around my own usecases.
+I'll add them here when they are done.
 
 
 ## Reference
@@ -266,8 +268,8 @@ Also works for `query.fdb.md` if query is in a solo `edn` codeblock.
 See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) for query syntax.
 
 ``` edn
-[:find ?e 
- :where [?e :fdb/tags "important"]]
+{:find [?e] 
+ :where [[?e :fdb/tags "important"]]}
 ```
 
 Will output to `query-out.fdb.edn`:
@@ -275,6 +277,16 @@ Will output to `query-out.fdb.edn`:
 ``` edn
 #{["/demos/reference/todo.md"] ["/demos/reference/doc.md"]}
 ```
+
+
+### Readers
+
+FileDB comes with these default readers:
+- `edn`: reads all data in edn files is loaded directly into the db
+- `md`: reads hashtags into `:fdb/tags`, links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
+- `eml:` reads common email keys from the email message headers, and tries to read body as text
+
+Triggers in the return return map work the same as those in metadata files.
 
 
 ### `fdbconfig.edn`
