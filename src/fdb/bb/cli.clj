@@ -5,6 +5,8 @@
   Runs in a babashka environment for startup speed, deps in ./bb.edn.
   Creates or connects to an existing fdb process to run commands.
   Symlink this file to /usr/local/bin/fdb to be able to run it from anywhere
+    ./symlink-fdb.sh
+  or
     ln -s \"$(pwd)/src/fdb/bb/cli.clj\" /usr/local/bin/fdb
   "
   (:refer-clojure :exclude [sync read])
