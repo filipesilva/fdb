@@ -109,8 +109,10 @@ echo '
          [?e :day ?day]
          [(user/this-week? ?day)]
          [?e :max ?max]]}
-' > ~/fdb/user/hottest-day.query.fdb.edn
-cat ~/fdb/user/hottest-day.query-out.fdb.edn
+' > ~/fdb/user/week-max-temp.query.fdb.edn
+
+# query results are in this file
+cat ~/fdb/user/week-max-temp.query-out.fdb.edn
 # #{["2024-03-29" 15.5]
 #  ["2024-03-30" 13.8]
 #  ["2024-03-31" 13.4]
