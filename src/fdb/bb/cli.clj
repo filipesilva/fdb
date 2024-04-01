@@ -74,11 +74,11 @@
         (when demos
           (fs/copy-tree fdb-demos-path demos-path {:replace-existing true})
           (log/info "created demos folder at" demos-path))
-        (u/spit-edn path (cond-> {:db-path    "./xtdb"
-                                  :mounts     {:user user-path}
-                                  :readers    {}
-                                  :extra-deps {}
-                                  :load       []}
+        (u/spit-edn path (cond-> {:db-path       "./xtdb"
+                                  :mounts        {:user user-path}
+                                  :extra-deps    {}
+                                  :extra-readers {}
+                                  :load          []}
                            demos (-> (assoc-in [:mounts :demos] demos-path)
                                      (update :load conj
                                              (str (fs/path demos-path "reference/repl.fdb.clj"))))))

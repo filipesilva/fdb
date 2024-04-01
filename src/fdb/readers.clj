@@ -21,6 +21,7 @@
         readers    (->> [(or (:readers mount-spec)
                              (:readers config)
                              default-readers)
+                         (:extra-readers config)
                          (:extra-readers mount-spec)]
                         (map #(update-vals % call/specs))
                         (apply merge-with into))]
