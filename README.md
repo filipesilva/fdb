@@ -76,7 +76,7 @@ You need to [install Clojure](https://clojure.org/guides/install_clojure) and [B
 I'm using a Mac but I think this should work fine for Linux and Windows+WSL.
 
 Then clone this repository somewhere on disk, and go into the folder. 
-Add a symlink like so `ln -s "$(pwd)/src/fdb/bb/cli.clj" /usr/local/bin/fdb`.
+Add a symlink to user bins via `./symlink-fdb.sh`.
 Now you should be able to run `fdb help` from anywhere.
 
 

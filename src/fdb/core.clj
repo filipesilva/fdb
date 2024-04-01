@@ -362,3 +362,6 @@
 ;;   - so it seems to work but a little bit odd
 ;;   - is it related to the reload itself or to the config restart hook?
 ;; - support one-or-many for servers, maybe
+;; - would be cool to auto-import deps
+;;   - can't really know all mappings from ns to dep, but could make a list
+;;   - maybe catch the ns not found error and dynamically add it
