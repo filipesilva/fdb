@@ -408,6 +408,7 @@ It looks like this:
 ``` edn
 ;; Metadata files are <file-path>.meta.edn.
 ;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
+;; This file is in fdbconfig.edn :extra-ignores so it's not noisy during use
 {;; ID is /mount/ followed by relative path on mount.
  ;; It is added automatically so you don't really add it.
  :xt/id           "/demos/reference/doc.md"
@@ -461,8 +462,7 @@ It looks like this:
 
  ;; Called on every db transaction via https://v1-docs.xtdb.com/clients/clojure/#_listen
  ;; This is how every other trigger is made, so you can make your own triggers.
- ;; Not enabled because it is a bit noisy during demos!
- ;; :fdb.on/tx       print-call-arg
+ :fdb.on/tx       print-call-arg
  }
 ```
 

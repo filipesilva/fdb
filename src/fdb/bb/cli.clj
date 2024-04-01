@@ -82,8 +82,8 @@
                                   :extra-readers {}
                                   :load          []}
                            demos (-> (assoc-in [:mounts :demos] demos-path)
-                                     (update :load conj
-                                             (str (fs/path demos-path "reference/repl.fdb.clj"))))))
+                                     (update :load conj (str (fs/path demos-path "reference/repl.fdb.clj")))
+                                     (assoc :extra-ignores ["reference/doc.txt.meta.edn"]))))
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]
