@@ -15,6 +15,112 @@ I like using markdown files on [Obsidian](https://obsidian.md) as my main readab
 FileDB should let you hack your own setup.
 
 
+## Quickstart
+
+Install and start watching (make sure to have clojure and babashka):
+
+``` sh
+git clone https://github.com/filipesilva/fdb
+cd fdb
+./symlink-fdb.sh
+fdb init --demos
+fdb watch
+```
+
+Then in another terminal:
+
+``` sh
+# clojuredocs search
+echo "reduce" > ~/fdb/user/clojuredocs.txt
+echo '
+{:fdb.on/modify
+ (fn [{:keys [self-path]}]
+   (-> "https://clojuredocs.org/search"
+       (fdb.http/add-params {:q (slurp self-path)})
+       (fdb.http/scrape [:li.arglist])
+       (->> (mapcat :content)
+            (clojure.string/join "\n")
+            (spit (fdb.utils/sibling-path self-path "clojuredocs-out.txt")))))}
+' > ~/fdb/user/clojuredocs.txt.meta.edn
+
+# results for any query in clojuredocs.txt are this file
+cat ~/fdb/user/clojuredocs-out.txt
+# (reduce f coll)
+# (reduce f val coll)
+# (reduced x)
+# (reduce f init ch)
+# (reducer coll xf)
+# (reduce f coll)
+# (reduce f init coll)
+# (reduced? x)
+# (reduce-kv f init coll)
+# (kv-reduce amap f init)
+# (coll-reduce coll f)
+# (coll-reduce coll f val)
+# (ensure-reduced x)⏎
+```
+
+``` sh
+# temperature tracker
+echo '
+{:fdb.on/schedule
+ {:every [1 :days]
+  :call  (fn [{:keys [self-path]}]
+           (let [lisbon   (-> "https://nominatim.openstreetmap.org/search"
+                              (fdb.http/add-params {:q "Lisbon" :limit 1 :format "json"})
+                              fdb.http/json
+                              first)
+                 forecast (-> "https://api.open-meteo.com/v1/forecast"
+                              (fdb.http/add-params {:daily     ["temperature_2m_max", "temperature_2m_min"] ,
+                                                    :past_days 7
+                                                    :latitude  (:lat lisbon)
+                                                    :longitude (:lon lisbon)})
+                              fdb.http/json
+                              :daily)
+                 temps    (map (fn [day max min]
+                                 {:day day
+                                  :max max
+                                  :min min})
+                               (:time forecast)
+                               (:temperature_2m_max forecast)
+                               (:temperature_2m_min forecast))]
+             (run! (fn [temp]
+                     (fdb.utils/spit-edn
+                      (fdb.utils/sibling-path self-path (str "weather/" (:day temp) ".edn"))
+                      temp))
+                   temps)))}}
+' > ~/fdb/user/weather.edn
+
+# edn files for min/max temp, updated every day, for previous and next 7 days
+ll ~/fdb/user/weather
+
+# what are the max temperatures like the week around today?
+echo '
+(require \'[tick.core :as t])
+(defn this-week? [date]
+  (let [today (t/date)]
+    (t/<= (t/<< today (t/of-days 3))
+          (t/date date)
+          (t/>> today (t/of-days 3)))))
+' > ~/fdb/user/repl.fdb.clj
+echo '
+{:find [?day ?max]
+ :where [[?e :fdb/parent "/user/weather"]
+         [?e :day ?day]
+         [(user/this-week? ?day)]
+         [?e :max ?max]]}
+' > ~/fdb/user/hottest-day.query.fdb.edn
+cat ~/fdb/user/hottest-day.query-out.fdb.edn
+# #{["2024-03-29" 15.5]
+#  ["2024-03-30" 13.8]
+#  ["2024-03-31" 13.4]
+#  ["2024-04-01" 16.0]
+#  ["2024-04-02" 16.4]
+#  ["2024-04-03" 17.8]
+#  ["2024-04-04" 17.3]}
+```
+
+
 ## What are the main ideas in it?
 
 - mount: the name a folder on disk has on the db, and that's being watched

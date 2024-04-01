@@ -5,6 +5,7 @@
    [clj-yaml.core :as yaml]
    [clojure.java.io :as io]
    [clojure.string :as str]
+   [fdb.http :as http]
    [fdb.metadata :as metadata]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]))
@@ -23,7 +24,7 @@
        ;; [] without [ inside followed by ()
        (re-seq #"\[[^\[]+\]\(([^)]+)\)")
        (map second)
-       (map u/url-decode)
+       (map http/decode-uri)
        (map #(->> %
                   (fs/path (fs/parent self))
                   (fs/relativize mount)

@@ -306,19 +306,6 @@
     (catch Exception e
       (as-comments (with-out-str (pprint/pprint e))))))
 
-(defn url-encode
-  "Like JS encodeURI."
-  [s]
-  (-> s
-      (URLEncoder/encode)
-      (.replace "+" "%20")
-      (.replace "%2F" "/")))
-
-(defn url-decode
-  "Like JS decodeURI."
-  [s]
-  (URLDecoder/decode s))
-
 ;; TODO:
 ;; - str-path fn
 ;; - the watch-config and watch-and-block loop are very similar

@@ -61,8 +61,3 @@
     (is (= ::sut/timeout (sut/maybe-timeout [0 :seconds] f)))
     (is (= nil (sut/maybe-timeout nil f)))
     (is (= nil (sut/maybe-timeout 200 f)))))
-
-(deftest url-encode-and-decode
-  (is (= "foo%20bar" (sut/url-encode "foo bar")))
-  (is (= "../foo.bar" (sut/url-encode "../foo.bar")))
-  (is (= "foo bar" (-> "foo bar" sut/url-encode sut/url-decode))))
