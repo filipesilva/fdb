@@ -12,8 +12,7 @@
    [taoensso.timbre :as log]
    [tick.core :as t])
   (:import
-   (java.io RandomAccessFile)
-   (java.net URLDecoder URLEncoder)))
+   (java.io RandomAccessFile)))
 
 (defn one-or-many
   "Returns x if it's a set, sequential, or nil, otherwise [x]."
@@ -34,7 +33,8 @@
   `(try ~expr
      (catch Exception e#
        (log/error (str (str/replace-first (type e#) "class " "") ":")
-                  (or (ex-message e#) "<no message>"))
+                  (or (ex-message e#) "<no message>")
+                  (or (:cause (Throwable->map e#)) "<no cause>"))
        nil)))
 
 (defmacro catch-nil
