@@ -5,7 +5,7 @@ FileDB is a reactive database environment for your files.
 It watches your files on disk and loads some of their data to a database.
 You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
 
-Check the [Quickstar](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
+Check the [Quickstart](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
 [Demos](#demos) has examples of cool things to do with it.
 
 The database is wholly determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
