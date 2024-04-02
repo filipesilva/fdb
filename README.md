@@ -18,7 +18,10 @@ FileDB should let you hack your own setup.
 
 ## Quickstart
 
-Install and start watching (make sure to have clojure and babashka):
+This is a Clojure heavy so it's probably best if you're a Clojure dev already with some Datalog chops.
+But even if you're not, you can also bite off more than you can chew, then chew it.
+
+Clone and start watching (make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation)):
 
 ``` sh
 git clone https://github.com/filipesilva/fdb
@@ -115,12 +118,12 @@ echo '
 # query results are in this file
 cat ~/fdb/user/week-max-temp.query-out.fdb.edn
 # #{["2024-03-29" 15.5]
-#  ["2024-03-30" 13.8]
-#  ["2024-03-31" 13.4]
-#  ["2024-04-01" 16.0]
-#  ["2024-04-02" 16.4]
-#  ["2024-04-03" 17.8]
-#  ["2024-04-04" 17.3]}
+#   ["2024-03-30" 13.8]
+#   ["2024-03-31" 13.4]
+#   ["2024-04-01" 16.0]
+#   ["2024-04-02" 16.4]
+#   ["2024-04-03" 17.8]
+#   ["2024-04-04" 17.3]}
 ```
 
 
@@ -176,20 +179,7 @@ So that got me thinking about doing a database that was mostly a queryable layer
 I then I added more stuff to it that I thought was cool, like reactive triggers and a live system.
 
 
-## Ok fine, how do I install the thing
-
-This is a Clojure heavy so it's probably best if you're a Clojure dev already with some Datalog chops.
-But even if you're not, you can also bite off more than you can chew, then chew it.
-
-You need to [install Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://babashka.org) to use FileDB.
-I'm using a Mac but I think this should work fine for Linux and Windows+WSL.
-
-Then clone this repository somewhere on disk, and go into the folder. 
-Add a symlink to user bins via `./symlink-fdb.sh`.
-Now you should be able to run `fdb help` from anywhere.
-
-
-## Now how do I use it?
+## How do I use it?
 
 Start by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
