@@ -71,7 +71,7 @@
                    ";; Quick help: https://clojuredocs.org https://github.com/filipesilva/fdb#call-spec-and-call-arg\n"))
         (spit (str (fs/path user-path "query.fdb.edn"))
               (str ";; XTDB queryes added here will be evaluated, output will show up in ./query-out.fdb.edn\n"
-                   ";; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/\n"))
+                   ";; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/ https://www.learndatalogtoday.org\n"))
         (log/info "created user folder at" user-path)
         (fs/copy-tree src-demos-path demos-path {:replace-existing true})
         (log/info "created demos folder at" demos-path)
@@ -97,7 +97,7 @@
   (let [config-path (find-config-path config)]
     (eval-in-fdb config-path 'fdb.core/read config-path (str (fs/cwd)) pattern)))
 
-(def spec {:config {:desc    "The FileDB config file. Defaults to ~/fdb/fdbconfig.edn."
+(def spec {:config {:desc    "The FileDB config file. Defaults to ./fdbconfig.edn or ~/fdb/fdbconfig.edn."
                     :alias   :c}
            :debug  {:desc    "Print debug info."
                     :alias   :d

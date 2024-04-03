@@ -6,11 +6,12 @@ It watches your files on disk and loads some of their data to a database.
 You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
 
 Check the [Quickstart](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
-[Demos](#demos) has examples of cool things to do with it.
+[Demos](#demos) has examples of cool things I do with it.
 
-The database is wholly determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
+The database is determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
 Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
 
+FileDB is for all those things you know you could do with code, but it's never worth the effort to set everything up.
 I use it to hack together code and automations for my own usecases.
 I like using markdown files on [Obsidian](https://obsidian.md) as my main readable files, but I don't think that matters.
 FileDB should let you hack your own setup.
@@ -18,12 +19,15 @@ FileDB should let you hack your own setup.
 
 ## Quickstart
 
-This is a Clojure heavy so it's probably best if you're a Clojure dev already with some Datalog chops.
-But even if you're not, you can also bite off more than you can chew, then chew it.
+This is Clojure heavy so it's probably best if you're a [Clojure](https://clojure.org) dev already with some [Datalog](https://en.wikipedia.org/wiki/Datalog) chops.
+But if you're not, it's a great time to start.
+Clojure and Datalog are awesome!
+Bite off more than you can chew, then chew it.
 
-Clone and start watching (make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation)):
+Clone and start watching, make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation) installed first:
 
 ``` sh
+# go into a folder where you can clone fdb into
 git clone https://github.com/filipesilva/fdb
 cd fdb
 ./symlink-fdb.sh
@@ -31,7 +35,11 @@ fdb init
 fdb watch
 ```
 
-Then in another terminal:
+[CLI](#cli) explains what these commands do.
+
+Then in another terminal run commands for the examples below.
+
+This example uses a `fdb.on/modify` [metadata trigger](#fdbconfigedn) to search in [ClojureDocs](https://clojuredocs.org) whenever a file changes, and writes the scraped results to another file:
 
 ``` sh
 # clojuredocs search
@@ -63,6 +71,8 @@ cat ~/fdb/user/clojuredocs-out.txt
 # (coll-reduce coll f val)
 # (ensure-reduced x)
 ```
+
+This example uses a `fdb.on/schedule` [metadata trigger](#fdbconfigedn) to, each day, look up temperatures in Lisbon for the past and future 7 days, load them into FileDB by writing them to `.edn` files on disk that we have [readers](#readers) for, then query the db using a [query file](#repl-and-query-files) that calls a function we just defined in a [repl file](#repl-and-query-files).
 
 ``` sh
 # temperature tracker
@@ -179,9 +189,22 @@ So that got me thinking about doing a database that was mostly a queryable layer
 I then I added more stuff to it that I thought was cool, like reactive triggers and a live system.
 
 
-## How do I use it?
+## CLI
 
-Start by running `fdb init`.
+You'll need to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation) installed first.
+Installing the FileDB CLI is just cloning this repo and symlinking the CLI script.
+
+``` sh
+# go into a folder where you can clone fdb into
+git clone https://github.com/filipesilva/fdb
+cd fdb
+./symlink-fdb.sh
+```
+
+Now you should be able to run `fdb help` from anywhere.
+If you don't want to symlink the CLI script, you can also call `./src/fdb/bb/cli.clj help` from this dir.
+
+Start using FileDB by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
 If you want to create the `fdb` folder in the current (or some other) dir, do `fdb init .`.
 
@@ -208,7 +231,10 @@ This is useful when you add or update readers and want to re-read those files.
 Below is some cool stuff that you can do with FileDB.
 If you want to follow these demos, add their dir as a mount.
 
-- `demos/nutrition`: [make your own nutrition tracking system](./demos/nutrition/README.md)
+- WIP [`~/demos/nutrition`](./demos/nutrition/README.md): make your own nutrition tracking system
+- TODO [`~/demos/email`](./demos/email/README.md): sync all of your emails locally, connect them with your notes
+- TODO [`~/demos/code-analysis`](./demos/code-analysis/README.md): read AST for clj files, query it to find what fns are affected when a given fn changes
+- TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
 
 I'm still working on more demos, mostly around my own usecases.
 I'll add them here when they are done.
@@ -228,6 +254,9 @@ FileDB comes with these default readers to make it easy to interact with common 
 - `eml:` reads common email keys from the email message headers, and tries to read body as text
 
 Triggers in the return return map work the same as those in metadata files.
+
+You can make your own readers too.
+Check out how the default ones are implemented in `src/fdb/readers/`.
 
 
 ### Repl and Query files
@@ -267,7 +296,7 @@ Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 
 You can query the db with a file called `query.fdb.edn`, or with any prefix.
 Also works for `query.fdb.md` if query is in a solo `edn` codeblock.
-See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) for query syntax.
+See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) for query syntax, and [Learn Datalog Today!](https://www.learndatalogtoday.org) if you want to learn about Datalog from scratch.
 
 ``` edn
 {:find [?e] 
