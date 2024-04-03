@@ -532,3 +532,5 @@ Call `(clj-reload.core/reload)` to reload code as you change it, if you have a c
 
 I have TODOs at the end of each file that you can take a look at.
 I find this easier than making issues.
+
+`master` branch contains the latest stable code, `dev` is where I work on for new changes.
