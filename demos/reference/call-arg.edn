@@ -1,5 +1,5 @@
 ;; This is the format for call arg, which the function resolved for call-spec is called with.
-;; It's also acessible in (fdb.call/arg) for triggers, readers, repl files, and files loaded in fdbconfig.edn.
+;; It's also acessible in (fdb.call/arg).
 {:config      {,,,}                         ;; fdb config value
  :config-path "~/fdb/fdbconfig.json"        ;; on-disk path to config
  :node        {,,,}                         ;; xtdb database node

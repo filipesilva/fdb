@@ -3,7 +3,7 @@
 FileDB is a reactive database environment for your files.
 
 It watches your files on disk and loads some of their data to a database.
-You can use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and also add reactive triggers for automation.
+You use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and add reactive triggers for automation.
 
 Check the [Quickstart](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
 [Demos](#demos) has examples of cool things I do with it.
@@ -39,7 +39,7 @@ fdb watch
 
 Then in another terminal run commands for the examples below.
 
-This example uses a `fdb.on/modify` [metadata trigger](#fdbconfigedn) to search in [ClojureDocs](https://clojuredocs.org) whenever a file changes, and writes the scraped results to another file:
+This example uses a `fdb.on/modify` [metadata trigger](#metadata) to search in [ClojureDocs](https://clojuredocs.org) whenever a file changes, and writes the scraped results to another file:
 
 ``` sh
 # clojuredocs search
@@ -70,9 +70,17 @@ cat ~/fdb/user/clojuredocs-out.txt
 # (coll-reduce coll f)
 # (coll-reduce coll f val)
 # (ensure-reduced x)
+
+# search for something else
+echo "map" > ~/fdb/user/clojuredocs.txt
+cat ~/fdb/user/clojuredocs-out.txt
 ```
 
-This example uses a `fdb.on/schedule` [metadata trigger](#fdbconfigedn) to, each day, look up temperatures in Lisbon for the past and future 7 days, load them into FileDB by writing them to `.edn` files on disk that we have [readers](#readers) for, then query the db using a [query file](#repl-and-query-files) that calls a function we just defined in a [repl file](#repl-and-query-files).
+This example uses a `fdb.on/schedule` [metadata trigger](#metadata) to:
+- each day
+- look up temperatures in Lisbon for the past and future 7 days
+- load them into FileDB by writing them to `.edn` files on disk that we have [readers](#readers) for
+- then query the db using a [query file](#repl-and-query-files) that calls a function we just defined in a [repl file](#repl-and-query-files)
 
 ``` sh
 # temperature tracker
@@ -141,8 +149,8 @@ cat ~/fdb/user/week-max-temp.query-out.fdb.edn
 
 - mount: the name a folder on disk has on the db, and that's being watched
 - repl/query file: evaluates code or db queries on file save, outputs result to a sibling file
+- reader: a fn that takes a file and returns data from it as edn, which is loaded into the db
 - metadata: extra data about a file you add in a sibling .meta.edn file
-- reader: a fn that take a file and returns data from it as edn
 - trigger: fn in metadata called reactively as the db changes
 - call spec/arg: how fns are specified for readers and triggers, and the argument they take
 
@@ -181,7 +189,7 @@ You know what's really easy to sync and open though?
 
 Files.
 
-You have iCloud, Google Drive, Syncthing, Git, and a ton of other stuff to sync.
+You have iCloud, Google Drive, Dropbox, Syncthing, Git, and a ton of other stuff to sync.
 You have apps that open your on-disk files.
 Lots of these cloud services give you some way to download all of your stuff.
 
@@ -206,21 +214,23 @@ If you don't want to symlink the CLI script, you can also call `./src/fdb/bb/cli
 
 Start using FileDB by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
-If you want to create the `fdb` folder in the current (or some other) dir, do `fdb init .`.
+If you want to create the `fdb` folder in the current (or some other) dir, add it at the end of init like `fdb init .`.
 
 Then run `fdb watch`.
 You can edit the config anytime, for instance to add new mounts, and the watcher will restart automatically.
-It starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
+It starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to from a Clojure editor like [Emacs with Cider](https://github.com/clojure-emacs/cider) or [VSCode with Calva](https://calva.io).
 
 It will watch folders under the `:mount` key in `fdbconfig.edn`.
 Modified date, parent, and path for each file on mounts will be added to the db.
 If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will be added to the db's `doc.md` id.
 You can put triggers and whatever else you want in this edn file.
 
+`~/fdb/user/` has a [repl and query file](repl-and-query-files) to play with.
 The [Reference](#reference) is in `~/fdb/demos/reference` and contains examples of how things work.
 
 You can also run `fdb sync` to do a one-shot sync.
 This is useful when you have some automation you want to run manually.
+It doesn't run `fdb.on/schedule` though.
 
 `fdb read glob-pattern` forces a read of the (real, not mount) paths.
 This is useful when you add or update readers and want to re-read those files.
@@ -232,8 +242,8 @@ Below is some cool stuff that you can do with FileDB.
 If you want to follow these demos, add their dir as a mount.
 
 - WIP [`~/demos/nutrition`](./demos/nutrition/README.md): make your own nutrition tracking system
-- TODO [`~/demos/email`](./demos/email/README.md): sync all of your emails locally, connect them with your notes
-- TODO [`~/demos/code-analysis`](./demos/code-analysis/README.md): read AST for clj files, query it to find what fns are affected when a given fn changes
+- TODO `~/demos/email`: sync all of your emails locally, connect them with your notes
+- TODO `~/demos/code-analysis`: read AST for clj files, query it to find what fns are affected when a given fn changes
 - TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
 
 I'm still working on more demos, mostly around my own usecases.
@@ -242,7 +252,7 @@ I'll add them here when they are done.
 
 ## Reference
 
-These files are in `~/fdb/demos/reference` folder but are not mounted.
+Reference files are in `~/fdb/demos/reference` folder but are not mounted.
 You can mount them if you want.
 I've also gathered them here to give a nice overview of what you can do, and so its easy to search over them.
 
@@ -261,14 +271,12 @@ Check out how the default ones are implemented in `src/fdb/readers/`.
 
 ### Repl and Query files
 
-You can run code over the db process with a file called `repl.fdb.clj`, or with any prefix e.g. `foo.repl.fdb.clj`.
+You can run code over the db process with a file called `repl.fdb.clj`, with any prefix e.g. `foo.repl.fdb.clj`.
 `repl.fdb.md` also works if the clojure code is in a solo `clojure` codeblock.
-You can also connect your editor to the nrepl server that starts with `fdb watch`, it's on port 2525 by default.
+You can also connect your editor to the nREPL server that starts with `fdb watch`, it's on port 2525 by default.
 
 It starts in the `user` namespace but you can add whatever namespace form you want, and that's the ns it'll be eval'd in.
-You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more on this below).
-
-You can add this file to `fdbconfig.edn` under `:load` and it will be loaded at startup, and the functions you define here will be available for triggers and readers.
+You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more `call-arg` in the reference).
 
 ``` clojure
 ;; We'll use this fn later in triggers.
@@ -294,7 +302,9 @@ Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 ;; => #'user/print-call-arg
 ```
 
-You can query the db with a file called `query.fdb.edn`, or with any prefix.
+You can add a repl file (or any clj file really) to `fdbconfig.edn` under `:load` to be loaded at startup, and the functions you define in it will be available for triggers and readers before sync.
+
+You can query the db with a file called `query.fdb.edn`, with any prefix.
 Also works for `query.fdb.md` if query is in a solo `edn` codeblock.
 See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) for query syntax, and [Learn Datalog Today!](https://www.learndatalogtoday.org) if you want to learn about Datalog from scratch.
 
@@ -313,74 +323,75 @@ Will output to `query-out.fdb.edn`:
 ### `fdbconfig.edn`
 
 ``` edn
-;; This is the format of the fdb config file. Your real one is probably on your home dir.
-{;; Where the xtdb db filess will be saved.
+;; This is the format of the fdb config file. Your real one is probably on your ~/fdb/fdbconfig.edn.
+{;; Where the xtdb db files will be saved.
  ;; You can delete this at any time, and the latest state will be recreated from the mount files.
  ;; You'll lose time-travel data if you delete it though.
  ;; See more about xtdb time travel in https://v1-docs.xtdb.com/concepts/bitemporality/.
- :db-path      "./fdb"
+ :db-path "./xtdb"
 
  ;; These paths that will be mounted on the db.
  ;; If you have ~/fdb/demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
  ;; its id in the db will be /demos/reference/repl.fdb.clj.
- :mounts       {;; "./demos" is the same as {:path "./demos"}
-                :demos  "./demos/"
-                :notes  {:path          "/path/to/obsidian/vault"
-                         ;; extra-readers will be added just to files in this mount.
-                         ;; You can also add :readers to overwrite the toplevel.
-                         :extra-readers {:md user/read-obsidian}}}
+ :mounts {;; "./demos" is the same as {:path "./demos"}
+          :demos "./demos/"
+          :notes {:path          "/path/to/obsidian/vault"
+                  ;; extra-readers will be added just to files in this mount.
+                  ;; You can also add :readers to overwrite the toplevel.
+                  :extra-readers {:pdf user/read-pdf}}}
 
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
  ;; The key is the file extension.
  ;; They are called with the call-arg (see below) just like triggers.
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
- ;; Defaults to :edn, :md, and :eml readers in fdb/src/readers.
- :readers      {:txt user/read-txt}
+ ;; Defaults to :edn, :md, and :eml readers in fdb/src/readers but can be overwritten
+ ;; with :readers instead of :extra-readers.
+ :extra-readers {:txt user/read-txt}
 
  ;; Disk paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers.
- :load         ["/fdb/demos/reference/repl.fdb.clj"]
+ :load ["/fdb/demos/reference/repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.
  ;; See https://clojure.org/guides/deps_and_cli for more about deps.
- :extra-deps   {org.clojure/data.csv  {:mvn/version "1.1.0"}
-                org.clojure/data.json {:git/url "https://github.com/clojure/data.json"
-                                       :git/sha "e9e57296e12750512788b723e49ba7f9abb323f9"}
-                my-local-lib          {:local/root "/path/to/lib"}}
+ :extra-deps {org.clojure/data.csv  {:mvn/version "1.1.0"}
+              org.clojure/data.json {:git/url "https://github.com/clojure/data.json"
+                                     :git/sha "e9e57296e12750512788b723e49ba7f9abb323f9"}
+              my-local-lib          {:local/root "/path/to/lib"}}
 
- ;; Serve call-specs (see below) from fdb.
+ ;; Serve call-specs from fdb.
  ;; Use with https://ngrok.com or https://github.com/localtunnel/localtunnel to make a public server.
- :serve        {;; Map from route to call-spec, req will be within call-arg as :req.
-                ;; Route format is from https://github.com/tonsky/clj-simple-router.
-                :routes {"GET /"        user/get-root
-                         "GET /stuff/*" user/get-stuff}
-                ;; Server options for https://github.com/http-kit/http-kit.
-                ;; Defaults to {:port 80}.
-                :opts   {:port 8081}}
+ :serve {;; Map from route to call-spec, req will be within call-arg as :req.
+         ;; Route format is from https://github.com/tonsky/clj-simple-router.
+         :routes {"GET /"        user/get-root
+                  "GET /stuff/*" user/get-stuff}
+         ;; Server options for https://github.com/http-kit/http-kit.
+         ;; Defaults to {:port 80}.
+         :opts   {:port 8081}}
 
  ;; Files and folders to ignore when watching for changes.
  ;; default is [".DS_Store" ".git" ".gitignore" ".obsidian" ".vscode" "node_modules" "target" ".cpcache"]
  ;; You can add to the defaults with :extra-ignore, or overwrite it with :ignore.
  ;; You can also use :ignore and :extra-ignore on the mount map definition.
- :extra-ignore [".obsidian"]
+ :extra-ignore [".noisy-folder"]
 
  ;; nRepl options, port defaults to 2525.
  ;; Started automatically on watch, lets you connect directly from your editor to the fdb process.
  ;; Also used by the fdb cli to connnect to the background clojure process.
  ;; See https://nrepl.org/nrepl/usage/server.html#server-options for more.
- :repl         {}
+ :repl {}
 
  ;; You can add your own stuff here, and since the call-arg gets the config you will
  ;; be able to look up your config items on triggers and readers.
- :my-stuff     "very personal"}
+ :my-stuff "personal config data I want to use in fns"}
 ```
 
 
 ### `call-spec` and `call-arg`
 
-Readers and triggers take a `call-spec` that can be a few different things, and will receive `call-arg` (below):
+Readers and triggers take a `call-spec` that can be a few different things, and will receive `call-arg`:
 
 ``` edn
 ;; These are the different formats supported for call-spec, used in readers and triggers.
@@ -396,6 +407,7 @@ clojure.core/println
 ;; A vector uses the first kw element to decide what to do.
 ;; The only built-in resolution is :sh, that calls a shell command and can use a few bindings from call-arg.
 ;; You can add your own with (defmethod fdb.call/to-fn :my-thing ...)
+;; See ./src/fdb/call for existing ones.
 [:sh "echo" config-path target-path self-path]
 
 ;; A map containing :call, which is any of the above
@@ -417,7 +429,7 @@ It looks like this:
 
 ``` edn
 ;; This is the format for call arg, which the function resolved for call-spec is called with.
-;; It's also acessible in (fdb.call/arg) for triggers, readers, repl files, and files loaded in fdbconfig.edn.
+;; It's also acessible in (fdb.call/arg).
 {:config      {,,,}                         ;; fdb config value
  :config-path "~/fdb/fdbconfig.json"        ;; on-disk path to config
  :node        {,,,}                         ;; xtdb database node
@@ -436,24 +448,32 @@ It looks like this:
 ```
 
 
-### Metadata files
+### Metadata
 
-`doc.txt.meta.edn` is a metadata file for `doc.txt`.
+Metadata is any data you want to put into the DB for your files.
+Then you can query it.
+
+There's two sources of metadata:
+- readers: for the file extension, edn/md/eml are built-in
+- metadata files: `doc.md.meta.edn` is a metadata file for `doc.md`
+Both are loaded into the database whenever the file changes.
+
+Keys on the `fdb` namespace have special meaning for FileDB.
+Reactive triggers are on the `fdb.on` namespace.
 
 ``` edn
-;; Metadata files are <file-path>.meta.edn.
-;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
-;; This file is in fdbconfig.edn :extra-ignores so it's not noisy during use
+;; This both the format of db and on-disk metadata files.
 {;; ID is /mount/ followed by relative path on mount.
- ;; It is added automatically so you don't really add it.
+ ;; It's the unique id for XTDB.
+ ;; Added automatically.
  :xt/id           "/demos/reference/doc.md"
 
  ;; Modified is the most recent between doc.md and doc.md.meta.edn.
- ;; Added automatically in the db.
+ ;; Added automatically.
  :fdb/modified    "2021-03-21T20:00:00.000-00:00"
 
  ;; The ID of the parent of this ID, useful for recursive queries
- ;; Added automatically in the db.
+ ;; Added automatically.
  :fdb/parent      "/demos/reference"
 
  ;; ID references and tags are useful enough in relating docs that they're first class.
@@ -504,9 +524,11 @@ It looks like this:
 
 ## Hacking on FileDB
 
-[ARCHITECTURE.md](ARCHITECTURE.md) has an overview of the main namespaces in FileDB and how they interact.
+[ARCHITECTURE.md](ARCHITECTURE.md) (TODO) has an overview of the main namespaces in FileDB and how they interact.
 
 `fdb watch --debug` starts fdb with some extra debug logging.
 Connect to the [nREPL server](https://nrepl.org/nrepl/1.1/index.html) on port 2525 by default, and change stuff.
 Call `(clj-reload.core/reload)` to reload code as you change it, if you have a config watcher running it will restart as well.
 
+I have TODOs at the end of each file that you can take a look at.
+I find this easier than making issues.

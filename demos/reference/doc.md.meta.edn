@@ -1,16 +1,15 @@
-;; Metadata files are <file-path>.meta.edn.
-;; fdb adds their content to the db on the same id as <file-path> together with any reader data.
-;; This file is in fdbconfig.edn :extra-ignores so it's not noisy during use
+;; This both the format of db and on-disk metadata files.
 {;; ID is /mount/ followed by relative path on mount.
- ;; It is added automatically so you don't really add it.
+ ;; It's the unique id for XTDB.
+ ;; Added automatically.
  :xt/id           "/demos/reference/doc.md"
 
  ;; Modified is the most recent between doc.md and doc.md.meta.edn.
- ;; Added automatically in the db.
+ ;; Added automatically.
  :fdb/modified    "2021-03-21T20:00:00.000-00:00"
 
  ;; The ID of the parent of this ID, useful for recursive queries
- ;; Added automatically in the db.
+ ;; Added automatically.
  :fdb/parent      "/demos/reference"
 
  ;; ID references and tags are useful enough in relating docs that they're first class.
