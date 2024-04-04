@@ -1,8 +1,8 @@
 # FileDB
 
-> Do not go gentle into that good SaaS,
-> Users should burn and rave at close of data;
-> Rage, rage against the dying of the file.
+> Do not go gentle into that good SaaS,  
+Users should burn and rave at close of data;  
+Rage, rage against the dying of the file.
 
 FileDB is a reactive database environment for your files.
 It's main purpose is to give you an easy way to take control of your data.
