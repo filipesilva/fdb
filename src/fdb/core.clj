@@ -368,3 +368,4 @@
 ;;   - sexp in metadata also can't do require very easily, it can't go within a fn, this could help
 ;;   - start by trying require-resolve, then auto-import if known, then fail
 ;;   - store all imported stuff and add to fdbconfig.edn if watching
+;;   - https://github.com/phronmophobic/dewey might help
