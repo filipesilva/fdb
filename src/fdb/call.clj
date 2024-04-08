@@ -119,3 +119,10 @@
 
 ;; TODO:
 ;; - maybe get rid of eval-under-call-args and just replace bindings with kws
+;; - ref call-spec
+;;   - can ref nested keys
+;;   - good for shared stuff, say the handler for this trigger is that other one
+;;   - would load it from db
+;;   - usable for other things too, db would have a resolver for it
+;;   - maybe easier is [:ref "user/folder/whatever" :key :another-key]
+;;     - no ambiguity

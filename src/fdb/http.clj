@@ -51,75 +51,31 @@
   ([url selector]
    (-> url scrape (enlive-html/select selector))))
 
-(comment
-  (-> "https://nominatim.openstreetmap.org/search"
-      (add-params {:q "Lisbon" :limit 1 :format "json"})
-      json)
-  ;; => [{"addresstype" "city",
-  ;;      "class" "boundary",
-  ;;      "osm_type" "relation",
-  ;;      "place_id" 287082329,
-  ;;      "boundingbox" ["38.6913994" "38.7967584" "-9.2298356" "-9.0863328"],
-  ;;      "name" "Lisboa",
-  ;;      "osm_id" 5400890,
-  ;;      "lon" "-9.1365919",
-  ;;      "display_name" "Lisboa, Portugal",
-  ;;      "type" "administrative",
-  ;;      "licence"
-  ;;      "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
-  ;;      "lat" "38.7077507",
-  ;;      "place_rank" 14,
-  ;;      "importance" 0.7149698324141975}]
-
-  (-> "https://api.open-meteo.com/v1/forecast"
-      (add-params {:latitude  "38.7077507"
-                   :longitude "-9.1365919"
-                   :daily     ["temperature_2m_max", "temperature_2m_min"] ,
-                   :past_days 7})
-      json)
-  ;; => {"timezone" "GMT",
-  ;;     "daily_units"
-  ;;     {"time" "iso8601", "temperature_2m_max" "°C", "temperature_2m_min" "°C"},
-  ;;     "elevation" 7.0,
-  ;;     "longitude" -9.14,
-  ;;     "generationtime_ms" 0.04100799560546875,
-  ;;     "utc_offset_seconds" 0,
-  ;;     "latitude" 38.71,
-  ;;     "timezone_abbreviation" "GMT",
-  ;;     "daily"
-  ;;     {"time"
-  ;;      ["2024-03-25"
-  ;;       "2024-03-26"
-  ;;       "2024-03-27"
-  ;;       "2024-03-28"
-  ;;       "2024-03-29"
-  ;;       "2024-03-30"
-  ;;       "2024-03-31"
-  ;;       "2024-04-01"
-  ;;       "2024-04-02"
-  ;;       "2024-04-03"
-  ;;       "2024-04-04"
-  ;;       "2024-04-05"
-  ;;       "2024-04-06"
-  ;;       "2024-04-07"],
-  ;;      "temperature_2m_max"
-  ;;      [16.1 13.8 15.6 17.5 15.5 13.8 13.4 16.0 16.4 17.8 17.3 19.7 16.9 18.8],
-  ;;      "temperature_2m_min"
-  ;;      [10.1 8.7 13.3 11.7 10.7 10.2 10.5 11.7 13.2 12.5 10.6 13.2 12.7 13.0]}}
-
-  (scrape "https://clojuredocs.org/search?q=reduce")
-  (scrape "https://clojuredocs.org/search?q=reduce" [:li.arglist])
-  ;; => ({:tag :li, :attrs {:class "arglist"}, :content ("(reduce f coll)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduce f val coll)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduced x)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduce f init ch)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reducer coll xf)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduce f coll)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduce f init coll)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduced? x)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(reduce-kv f init coll)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(kv-reduce amap f init)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(coll-reduce coll f)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(coll-reduce coll f val)")}
-  ;;     {:tag :li, :attrs {:class "arglist"}, :content ("(ensure-reduced x)")})
-  )
+;; TODO:
+;; - could sync a page to client when it changes, via SSE
+;;   - client can ask for static page, or self-updating page
+;;   - you change the page on disk, new version is pushed to client
+;;   - cool for sync in general, maybe even reified sessions
+;; - where does that headers-in-the-metadata idea fit in now?
+;;   - I guess it's just a namespaced k, for headers
+;; - have to make it easier for third party libs to add routes
+;; - blog is a cool example of a subset of your file library you might want to expose online
+;; - Is rss just a folder file listing ordered by date and content, and content negotiated to be rss format?
+;;   - The folder could be real, or be full of symlinks, or even be a synthetic listing from the db.
+;; - can I make some auto-PWA thing work?
+;;   - that'd make these real personal apps
+;; - need to be able to serve an existing ref
+;;   - e.g. serve trigger query result
+;;   - data needed: fn to render it, ref id, watch semantics
+;;   - watch semantics needs a model of server syncing a component first
+;;   - watch both the ref id, and the fn, or the file the fn is in
+;;   - probably always watch really... turning it off is the special case
+;; - reload on handler change
+;;   - maybe only relevant for the htmx live env case...
+;;     - normally you don't want to force-reload endpoint results when editing
+;;   - A bit of disconnect between the notion of "server handler is fn" and "live edit the file for a server fn".
+;;     - The link between the two is not obvious.
+;;     - But handler is deff a fn, not a file.
+;;     - Does the eval for the fn preserve the file?
+;; - first class htmx components
+;;   - demo should be like http://reagent-project.github.io demos
