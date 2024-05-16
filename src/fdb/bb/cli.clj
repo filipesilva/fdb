@@ -69,6 +69,8 @@
         (spit (str (fs/path user-path "repl.fdb.clj"))
               (str ";; Clojure code added here will be evaluated, output will show up in ./repl-out.fdb.clj\n"
                    ";; Quick help: https://clojuredocs.org https://github.com/filipesilva/fdb#call-spec-and-call-arg\n"))
+        (spit (str (fs/path user-path "load-repl.fdb.clj"))
+              ";; Like repl.fdb.clj, but loaded at startup. Put functions you want to always have loaded here.\n")
         (spit (str (fs/path user-path "query.fdb.edn"))
               (str ";; XTDB queries added here will be evaluated, output will show up in ./query-out.fdb.edn\n"
                    ";; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/ https://www.learndatalogtoday.org\n"))
@@ -79,7 +81,7 @@
                           :mounts        {:user user-path}
                           :extra-deps    {}
                           :extra-readers {}
-                          :load          []})
+                          :load          ["/user/load-repl.fdb.clj"]})
         (log/info "created new config at" path)))))
 
 (defn watch [{{:keys [config debug]} :opts}]

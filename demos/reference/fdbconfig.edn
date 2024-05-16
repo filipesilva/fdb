@@ -6,14 +6,10 @@
  :db-path "./xtdb"
 
  ;; These paths that will be mounted on the db.
- ;; If you have ~/fdb/demos mounted as :demos, and you have /demos/reference/repl.fdb.clj,
- ;; its id in the db will be /demos/reference/repl.fdb.clj.
- :mounts {;; "./demos" is the same as {:path "./demos"}
-          :demos "./demos/"
-          :notes {:path          "/path/to/obsidian/vault"
-                  ;; extra-readers will be added just to files in this mount.
-                  ;; You can also add :readers to overwrite the toplevel.
-                  :extra-readers {:pdf user/read-pdf}}}
+ ;; If you have ~/fdb/user mounted as :user, and you have ~/fdb/user/repl.fdb.clj,
+ ;; its id in the db will be /user/repl.fdb.clj.
+ :mounts {;; "~/fdb/user is the same as {:path "~/fdb/user"}
+          :user "~/fdb/user"}
 
  ;; Readers are fns that will read some data from a file as edn when it changes
  ;; and add it to the db together with the metadata.
@@ -22,11 +18,13 @@
  ;; Call `fdb read glob-pattern` if you change readers and want to force a re-read.
  ;; Defaults to :edn, :md, and :eml readers in fdb/src/readers but can be overwritten
  ;; with :readers instead of :extra-readers.
+ ;; You can also add :extra-readers to a single mount in the map notation.
  :extra-readers {:txt user/read-txt}
 
  ;; Disk paths of clj files to be loaded at the start.
- ;; Usually repl files where you added fns to use in triggers.
- :load ["/fdb/demos/reference/repl.fdb.clj"]
+ ;; Usually repl files where you added fns to use in triggers, or that load namespaces
+ ;; you want to use without requiring them.
+ :load ["/user/load-repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

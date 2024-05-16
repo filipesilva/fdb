@@ -93,7 +93,8 @@
                       :node        node}
         (with-open [_server (closeable-server serve)]
           (doseq [f load]
-            (when-some [path (-> f fs/absolutize str)]
+            (when-some [path (or (metadata/id->path config-path config f)
+                                 (-> f fs/absolutize str))]
               (call/with-arg {:self-path path}
                 (binding [*ns* (create-ns 'user)]
                   (log/info "loading" path)
