@@ -6,12 +6,14 @@
    [fdb.metadata :as metadata]
    [fdb.readers.edn :as readers-edn]
    [fdb.readers.eml :as readers-eml]
+   [fdb.readers.json :as readers-json]
    [fdb.readers.md :as readers-md]
    [fdb.utils :as u]))
 
 (def default-readers
   {:edn #'readers-edn/read
    :eml #'readers-eml/read
+   :json #'readers-json/read
    :md  #'readers-md/read})
 
 (defn id->readers
@@ -51,3 +53,4 @@
 ;;   - a bit up in the air how the output would be processed... parse edn I guess
 ;; - support ext like .foo.bar, fs/split-ext doesn't work for that
 ;; - fdb.on/read on metadata can add more readers, used for testing
+;; - default collection readers too? csv, json array, mbox

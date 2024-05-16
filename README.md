@@ -265,6 +265,7 @@ I've also gathered them here to give a nice overview of what you can do, and so 
 
 FileDB comes with these default readers to make it easy to interact with common data:
 - `edn`: reads all data in edn files is loaded directly into the db
+- `json`: reads all data, keywordizing keys
 - `md`: reads links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
 - `eml:` reads common email keys from the email message headers, and tries to read body as text
 
@@ -457,7 +458,7 @@ Metadata is any data you want to put into the DB for your files.
 Then you can query it.
 
 There's two sources of metadata:
-- readers: for the file extension, edn/md/eml are built-in
+- readers: for the file extension, edn/md/json/eml are built-in
 - metadata files: `doc.md.meta.edn` is a metadata file for `doc.md`
 Both are loaded into the database whenever the file changes.
 

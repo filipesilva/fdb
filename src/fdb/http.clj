@@ -79,3 +79,10 @@
 ;;     - Does the eval for the fn preserve the file?
 ;; - first class htmx components
 ;;   - demo should be like http://reagent-project.github.io demos
+;; - turn the htmx problem into a content negotiation problem
+;;   - always return the plain data from endpoints, then render it
+;;   - edn, json, http for htmx, partial http for htmx partials
+;;   - maybe full html can be nested routes?
+;;     - /api/email/1 is just the email partial
+;;     - /inbox/email/1 is the inbox with the email partial in
+;;
