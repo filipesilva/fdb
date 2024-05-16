@@ -370,6 +370,3 @@
 ;;   - start by trying require-resolve, then auto-import if known, then fail
 ;;   - store all imported stuff and add to fdbconfig.edn if watching
 ;;   - https://github.com/phronmophobic/dewey might help
-;; - cider can't go to definition in repl files
-;;   - looks like it's because of the add-lib
-;;   - can do pprint and xtdb source np

@@ -12,10 +12,9 @@
  ;; Added automatically.
  :fdb/parent      "/demos/reference"
 
- ;; ID references and tags are useful enough in relating docs that they're first class.
+ ;; ID references are useful enough in relating docs that they're first class.
  :fdb/refs        #{"/demos/reference/todo.md"
                     "/demos/reference/ref-one.md"}
- :fdb/tags        #{"important" "not-very-important"}
 
  ;; Called when this file, or its metadata, is modified.
  ;; The fn will be called with the call-arg.
@@ -36,7 +35,7 @@
  ;; The latest results will be in important-files.edn, specified in the :path key.
  ;; You can add triggers to path metadata, or use it as a ref to other triggers.
  :fdb.on/query    {:q    [:find ?e
-                          :where [?e :fdb/tags "important"]]
+                          :where [?e :tags "important"]]
                    :path "./important-files.edn"
                    :call print-call-arg}
 

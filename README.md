@@ -265,7 +265,7 @@ I've also gathered them here to give a nice overview of what you can do, and so 
 
 FileDB comes with these default readers to make it easy to interact with common data:
 - `edn`: reads all data in edn files is loaded directly into the db
-- `md`: reads hashtags into `:fdb/tags`, links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
+- `md`: reads links into `:fdb/refs`, and all [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format). Property keys that start with `fdb` are read as edn.
 - `eml:` reads common email keys from the email message headers, and tries to read body as text
 
 Triggers in the return return map work the same as those in metadata files.
@@ -315,7 +315,7 @@ See [XTDB docs](https://v1-docs.xtdb.com/language-reference/datalog-queries/) fo
 
 ``` edn
 {:find [?e] 
- :where [[?e :fdb/tags "important"]]}
+ :where [[?e :tags "important"]]}
 ```
 
 Will output to `query-out.fdb.edn`:
@@ -479,10 +479,9 @@ Reactive triggers are on the `fdb.on` namespace.
  ;; Added automatically.
  :fdb/parent      "/demos/reference"
 
- ;; ID references and tags are useful enough in relating docs that they're first class.
+ ;; ID references are useful enough in relating docs that they're first class.
  :fdb/refs        #{"/demos/reference/todo.md"
                     "/demos/reference/ref-one.md"}
- :fdb/tags        #{"important" "not-very-important"}
 
  ;; Called when this file, or its metadata, is modified.
  ;; The fn will be called with the call-arg.
@@ -503,7 +502,7 @@ Reactive triggers are on the `fdb.on` namespace.
  ;; The latest results will be in important-files.edn, specified in the :path key.
  ;; You can add triggers to path metadata, or use it as a ref to other triggers.
  :fdb.on/query    {:q    [:find ?e
-                          :where [?e :fdb/tags "important"]]
+                          :where [?e :tags "important"]]
                    :path "./important-files.edn"
                    :call print-call-arg}
 

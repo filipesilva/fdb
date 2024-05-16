@@ -92,15 +92,10 @@
 (defn read
   [{:keys [self-path] :as call-arg}]
   (let [md            (slurp self-path)
-        [_ yml body]  (re-find #"(?s)^(?:---\n(.*?)\n---\n)?(.*)" md)
+        [_ yml]       (re-find #"(?s)^(?:---\n(.*?)\n---\n)?" md)
         front-matter' (front-matter yml)
-        tags          (-> #{}
-                          (into (:tags front-matter'))
-                          (into (tags body)))
         refs'         (refs call-arg md)]
     (merge (read-edn-for-fdb-keys front-matter')
-           (when (seq tags)
-             {:fdb/tags tags})
            (when (seq refs')
              {:fdb/refs refs'}))))
 

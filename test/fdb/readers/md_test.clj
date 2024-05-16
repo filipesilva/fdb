@@ -23,7 +23,6 @@
                           "/vault/inbox/another file.md"
                           "/vault/another file.md"
                           "/vault/md link.md"},
-            :fdb/tags   #{"1bâc" "aaa" "accepted" "action-item" "applied" "learning"}
             :fdb/k      {:foo "bar"},
             :fdb.a/ks   ['n.s/sym {:call 'n.s/another-sym} [:sh "echo"]],}
            (sut/read {:config-path config-path

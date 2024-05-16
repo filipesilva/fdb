@@ -1,5 +1,5 @@
 ```edn
 ;; works like query.fdb.edn
 [:find ?e
- :where [?e :fdb/tags "important"]]
+ :where [?e :tags "important"]]
 ```
