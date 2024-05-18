@@ -7,28 +7,28 @@ Rage, rage against the dying of the file.
 FileDB is a reactive database environment for your files.
 It's main purpose is to give you an easy way to take control of your data.
 
-It watches your files on disk and loads some of their data to a database.
+It watches files on disk and loads their data to a database.
 You use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and add reactive triggers for automation.
 
 Check the [Demo](#demo) and [Reference](#reference) to see what interacting with FileDB looks like.
 [More Demos](#more-demos) has examples of cool things I do with it.
 
 The database is determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
-Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
+Anything that syncs files to your disk can trigger your automations, so it's easy to save a file on your phone to trigger computation on your laptop.
 
 FileDB is for all those things you know you could do with code, but it's never worth the effort to set everything up.
-I use it to hack together code and automations for my own usecases.
+I use it to hack together code and automations for my own use cases.
 I like using markdown files on [Obsidian](https://obsidian.md) as my main readable files, but I don't think that matters.
 FileDB should let you hack your own setup.
 
 
 ## Demo
 
-This is Clojure heavy so it's probably best if you're a [Clojure](https://clojure.org) dev already with some [Datalog](https://en.wikipedia.org/wiki/Datalog) chops.
+This is Clojure heavy so it's probably best if you're a [Clojure](https://clojure.org) dev with [Datalog](https://en.wikipedia.org/wiki/Datalog) chops.
 
 But if you're not, it's a great time to start.
 Clojure and Datalog are awesome!
-Courage Wolf offers great advice here: just bite off more than you can chew, then chew it.
+Courage Wolf offers great advice here: bite off more than you can chew, then chew it.
 
 First step is to clone and start watching.
 Make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation) installed first.
@@ -49,14 +49,14 @@ Run the `cat` commands separately, since it will take some ms for FileDB to act 
 Some `echo` commands are using `>>` instead of `>` to append so existing content isn't lost.
 
 The `~/fdb/user` folder is created by FileDB and automatically watched.
-It's where you can play with some code and data without thinking too much about it.
+It's where you can play with code and data without thinking too much about it.
 
 ```sh
 cd ~/fdb/user
 ```
 
-You can use a real editor instead of `echo`/`cat`.
-Using shell commands here is just for the demo.
+You can use an editor instead of `echo`/`cat`.
+I'm using shell commands here for demo brevity.
 
 
 ### Data
@@ -171,7 +171,7 @@ Clojure code in repl files is evaluated in the Clojure process under the `user` 
 REPL files end with `repl.fdb.clj`.
 The result of the execution will be in a comment in `repl-out.fdb.clj`, together with the executed code.
 
-FileDB also starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
+FileDB starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
 In this demo we're going to focus on the file watcher use, but feel free to use both ways.
 
 ```sh
@@ -200,7 +200,7 @@ cat repl-out.fdb.clj
 ;; => #'user/my-inc
 ```
 
-You can call this function by it's namespaced name (`user/my-inc`) or by just `my-inc`, since all repl files start in the `user` namespace.
+You can call this function by it's namespaced name (`user/my-inc`) or by `my-inc`, since all repl files start in the `user` namespace.
 
 ``` sh
 echo '(+ (user/my-inc 1) (my-inc 1))' > another-repl.fdb.clj
@@ -218,8 +218,8 @@ Code in a repl file was loaded into the process but if you kill the process it's
 Repl files aren't automatically loaded on startup because then you'd have to watch out what you write in them to avoid slowing down startup.
 
 In `fdbconfig.edn` there's a load vector where you can put `.clj` files that will be loaded on startup.
-There's `["load-repl.fdb.clj" "server-repl.fdb.clj"]` in there already.
-They are also a repl files so any changes are immediately loaded.
+There's `["load-repl.fdb.clj" "server-repl.fdb.clj"]` in there.
+They are repl files so any changes are immediately loaded.
 
 You have full access to the database from code files, so you can use the [XTDB API](https://v1-docs.xtdb.com/language-reference/datalog-queries/) directly.
 You can get the current node via `(fdb.db/node)`.
@@ -289,8 +289,8 @@ cat repl-out.fdb.clj
 ;;        :xt/id "/user/data.json"}]}
 ```
 
-You also have convenience functions for `pull`, `pull-many`, `entity` and `entity-history`.
-`entity-history` is a particularly cool one because it gives you all past versions of that id, as long as the database wasn't deleted.
+You have convenience functions for `pull`, `pull-many`, `entity` and `entity-history`.
+`entity-history` is a cool one because it gives you all past versions of that id, as long as the database wasn't deleted.
 Past content is in `xtdb.api/doc`.
 
 ```sh
@@ -373,11 +373,11 @@ echo '
 ### Network
 
 Anything that can sync files over network can interact with FileDB.
-You can sync some data files from one machine to another that is running FileDB, and if that file is watched, it will be loaded.
+You can sync data files from one machine to another that is running FileDB, and if that file is watched, it will be loaded.
 You can sync repl files, which will cause them to be evaluated, and then sync back the `repl-out.fdb.clj` to see the result.
 
 FileDB has a built-in [http-kit](https://github.com/http-kit/http-kit) server that maps routes to functions.
-Handlers receive a [call-arg](#call-spec-and-call-arg) with `:req` also there.
+Handlers receive a [call-arg](#call-spec-and-call-arg) with `:req`.
 
 ```sh
 echo '
@@ -397,7 +397,7 @@ Content is negotiated automatically via [Muuntaja](https://github.com/metosin/mu
 Routes are order independent thanks to [clj-simple-router](https://github.com/tonsky/clj-simple-router).
 
 There's a convenience function to render [Hiccup](https://github.com/escherize/huff) in `fdb.http/render` that you can use without having to import Hiccup.
-You can use Hiccup together with [HTMX](https://htmx.org) to quickly whip up some UI for FileDB.
+You can use Hiccup together with [HTMX](https://htmx.org) to quickly whip up UI for FileDB.
 
 ```sh
 echo '
@@ -423,7 +423,7 @@ You can use [ngrok](https://ngrok.com) for free to share this server with others
 Run `ngrok http 80` after setting ngrok up, and share the link it gives you under `Forwarding`.
 In the [ngrok dashboard](https://dashboard.ngrok.com/get-started/setup) you have the CLI args to use a static domain so your server is always up at the same address.
 
-The `fdb.http` namespace also has some helpers to interact with existing APIs.
+The `fdb.http` namespace has helpers to interact with existing APIs.
 This code will get you geo data for the city of Lisbon, Portugal.
 
 ```sh
@@ -467,7 +467,7 @@ The main idea in FileDB is that you can use files as both data and code for a lo
 
 This process is yours, and you can do cool stuff with it.
 
-Here's what some of the terms your see in this README mean:
+Here's what the terms your see in this README mean:
 - mount: the name a watched folder on disk has on the db
 - repl/query file: file that evaluates code or db queries on save, outputs result to a sibling file
 - reader: a fn that takes a file and returns data from it as edn, which is loaded into the db
@@ -487,7 +487,7 @@ mount --> file change --> readers+metadata -> db --> triggers
 
 ## More Demos
 
-Below is some cool stuff that you can do with FileDB.
+Below is cool stuff that you can do with FileDB.
 If you want to follow these demos, add their dir as a mount.
 
 - [~/demos/clojuredocs](./demos/clojuredocs/README.md): query and scrape [clojuredocs](https://clojuredocs.org) results whenever you write to a file
@@ -497,26 +497,26 @@ If you want to follow these demos, add their dir as a mount.
 - TODO `~/demos/code-analysis`: read AST for clj files, query it to find what fns are affected when a given fn changes
 - TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
 
-I'm still working on more demos, mostly around my own usecases.
+I'm working on more demos around my own usecases.
 I'll add them here when they are done.
-If you have some cool demos you'd like to list here, make a PR!
+If you have cool demos you'd like to list here, make a PR!
 
 
 ## But why?
 
-Because I think it's silly that I own a really powerful laptop and a really powerful phone, and yet my data is sequestered away on cloud servers, where I pay for the privilege of accessing it and using it in a silo.
+Because I think it's silly that I own a powerful laptop and a powerful phone, and yet my data is sequestered away on cloud servers, where I pay for the privilege of accessing it and using it in a silo.
 
 I want my data, and I want to fuck around with it on my terms.
 I want to connect it together and try to do cool stuff with it!
 And I want to sync it between my laptop and my phone, and wherever else I want to have it.
 
 Last year I was travelling somewhere with bad connectivity and wanted to look up food nutrition data on my phone.
-This is generally known data.
+This is known data.
 Surely there's an app for that.
-I tried some 10 apps free and paid, and found they were mostly garbage.
+I tried 10 apps free and paid, and found they were mostly garbage.
 I don't think I found even one that worked offline and had the 5 foods I tested.
 
-Why is this so hard to get?!
+Why is this hard to get?!
 The USDA gives you a [24MB CSV](https://fdc.nal.usda.gov/download-datasets.html) of all foundation foods.
 2.8GB if you want all foods, the bulk of it branded.
 I know how to program.
@@ -529,9 +529,9 @@ You know what's really easy to sync and open though?
 
 Files.
 
-You have iCloud, Google Drive, Dropbox, Syncthing, Git, and a ton of other stuff to sync.
+You have iCloud, Google Drive, Dropbox, Syncthing, Git, and a ton of other apps to sync.
 You have apps that open your on-disk files.
-Lots of these cloud services give you some way to download all of your stuff.
+Lots of these cloud services give you a way to download all of your data.
 
 So that got me thinking about doing a database that was mostly a queryable layer over disk files.
 I then I added more stuff to it that I thought was cool, like reactive triggers, a live system, and a http server.
@@ -550,11 +550,11 @@ cd fdb
 ```
 
 Now you should be able to run `fdb help` from anywhere.
-If you don't want to symlink the CLI script, you can also call `./src/fdb/bb/cli.clj help` from this dir. That's what `./symlink-fdb.sh` is linking.
+If you don't want to symlink the CLI script, you can call `./src/fdb/bb/cli.clj help` from this dir. That's what `./symlink-fdb.sh` is linking.
 
 Start using FileDB by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
-If you want to create the `fdb` folder in the current (or some other) dir, add it at the end of init like `fdb init .`.
+If you want to create the `fdb` folder in the current (or other) dir, add it at the end of init like `fdb init .`.
 
 Then run `fdb watch`.
 You can edit the config anytime, for instance to add new mounts, and the watcher will restart automatically.
@@ -567,14 +567,14 @@ If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will
 You can put triggers and whatever else you want in this edn file.
 
 Deleted files are removed from the database.
-But since XTDB is a [bitemporal](https://v1-docs.xtdb.com/concepts/bitemporality/) database, you can still query for past versions of the database.
-`fdb watch` will also pick up files that changed since it was last running.
+But since XTDB is a [bitemporal](https://v1-docs.xtdb.com/concepts/bitemporality/) database, you can query for past versions of the database.
+`fdb watch` will pick up files that changed since it was last running, including deletions.
 
 `~/fdb/user/` has a [repl and query file](repl-and-query-files) to play with.
 The [Reference](#reference) is in `~/fdb/demos/reference` and contains examples of how things work.
 
 You can also run `fdb sync` to do a one-shot sync.
-This is useful when you have some automation you want to run manually.
+This is useful when you have automation you want to run manually.
 It doesn't run `fdb.on/schedule` though.
 
 `fdb read glob-pattern` forces a read of the (real, not mount) paths.
@@ -585,7 +585,7 @@ This is useful when you add or update readers and want to re-read those files.
 
 Reference files are in `~/fdb/demos/reference` folder but are not mounted.
 You can mount them if you want.
-I've also gathered them here to give a nice overview of what you can do, and so its easy to search over them.
+I've gathered them here to give a nice overview of what you can do, and so its easy to search over them.
 
 ### Readers
 
@@ -605,7 +605,7 @@ Check out how the default ones are implemented in `src/fdb/readers/`.
 
 You can run code over the db process with a file called `repl.fdb.clj`, with any prefix e.g. `foo.repl.fdb.clj`.
 `repl.fdb.md` also works if the clojure code is in a solo `clojure` codeblock.
-You can also connect your editor to the nREPL server that starts with `fdb watch`, it's on port 2525 by default.
+You can connect your editor to the nREPL server that starts with `fdb watch`, it's on port 2525 by default.
 
 It starts in the `user` namespace but you can add whatever namespace form you want, and that's the ns it'll be eval'd in.
 You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more on `call-arg` in the later in the reference).
@@ -634,7 +634,7 @@ Will write the evaluated code with output in a comment to `repl-out.fdb.clj`:
 ;; => #'user/print-call-arg
 ```
 
-You can add a repl file (or any clj file really) to `fdbconfig.edn` under `:load` to be loaded at startup, and the functions you define in it will be available for triggers and readers before sync.
+You can add a repl file (or any clj file) to `fdbconfig.edn` under `:load` to be loaded at startup, and the functions you define in it will be available for triggers and readers before sync.
 
 You can query the db with a file called `query.fdb.edn`, with any prefix.
 Also works for `query.fdb.md` if query is in a solo `edn` codeblock.
@@ -856,7 +856,7 @@ Reactive triggers are on the `fdb.on` namespace.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) (TODO) has an overview of the main namespaces in FileDB and how they interact.
 
-`fdb watch --debug` starts fdb with some extra debug logging.
+`fdb watch --debug` starts fdb with extra debug logging.
 Connect to the [nREPL server](https://nrepl.org/nrepl/1.1/index.html) on port 2525 by default, and change stuff.
 Call `(clj-reload.core/reload)` to reload code as you change it, if you have a config watcher running it will restart as well.
 
