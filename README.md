@@ -45,7 +45,10 @@ fdb watch
 [CLI](#cli) explains what these commands do.
 
 Then in another terminal go to `~/fdb/user`, and run the code in the Data, Code, and Network sections below.
-This folder is created by FileDB and automatically watched.
+Run the `cat` commands separately, since it will take some ms for FileDB to act on file changes.
+Some `echo` commands are using `>>` instead of `>` to append so existing content isn't lost.
+
+The `~/fdb/user` folder is created by FileDB and automatically watched.
 It's where you can play with some code and data without thinking too much about it.
 
 ```sh
@@ -359,7 +362,7 @@ echo '
   (spit (str self-path ".audit")
         (-> tx :xtdb.api/tx-time .toInstant (str "\n"))
         :append true))
-' > load-repl.fdb.clj
+' >> load-repl.fdb.clj
 echo '
 {:tags #{"demo"}
  :fdb.on/modify user/audit}
@@ -380,7 +383,7 @@ Handlers receive a [call-arg](#call-spec-and-call-arg) with `:req` also there.
 echo '
 (defn foo [{:keys [req]}]
   {:body {:bar "baz"}})
-' > server-repl.fdb.clj
+' >> server-repl.fdb.clj
 # set fdbconfig.edn :server :routes to {"GET /foo" user/foo}
 
 curl localhost:80/foo
@@ -410,7 +413,7 @@ echo '
   {:body
    (fdb.http/render
     [:div "They call it Royale with Cheese."])})
-' > server-repl.fdb.clj
+' >> server-repl.fdb.clj
 # set fdbconfig.edn :server :routes to 
 # {"GET /" user/clicker "POST /clicked" user/clicked}
 ```
