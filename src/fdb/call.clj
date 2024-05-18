@@ -1,6 +1,7 @@
 (ns fdb.call
   (:refer-clojure :exclude [apply])
   (:require
+   [babashka.fs :as fs]
    [babashka.process :refer [shell]]
    [fdb.utils :as u]
    [taoensso.timbre :as log]))
@@ -76,10 +77,12 @@
   [[_ & shell-args]]
   (fn [call-arg]
     (let [[opts & rest :as all] (eval-under-call-arg call-arg (vec shell-args))
-          io-opts               {:out *out* :err *err*}
+          shell-opts            {:dir (-> call-arg :self-path fs/parent str)
+                                 :out *out*
+                                 :err *err*}
           shell-args'           (if (map? opts)
-                                  (into [(merge io-opts opts)] rest)
-                                  (into [io-opts] all))]
+                                  (into [(merge shell-opts opts)] rest)
+                                  (into [shell-opts] all))]
       (clojure.core/apply shell shell-args'))))
 
 (defmethod to-fn clojure.lang.Fn
