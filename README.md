@@ -396,7 +396,7 @@ curl localhost:80/foo
 Content is negotiated automatically via [Muuntaja](https://github.com/metosin/muuntaja).
 Routes are order independent thanks to [clj-simple-router](https://github.com/tonsky/clj-simple-router).
 
-There's a convenience function to render [Hiccup](https://github.com/weavejester/hiccup) in `fdb.http/render` that you can use without having to import Hiccup.
+There's a convenience function to render [Hiccup](https://github.com/escherize/huff) in `fdb.http/render` that you can use without having to import Hiccup.
 You can use Hiccup together with [HTMX](https://htmx.org) to quickly whip up some UI for FileDB.
 
 ```sh
@@ -404,7 +404,7 @@ echo '
 (defn clicker [_]
   {:body
    (fdb.http/render
-    [:body
+    [:<>
      [:script {:src "https://unpkg.com/htmx.org@1.9.12"}]
      [:button {:hx-post "/clicked" :hx-swap "outerHTML"}
       "You know what they call a Quarter Pounder with Cheese in Paris?"]])})

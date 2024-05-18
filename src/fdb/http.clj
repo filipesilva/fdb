@@ -3,7 +3,7 @@
    [net.cgrand.enlive-html :as enlive-html]
    [clojure.data.json :as json]
    [clojure.string :as str]
-   [hiccup2.core :as h])
+   [huff2.core :as h])
   (:import
    (java.net URL URLDecoder URLEncoder)))
 
@@ -53,7 +53,7 @@
    (-> url scrape (enlive-html/select selector))))
 
 (defn render
-  "Same as hiccup2.core/html followed by str."
+  "Same as huff2.core/html followed by str."
   [x]
   (str (h/html x)))
 
