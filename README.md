@@ -70,7 +70,7 @@ echo '{:tags #{"demo"}}' > data.edn
 You can query for the data in it with a query file.
 Query files end with `query.fdb.edn`.
 The result of the query will be in `query-out.fdb.edn`.
-The query is in [XTDB datalog](https://v1-docs.xtdb.com/language-reference/datalog-queries/), and this one means "get me all data for files with demo in the tags property".
+Queries are in [XTDB datalog](https://v1-docs.xtdb.com/language-reference/datalog-queries/), and this one means "get me all data for files with demo in the tags property".
 
 ```sh
 echo '
