@@ -2,7 +2,8 @@
   (:require
    [net.cgrand.enlive-html :as enlive-html]
    [clojure.data.json :as json]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [hiccup2.core :as h])
   (:import
    (java.net URL URLDecoder URLEncoder)))
 
@@ -50,6 +51,11 @@
    (-> url URL. enlive-html/html-resource))
   ([url selector]
    (-> url scrape (enlive-html/select selector))))
+
+(defn render
+  "Same as hiccup2.core/html followed by str."
+  [x]
+  (str (h/html x)))
 
 ;; TODO:
 ;; - could sync a page to client when it changes, via SSE

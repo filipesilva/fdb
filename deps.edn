@@ -29,14 +29,15 @@
          http-kit/http-kit           {:mvn/version "2.7.0"}
          io.github.tonsky/clj-simple-router {:mvn/version "0.1.0"}
          metosin/muuntaja            {:mvn/version "0.6.10"}
+         hiccup/hiccup               {:mvn/version "2.0.0-RC3"}
          org.clojure/data.json       {:mvn/version "2.5.0"}
          enlive/enlive               {:mvn/version "1.1.6"}
          ;; built-in reader deps
-         clj-commons/clj-yaml      {:mvn/version "1.0.27"}
-         io.forward/clojure-mail   {:mvn/version "1.0.8"}
+         clj-commons/clj-yaml        {:mvn/version "1.0.27"}
+         io.forward/clojure-mail     {:mvn/version "1.0.8"}
          ;; Don't really use medley directly, but clojure-mail does, and it always shows
          ;; a warning about abs being overwritten because it's on an old medley version
-         dev.weavejester/medley    {:mvn/version "1.7.0"}}
+         dev.weavejester/medley      {:mvn/version "1.7.0"}}
 
  :aliases
  {:neil {:project {:name fdb/fdb}}}}

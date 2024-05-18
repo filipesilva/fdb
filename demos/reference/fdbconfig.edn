@@ -21,10 +21,11 @@
  ;; You can also add :extra-readers to a single mount in the map notation.
  :extra-readers {:txt user/read-txt}
 
- ;; Disk paths of clj files to be loaded at the start.
+ ;; Mount or real paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers, or that load namespaces
- ;; you want to use without requiring them.
- :load ["/user/load-repl.fdb.clj"]
+ ;; you want to use without requiring them, or server handlers.
+ :load ["/user/load-repl.fdb.clj"
+        "/user/server-repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

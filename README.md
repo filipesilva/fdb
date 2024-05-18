@@ -10,8 +10,8 @@ It's main purpose is to give you an easy way to take control of your data.
 It watches your files on disk and loads some of their data to a database.
 You use [Clojure](https://clojure.org) and [XTDB](https://xtdb.com) to interact with this data, and add reactive triggers for automation.
 
-Check the [Quickstart](#quickstart) and [Reference](#reference) to see what interacting with FileDB looks like.
-[Demos](#demos) has examples of cool things I do with it.
+Check the [Demo](#demo) and [Reference](#reference) to see what interacting with FileDB looks like.
+[More Demos](#more-demos) has examples of cool things I do with it.
 
 The database is determined by the files on disk, so you can replicate it wholly or partially by syncing these files.
 Anything that syncs files to your disk can also trigger your automations, so it's easy to save a file on your phone to trigger some computation on your laptop.
@@ -22,16 +22,18 @@ I like using markdown files on [Obsidian](https://obsidian.md) as my main readab
 FileDB should let you hack your own setup.
 
 
-## Quickstart
+## Demo
 
 This is Clojure heavy so it's probably best if you're a [Clojure](https://clojure.org) dev already with some [Datalog](https://en.wikipedia.org/wiki/Datalog) chops.
+
 But if you're not, it's a great time to start.
 Clojure and Datalog are awesome!
-Bite off more than you can chew, then chew it.
+Courage Wolf offers great advice here: just bite off more than you can chew, then chew it.
 
-Clone and start watching, make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation) installed first:
+First step is to clone and start watching.
+Make sure to have [Clojure](https://clojure.org/guides/install_clojure) and [Babashka](https://github.com/babashka/babashka#installation) installed first.
 
-``` sh
+```sh
 # go into a folder where you can clone fdb into
 git clone https://github.com/filipesilva/fdb
 cd fdb
@@ -42,129 +44,459 @@ fdb watch
 
 [CLI](#cli) explains what these commands do.
 
-Then in another terminal run commands for the examples below.
+Then in another terminal go to `~/fdb/user`, and run the code in the Data, Code, and Network sections below.
+This folder is created by FileDB and automatically watched.
+It's where you can play with some code and data without thinking too much about it.
 
-This example uses a `fdb.on/modify` [metadata trigger](#metadata) to search in [ClojureDocs](https://clojuredocs.org) whenever a file changes, and writes the scraped results to another file:
-
-``` sh
-# clojuredocs search
-echo "reduce" > ~/fdb/user/clojuredocs.txt
-echo '
-{:fdb.on/modify
- (fn [{:keys [self-path]}]
-   (-> "https://clojuredocs.org/search"
-       (fdb.http/add-params {:q (slurp self-path)})
-       (fdb.http/scrape [:li.arglist])
-       (->> (mapcat :content)
-            (clojure.string/join "\n")
-            (spit (fdb.utils/sibling-path self-path "clojuredocs-out.txt")))))}
-' > ~/fdb/user/clojuredocs.txt.meta.edn
-
-# results for any query in clojuredocs.txt are this file
-cat ~/fdb/user/clojuredocs-out.txt
-# (reduce f coll)
-# (reduce f val coll)
-# (reduced x)
-# (reduce f init ch)
-# (reducer coll xf)
-# (reduce f coll)
-# (reduce f init coll)
-# (reduced? x)
-# (reduce-kv f init coll)
-# (kv-reduce amap f init)
-# (coll-reduce coll f)
-# (coll-reduce coll f val)
-# (ensure-reduced x)
-
-# search for something else
-echo "map" > ~/fdb/user/clojuredocs.txt
-cat ~/fdb/user/clojuredocs-out.txt
+```sh
+cd ~/fdb/user
 ```
 
-This example uses a `fdb.on/schedule` [metadata trigger](#metadata) to:
-- each day
-- look up temperatures in Lisbon for the past and future 7 days
-- load them into FileDB by writing them to `.edn` files on disk that we have [readers](#readers) for
-- then query the db using a [query file](#repl-and-query-files) that calls a function we just defined in a [repl file](#repl-and-query-files)
+You can use a real editor instead of `echo`/`cat`.
+Using shell commands here is just for the demo.
+
+
+### Data
+
+FileDB loads data on watched files that it can [read](#readers). [EDN](https://en.wikipedia.org/wiki/Clojure#Extensible_Data_Notation) map data in watched folders is automatically added to the database.
+
+```sh
+echo '{:tags #{"demo"}}' > data.edn
+```
+
+You can query for the data in it with a query file.
+Query files end with `query.fdb.edn`.
+The result of the query will be in `query-out.fdb.edn`.
+The query is in [XTDB datalog](https://v1-docs.xtdb.com/language-reference/datalog-queries/), and this one means "get me all data for files with demo in the tags property".
+
+```sh
+echo '
+{:find [(pull ?e [*])] 
+ :where [[?e :tags "demo"]]}
+' > query.fdb.edn
+
+cat query-out.fdb.edn
+```
+
+```edn
+#{[{:tags #{"demo"}
+    :fdb/modified #inst "2024-04-23T22:49:27.271946426Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.edn"}]}
+```
+
+Data in Markdown [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format) and JSON maps is also automatically loaded.
+
+```sh
+echo '---
+tags:
+  - demo
+---
+Markdown body is not loaded
+' > data.md
+echo '{"tags": ["demo"]}' > data.json
+touch query.fdb.edn
+
+cat query-out.fdb.edn
+```
+
+```edn
+#{[{:tags ["demo"]
+    :fdb/modified #inst "2024-04-23T22:50:12.791335391Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.md"}]
+  [{:tags ["demo"]
+    :fdb/modified #inst "2024-04-23T22:50:12.791511140Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.json"}]
+  [{:tags #{"demo"}
+    :fdb/modified #inst "2024-04-23T22:49:27.271946426Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.edn"}]}
+```
+
+Files without a reader only get `:xt/id`, `:fdb/modified`, and `:fdb/parent` in the db.
+
+```sh
+echo 'just a txt' > file.txt
+echo '
+{:find [(pull ?e [*])] 
+ :where [[?e :xt/id "/user/file.txt"]]}
+' > file-query.fdb.edn
+
+cat file-query-out.fdb.edn
+```
+
+```edn
+#{[{:fdb/modified #inst "2024-04-23T22:50:32.953604479Z"
+    :fdb/parent "/user"
+    :xt/id "/user/file.txt"}]}
+```
+
+But you can add metadata to any file via a sibling file that ends in `.meta.edn`.
+
+```sh
+echo '{:tags #{"demo"}}' > file.txt.meta.edn
+touch query.fdb.edn
+
+cat query-out.fdb.edn
+```
+
+```edn
+#{[{:tags ["demo"]
+    :fdb/modified #inst "2024-04-23T22:50:12.791335391Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.md"}]
+  [{:tags ["demo"]
+    :fdb/modified #inst "2024-04-23T22:50:12.791511140Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.json"}]
+  [{:tags #{"demo"}
+    :fdb/modified #inst "2024-04-23T22:49:27.271946426Z"
+    :fdb/parent "/user"
+    :xt/id "/user/data.edn"}]
+  [{:tags #{"demo"}
+    :fdb/modified #inst "2024-04-23T22:51:32.639683791Z"
+    :fdb/parent "/user"
+    :xt/id "/user/file.txt"}]}
+```
+
+
+### Code
+
+Clojure code in repl files is evaluated in the Clojure process under the `user` namespace.
+REPL files end with `repl.fdb.clj`.
+The result of the execution will be in a comment in `repl-out.fdb.clj`, together with the executed code.
+
+FileDB also starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that you can connect to.
+In this demo we're going to focus on the file watcher use, but feel free to use both ways.
+
+```sh
+echo '(inc 1)' > repl.fdb.clj
+
+cat repl-out.fdb.clj
+```
+
+```clojure
+(inc 1)
+
+;; 2
+```
+
+Since the code is evaluated into a persistent process, you can define a function in one file and use it in another.
+
+```sh
+echo '(defn my-inc [x] (inc x))' > repl.fdb.clj
+
+cat repl-out.fdb.clj 
+```
+
+```clojure
+(defn my-inc [x] (inc x))
+
+;; => #'user/my-inc
+```
+
+You can call this function by it's namespaced name (`user/my-inc`) or by just `my-inc`, since all repl files start in the `user` namespace.
 
 ``` sh
-# temperature tracker
-echo '
-{:fdb.on/schedule
- {:every [1 :days]
-  :call  (fn [{:keys [self-path]}]
-           (let [lisbon   (-> "https://nominatim.openstreetmap.org/search"
-                              (fdb.http/add-params {:q "Lisbon" :limit 1 :format "json"})
-                              fdb.http/json
-                              first)
-                 forecast (-> "https://api.open-meteo.com/v1/forecast"
-                              (fdb.http/add-params {:daily     ["temperature_2m_max", "temperature_2m_min"] ,
-                                                    :past_days 7
-                                                    :latitude  (:lat lisbon)
-                                                    :longitude (:lon lisbon)})
-                              fdb.http/json
-                              :daily)
-                 temps    (map (fn [day max min]
-                                 {:day day
-                                  :max max
-                                  :min min})
-                               (:time forecast)
-                               (:temperature_2m_max forecast)
-                               (:temperature_2m_min forecast))]
-             (run! (fn [temp]
-                     (fdb.utils/spit-edn
-                      (fdb.utils/sibling-path self-path (str "weather/" (:day temp) ".edn"))
-                      temp))
-                   temps)))}}
-' > ~/fdb/user/weather.edn
+echo '(+ (user/my-inc 1) (my-inc 1))' > another-repl.fdb.clj
 
-# edn files for min/max temp, updated every day, for previous and next 7 days
-ll ~/fdb/user/weather
+cat another-repl-out.fdb.clj
+```
 
-# what are the max temperatures like the week around today?
-echo '
-(require \'[tick.core :as t])
-(defn this-week? [date]
-  (let [today (t/date)]
-    (t/<= (t/<< today (t/of-days 3))
-          (t/date date)
-          (t/>> today (t/of-days 3)))))
-' > ~/fdb/user/repl.fdb.clj
-echo '
-{:find [?day ?max]
- :where [[?e :fdb/parent "/user/weather"]
-         [?e :day ?day]
-         [(user/this-week? ?day)]
-         [?e :max ?max]]}
-' > ~/fdb/user/week-max-temp.query.fdb.edn
+``` clojure
+(+ (user/my-inc 1) (my-inc 1))
 
-# query results are in this file
-cat ~/fdb/user/week-max-temp.query-out.fdb.edn
-# #{["2024-03-29" 15.5]
-#   ["2024-03-30" 13.8]
-#   ["2024-03-31" 13.4]
-#   ["2024-04-01" 16.0]
-#   ["2024-04-02" 16.4]
-#   ["2024-04-03" 17.8]
-#   ["2024-04-04" 17.3]}
+;; => 4
+```
+
+Code in a repl file was loaded into the process but if you kill the process it's gone.
+Repl files aren't automatically loaded on startup because then you'd have to watch out what you write in them to avoid slowing down startup.
+
+In `fdbconfig.edn` there's a load vector where you can put `.clj` files that will be loaded on startup.
+There's `["load-repl.fdb.clj" "server-repl.fdb.clj"]` in there already.
+They are also a repl files so any changes are immediately loaded.
+
+You have full access to the database from code files, so you can use the [XTDB API](https://v1-docs.xtdb.com/language-reference/datalog-queries/) directly.
+You can get the current node via `(fdb.db/node)`.
+
+``` sh
+echo '
+(xtdb.api/q
+ (xtdb.api/db (fdb.db/node))
+ \'{:find [(pull ?e [*])]
+    :where [[?e :tags "demo"]]})
+' > repl.fdb.clj
+
+cat repl-out.fdb.clj
+```
+
+```clojure
+(xtdb.api/q
+ (xtdb.api/db (fdb.db/node))
+ '{:find [(pull ?e [*])]
+   :where [[?e :tags "demo"]]})
+
+;; => #{[{:tags #{"demo"},
+;;        :fdb/modified #time/instant "2024-05-16T14:52:32.352959185Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.edn"}]
+;;      [{:tags ["demo"],
+;;        :fdb/modified #time/instant "2024-05-16T14:52:41.886827051Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.md"}]
+;;      [{:tags ["demo"],
+;;        :fdb/modified #time/instant "2024-05-16T14:52:41.886982426Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.json"}]}
+```
+
+You were able to call `xtdb.api/q` directly via its fully qualified name because the library was already loaded into the FileDB process.
+But you can do `(require '[xtdb.api :as xt])` instead if you want.
+
+The `fdb.db` namespace contains a convenience function `xtdb.api/q` that uses the current db so you don't have to call `(xtdb.api/db (fdb.db/node))` all the time.
+
+``` sh
+echo '
+(fdb.db/q
+ \'{:find [(pull ?e [*])]
+    :where [[?e :tags "demo"]]})
+' > repl.fdb.clj
+
+cat repl-out.fdb.clj
+```
+
+```clojure
+(fdb.db/q
+ '{:find [(pull ?e [*])]
+    :where [[?e :tags "demo"]]})
+
+;; => #{[{:tags #{"demo"},
+;;        :fdb/modified #time/instant "2024-05-16T14:52:32.352959185Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.edn"}]
+;;      [{:tags ["demo"],
+;;        :fdb/modified #time/instant "2024-05-16T14:52:41.886827051Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.md"}]
+;;      [{:tags ["demo"],
+;;        :fdb/modified #time/instant "2024-05-16T14:52:41.886982426Z",
+;;        :fdb/parent "/user",
+;;        :xt/id "/user/data.json"}]}
+```
+
+You also have convenience functions for `pull`, `pull-many`, `entity` and `entity-history`.
+`entity-history` is a particularly cool one because it gives you all past versions of that id, as long as the database wasn't deleted.
+Past content is in `xtdb.api/doc`.
+
+```sh
+echo '{:tags #{"demo"} :new-k 1}' > data.edn
+echo '(fdb.db/entity-history "/user/data.edn" :asc :with-docs? true)' > repl.fdb.clj
+
+cat repl-out.fdb.clj
+```
+
+```clojure
+(fdb.db/entity-history "/user/data.edn" :asc :with-docs? true)
+
+;; => [{:xtdb.api/tx-time #inst "2024-05-16T14:52:32.889-00:00",
+;;      :xtdb.api/tx-id 32,
+;;      :xtdb.api/valid-time #inst "2024-05-16T14:52:32.889-00:00",
+;;      :xtdb.api/content-hash
+;;      #xtdb/id "1d10305d968b37f961fb664490fd69165c775440",
+;;      :xtdb.api/doc
+;;      {:tags #{"demo"},
+;;       :fdb/modified #time/instant "2024-05-16T14:52:32.352959185Z",
+;;       :fdb/parent "/user",
+;;       :xt/id "/user/data.edn"}}
+;;     {:xtdb.api/tx-time #inst "2024-05-16T15:31:59.275-00:00",
+;;      :xtdb.api/tx-id 47,
+;;      :xtdb.api/valid-time #inst "2024-05-16T15:31:59.275-00:00",
+;;      :xtdb.api/content-hash
+;;      #xtdb/id "d7bde02d1000fb3444558d26994b8ac30b93b295",
+;;      :xtdb.api/doc
+;;      {:tags #{"demo"},
+;;       :new-k 1,
+;;       :fdb/modified #time/instant "2024-05-16T15:31:58.744451751Z",
+;;       :fdb/parent "/user",
+;;       :xt/id "/user/data.edn"}}]
+```
+
+You can add code that will be run reactively on data and metadata.
+These are called triggers, and you can read more about different triggers in in [Metadata](#metadata).
+You can read more about the function format in triggers and the arguments it takes in [call-spec and call-arg](#call-spec-and-call-arg).
+
+This trigger will be called every time the file is modified and keep an audit log file of all modification dates.
+
+```sh
+echo '
+{:tags #{"demo"}
+ :fdb.on/modify (fn [{:keys [self-path tx]}]
+                  (spit (str self-path ".audit")
+                        (-> tx :xtdb.api/tx-time .toInstant (str "\n"))
+                        :append true))}
+' > file.txt.meta.edn
+touch file.txt
+touch file.txt
+
+cat file.txt.audit
+```
+
+```
+2024-05-16T20:52:50.845Z
+2024-05-16T20:52:59.819Z
+2024-05-16T20:53:00.820Z
+```
+
+You don't have to code in metadata though.
+You can make a function in a repl file and then use it in a trigger.
+Add functions you want to use in triggers to a loaded file like `load-repl.fdb.clj` so that they are always available.
+
+```sh
+echo '
+(defn audit [{:keys [self-path tx]}]
+  (spit (str self-path ".audit")
+        (-> tx :xtdb.api/tx-time .toInstant (str "\n"))
+        :append true))
+' > load-repl.fdb.clj
+echo '
+{:tags #{"demo"}
+ :fdb.on/modify user/audit}
+' > file.txt.meta.edn
+```
+
+
+### Network
+
+Anything that can sync files over network can interact with FileDB.
+You can sync some data files from one machine to another that is running FileDB, and if that file is watched, it will be loaded.
+You can sync repl files, which will cause them to be evaluated, and then sync back the `repl-out.fdb.clj` to see the result.
+
+FileDB has a built-in [http-kit](https://github.com/http-kit/http-kit) server that maps routes to functions.
+Handlers receive a [call-arg](#call-spec-and-call-arg) with `:req` also there.
+
+```sh
+echo '
+(defn foo [{:keys [req]}]
+  {:body {:bar "baz"}})
+' > server-repl.fdb.clj
+# set fdbconfig.edn :server :routes to {"GET /foo" user/foo}
+
+curl localhost:80/foo
+```
+
+```json
+{"bar":"baz"}
+```
+
+Content is negotiated automatically via [Muuntaja](https://github.com/metosin/muuntaja).
+Routes are order independent thanks to [clj-simple-router](https://github.com/tonsky/clj-simple-router).
+
+There's a convenience function to render [Hiccup](https://github.com/weavejester/hiccup) in `fdb.http/render` that you can use without having to import Hiccup.
+You can use Hiccup together with [HTMX](https://htmx.org) to quickly whip up some UI for FileDB.
+
+```sh
+echo '
+(defn clicker [_]
+  {:body
+   (fdb.http/render
+    [:body
+     [:script {:src "https://unpkg.com/htmx.org@1.9.12"}]
+     [:button {:hx-post "/clicked" :hx-swap "outerHTML"}
+      "You know what they call a Quarter Pounder with Cheese in Paris?"]])})
+
+(defn clicked [_]
+  {:body
+   (fdb.http/render
+    [:div "They call it Royale with Cheese."])})
+' > server-repl.fdb.clj
+# set fdbconfig.edn :server :routes to 
+# {"GET /" user/clicker "POST /clicked" user/clicked}
+```
+
+Go to http://localhost:80 to learn about the little differences between the US and Europe.
+You can use [ngrok](https://ngrok.com) for free to share this server with others. 
+Run `ngrok http 80` after setting ngrok up, and share the link it gives you under `Forwarding`.
+In the [ngrok dashboard](https://dashboard.ngrok.com/get-started/setup) you have the CLI args to use a static domain so your server is always up at the same address.
+
+The `fdb.http` namespace also has some helpers to interact with existing APIs.
+This code will get you geo data for the city of Lisbon, Portugal.
+
+```sh
+echo '
+(-> "https://nominatim.openstreetmap.org/search"
+    (fdb.http/add-params {:q "Lisbon" :limit 1 :format "json"})
+    fdb.http/json
+    first)
+' > repl.fdb.clj
+
+cat repl-out.fdb.clj
+```
+
+```
+(-> "https://nominatim.openstreetmap.org/search"
+    (fdb.http/add-params {:q "Lisbon" :limit 1 :format "json"})
+    fdb.http/json
+    first)
+
+;; => {:osm_type "relation",
+;;     :boundingbox ["38.6913994" "38.7967584" "-9.2298356" "-9.0863328"],
+;;     :name "Lisboa",
+;;     :type "administrative",
+;;     :licence
+;;     "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+;;     :place_id 256327888,
+;;     :class "boundary",
+;;     :lon "-9.1365919",
+;;     :lat "38.7077507",
+;;     :addresstype "city",
+;;     :display_name "Lisboa, Portugal",
+;;     :osm_id 5400890,
+;;     :place_rank 14,
+;;     :importance 0.7149698324141975}
 ```
 
 
 ## What are the main ideas in it?
 
-- mount: the name a folder on disk has on the db, and that's being watched
-- repl/query file: evaluates code or db queries on file save, outputs result to a sibling file
+The main idea in FileDB is that you can use files as both data and code for a long lived process that you build over time.
+
+This process is yours, and you can do cool stuff with it.
+
+Here's what some of the terms your see in this README mean:
+- mount: the name a watched folder on disk has on the db
+- repl/query file: file that evaluates code or db queries on save, outputs result to a sibling file
 - reader: a fn that takes a file and returns data from it as edn, which is loaded into the db
 - metadata: extra data about a file you add in a sibling .meta.edn file
 - trigger: fn in metadata called reactively as the db changes
 - call spec/arg: how fns are specified for readers and triggers, and the argument they take
 
 ```
+            ------------> repl/query -------> clojure process
+            |
 mount --> file change --> readers+metadata -> db --> triggers
             ^                                           |
             |                                           |
             ---------------------------------------------
 ```
+
+
+## More Demos
+
+Below is some cool stuff that you can do with FileDB.
+If you want to follow these demos, add their dir as a mount.
+
+- [~/demos/clojuredocs](./demos/clojuredocs/README.md): query and scrape [clojuredocs](https://clojuredocs.org) results whenever you write to a file
+- [~/demos/temp](./demos/temp/README.md): keep track of max/min temperature and query for the hottest day in the week
+- WIP [`~/demos/nutrition`](./demos/nutrition/README.md): make your own nutrition tracking system
+- TODO `~/demos/email`: sync all of your emails locally, connect them with your notes
+- TODO `~/demos/code-analysis`: read AST for clj files, query it to find what fns are affected when a given fn changes
+- TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
+
+I'm still working on more demos, mostly around my own usecases.
+I'll add them here when they are done.
+If you have some cool demos you'd like to list here, make a PR!
 
 
 ## But why?
@@ -199,7 +531,7 @@ You have apps that open your on-disk files.
 Lots of these cloud services give you some way to download all of your stuff.
 
 So that got me thinking about doing a database that was mostly a queryable layer over disk files.
-I then I added more stuff to it that I thought was cool, like reactive triggers and a live system.
+I then I added more stuff to it that I thought was cool, like reactive triggers, a live system, and a http server.
 
 
 ## CLI
@@ -215,7 +547,7 @@ cd fdb
 ```
 
 Now you should be able to run `fdb help` from anywhere.
-If you don't want to symlink the CLI script, you can also call `./src/fdb/bb/cli.clj help` from this dir.
+If you don't want to symlink the CLI script, you can also call `./src/fdb/bb/cli.clj help` from this dir. That's what `./symlink-fdb.sh` is linking.
 
 Start using FileDB by running `fdb init`.
 This will create `~/fdb/` with `fdbconfig.edn`, `user/`, and `demos/` inside.
@@ -227,8 +559,13 @@ It starts a [nREPL server](https://nrepl.org/nrepl/index.html) on port 2525 that
 
 It will watch folders under the `:mount` key in `fdbconfig.edn`.
 Modified date, parent, and path for each file on mounts will be added to the db.
+If there's a reader for that file type, the extracted data will be added.
 If you have `doc.md`, and add a `doc.md.meta.edn` next to it, that edn data will be added to the db's `doc.md` id.
 You can put triggers and whatever else you want in this edn file.
+
+Deleted files are removed from the database.
+But since XTDB is a [bitemporal](https://v1-docs.xtdb.com/concepts/bitemporality/) database, you can still query for past versions of the database.
+`fdb watch` will also pick up files that changed since it was last running.
 
 `~/fdb/user/` has a [repl and query file](repl-and-query-files) to play with.
 The [Reference](#reference) is in `~/fdb/demos/reference` and contains examples of how things work.
@@ -239,20 +576,6 @@ It doesn't run `fdb.on/schedule` though.
 
 `fdb read glob-pattern` forces a read of the (real, not mount) paths.
 This is useful when you add or update readers and want to re-read those files.
-
-
-## Demos
-
-Below is some cool stuff that you can do with FileDB.
-If you want to follow these demos, add their dir as a mount.
-
-- WIP [`~/demos/nutrition`](./demos/nutrition/README.md): make your own nutrition tracking system
-- TODO `~/demos/email`: sync all of your emails locally, connect them with your notes
-- TODO `~/demos/code-analysis`: read AST for clj files, query it to find what fns are affected when a given fn changes
-- TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
-
-I'm still working on more demos, mostly around my own usecases.
-I'll add them here when they are done.
 
 
 ## Reference
@@ -282,7 +605,7 @@ You can run code over the db process with a file called `repl.fdb.clj`, with any
 You can also connect your editor to the nREPL server that starts with `fdb watch`, it's on port 2525 by default.
 
 It starts in the `user` namespace but you can add whatever namespace form you want, and that's the ns it'll be eval'd in.
-You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more `call-arg` in the reference).
+You can find a call-arg like the one triggers receive in `(fdb.call/arg)` (more on `call-arg` in the later in the reference).
 
 ``` clojure
 ;; We'll use this fn later in triggers.
@@ -352,10 +675,11 @@ Will output to `query-out.fdb.edn`:
  ;; You can also add :extra-readers to a single mount in the map notation.
  :extra-readers {:txt user/read-txt}
 
- ;; Disk paths of clj files to be loaded at the start.
+ ;; Mount or real paths of clj files to be loaded at the start.
  ;; Usually repl files where you added fns to use in triggers, or that load namespaces
- ;; you want to use without requiring them.
- :load ["/user/load-repl.fdb.clj"]
+ ;; you want to use without requiring them, or server handlers.
+ :load ["/user/load-repl.fdb.clj"
+        "/user/server-repl.fdb.clj"]
 
  ;; These are Clojure deps loaded dynamically at the start, and reloaded when config changes.
  ;; You can add your local deps here too, and use them in triggers.

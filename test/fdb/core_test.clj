@@ -89,11 +89,11 @@
                                   :timeout [50 :millis]}]
                :fdb.on/startup  'fdb.core-test/log-call
                :fdb.on/shutdown 'fdb.core-test/log-call})
-      (is (u/eventually (db/pull node "/test/file.txt")))
-      (db/pull node "/test/file.txt")
+      (is (u/eventually (db/entity "/test/file.txt")))
+      (db/entity "/test/file.txt")
       (u/spit mount-path "one.md" "")
       (u/spit mount-path "folder/two.md" "")
-      (is (u/eventually (db/pull node "/test/folder/two.md")))
+      (is (u/eventually (db/entity "/test/folder/two.md")))
       ;; Check query ran by waiting for query result.
       (is (u/eventually (= #{["/test/file.txt"]
                              ["/test/folder"]
@@ -244,8 +244,8 @@
           f-id  "/test/one.my-edn"
           get-f (fn []
                   (fdb/sync config-path)
-                  (fdb/with-fdb [config-path _ node]
-                    (db/pull node f-id)))]
+                  (fdb/with-fdb [config-path _ _]
+                    (db/entity f-id)))]
       (u/swap-edn-file! config-path assoc
                         :readers {:my-edn '(fn [x#] (-> x# :self-path fdb.utils/slurp-edn))})
       (is (empty? (get-f)))

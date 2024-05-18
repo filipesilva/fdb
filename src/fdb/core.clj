@@ -55,7 +55,7 @@
   Route fn is resolved as call-spec."
   [{:keys [routes opts]}]
   (u/closeable
-   (when routes
+   (when (and routes (seq routes))
      (let [opts    (merge {:port 80}
                           opts
                           {:legacy-return-value? false
@@ -87,7 +87,7 @@
         (deps/add-libs extra-deps)))
     (with-open [node (or (when (= config-path (:config-path @call/*arg-from-watch))
                            (-> @call/*arg-from-watch :node u/closeable))
-                         (db/node (u/sibling-path config-path db-path)))]
+                         (db/start-node (u/sibling-path config-path db-path)))]
       (call/with-arg {:config-path config-path
                       :config      config
                       :node        node}
@@ -370,3 +370,4 @@
 ;;   - start by trying require-resolve, then auto-import if known, then fail
 ;;   - store all imported stuff and add to fdbconfig.edn if watching
 ;;   - https://github.com/phronmophobic/dewey might help
+;; - can I connect to the repl server if exposed via ngrok?
