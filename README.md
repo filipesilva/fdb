@@ -88,16 +88,16 @@ cat query-out.fdb.edn
     :xt/id "/user/data.edn"}]}
 ```
 
-Data in Markdown [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format) and JSON maps is also automatically loaded.
+Data in JSON maps and Markdown [yml properties](https://help.obsidian.md/Editing+and+formatting/Properties#Property+format) is also automatically loaded.
 
 ```sh
+echo '{"tags": ["demo"]}' > data.json
 echo '---
 tags:
   - demo
 ---
 Markdown body is not loaded
 ' > data.md
-echo '{"tags": ["demo"]}' > data.json
 touch query.fdb.edn
 
 cat query-out.fdb.edn
@@ -495,7 +495,6 @@ If you want to follow these demos, add their dir as a mount.
 - WIP [`~/demos/nutrition`](./demos/nutrition/README.md): make your own nutrition tracking system
 - TODO `~/demos/email`: sync all of your emails locally, connect them with your notes
 - TODO `~/demos/code-analysis`: read AST for clj files, query it to find what fns are affected when a given fn changes
-- TODO `~/demos/webapp`: serve a webapp for your fdb, put it online, go nuts
 
 I'm working on more demos around my own usecases.
 I'll add them here when they are done.
