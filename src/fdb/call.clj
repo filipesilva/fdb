@@ -92,7 +92,7 @@
 ;; Set by fdb during triggered calls. Nil during repl sessions, but that's what (arg) below is for.
 (def ^:dynamic *arg* nil)
 ;; Set by watch so repl sessions can also get a call-arg, and for restarts after code reload.
-(defonce *arg-from-watch (atom nil))
+(defonce *arg (atom nil))
 
 (defmacro with-arg
   "Run body with m merged into current *arg*."
@@ -111,7 +111,7 @@
     ;; If it's not set, it must be a nrepl session.
     ;; Watch should be running so we can get state from there.
     ;; *file* should work from a repl session when it evals a file.
-    (merge {:self-path *file*} @*arg-from-watch)))
+    (merge {:self-path *file*} @*arg)))
 
 (defn apply
   "Applies call-spec fn to call-arg, defaulting to current *call*. "

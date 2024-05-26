@@ -85,8 +85,8 @@
         ;; https://ask.clojure.org/index.php/10761/clj-behaves-different-in-the-repl-as-opposed-to-from-a-file
         (set-dynamic-classloader!)
         (deps/add-libs extra-deps)))
-    (with-open [node (or (when (= config-path (:config-path @call/*arg-from-watch))
-                           (-> @call/*arg-from-watch :node u/closeable))
+    (with-open [node (or (when (= config-path (:config-path @call/*arg))
+                           (-> @call/*arg :node u/closeable))
                          (db/start-node (u/sibling-path config-path db-path)))]
       (call/with-arg {:config-path config-path
                       :config      config
@@ -221,7 +221,7 @@
                                        u/closeable-seq))
                 _schedules      (u/closeable-atom triggers/*schedules {})
                 _ignores        (u/closeable-atom tr.ignore/*ids #{})
-                _arg-from-watch (u/closeable-atom call/*arg-from-watch call/*arg* :back {})]
+                _arg-from-watch (u/closeable-atom call/*arg call/*arg* :back {})]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))
       (triggers/start-schedules! node)
@@ -267,7 +267,7 @@
 (defn after-ns-reload
   "Restarts watch-config! with current config-path after (clj-reload/reload)."
   []
-  (when-let [config-path (:config-path @call/*arg-from-watch)]
+  (when-let [config-path (:config-path @call/*arg)]
     (log/info "restarting watch after code reload")
     (future
       (some-> @*config-watcher .close)
