@@ -129,3 +129,5 @@
 ;;   - usable for other things too, db would have a resolver for it
 ;;   - maybe easier is [:ref "user/folder/whatever" :key :another-key]
 ;;     - no ambiguity
+;; - should arg just be state?
+;;   - do it backwards compat if you wanna change it

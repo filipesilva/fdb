@@ -35,6 +35,7 @@
          ;; built-in reader deps
          clj-commons/clj-yaml        {:mvn/version "1.0.27"}
          io.forward/clojure-mail     {:mvn/version "1.0.8"}
+         com.sun.mail/gimap          {:mvn/version "1.6.7"}
          ;; Don't really use medley directly, but clojure-mail does, and it always shows
          ;; a warning about abs being overwritten because it's on an old medley version
          dev.weavejester/medley      {:mvn/version "1.7.0"}}

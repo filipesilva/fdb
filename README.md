@@ -74,7 +74,7 @@ Queries are in [XTDB datalog](https://v1-docs.xtdb.com/language-reference/datalo
 
 ```sh
 echo '
-{:find [(pull ?e [*])] 
+{:find [(pull ?e [*])]
  :where [[?e :tags "demo"]]}
 ' > query.fdb.edn
 
@@ -437,7 +437,7 @@ echo '
 cat repl-out.fdb.clj
 ```
 
-```
+```clojure
 (-> "https://nominatim.openstreetmap.org/search"
     (fdb.http/add-params {:q "Lisbon" :limit 1 :format "json"})
     fdb.http/json
@@ -460,6 +460,105 @@ cat repl-out.fdb.clj
 ;;     :importance 0.7149698324141975}
 ```
 
+You can get and send email using FileDB.
+First you need to add an `:email` key in `fdbconfig.edn` with email settings.
+For gmail you'll need to add a [app password](https://support.google.com/mail/answer/185833?hl=en).
+
+```edn
+{:email {:email    "your@email.com"
+         :password "password123"
+         ;; has defaults for gmail, for other email providers you'll have to fill it in
+         ;; :imap {:host "imap.gmail.com"}
+         ;; :smtp {:host "smtp.gmail.com" :port 587}
+         }}
+```
+
+Sync your mail to disk as `.eml` files with `fdb.email/sync`.
+It will take up to 50 mails each time it runs, but you can configure it with `:take-n`.
+Set `:since 0` to sync since the first email.
+
+```sh
+echo '
+{:fdb.on/schedule {:every  [5 :minutes]
+                   :call   fdb.email/sync
+                   :folder :all ;; gmail only, for others use string folder name
+                   :since  #inst "2024-05-15"}}
+' > email.meta.edn
+```
+
+FileDB has default readers for `.eml` that extract common fields to EDN.
+
+```sh
+echo '
+{:find [(pull ?e [*])]
+ :where [[?e :fdb/parent "/user/email"]]}
+' > query.fdb.edn
+
+cat query-out.fdb.edn
+```
+
+```edn
+#{[{:date #inst "2024-05-27T22:26:32.000-00:00"
+    :from ["filedb.demo@gmail.com"]
+    :labels ["Unread" "Inbox" "Sent"]
+    :message-id "<375215791.1.1716848792154@Filipes-MacBook-Pro.local>"
+    :subject "test subject"
+    :text "test body\n"
+    :thread-id "1800246439955148017"
+    :to ["filedb.demo@gmail.com"]
+    :fdb/modified #inst "2024-05-27T22:37:36.822301525Z"
+    :fdb/parent "/user/email"
+    :xt/id "/user/email/2024-05-27T22.26.32Z 78706fb8 test subject.eml"}]
+  [{:date #inst "2024-05-27T22:28:45.000-00:00"
+    :from ["filedb.demo@gmail.com"]
+    :labels ["Unread" "Inbox" "Sent"]
+    :message-id "<63529253.0.1716848925340@[192.168.64.1]>"
+    :subject "you got"
+    :text "mail\n"
+    :thread-id "1800246579702404960"
+    :to ["filedb.demo@gmail.com"]
+    :fdb/modified #inst "2024-05-27T22:41:12.895430986Z"
+    :fdb/parent "/user/email"
+    :xt/id "/user/email/2024-05-27T22.28.45Z 185a9ab9 you got.eml"}]}
+```
+
+Send mails with `fdb.email/send`.
+You can send an email to yourself by setting `:to :self`, which is handy for notifications.
+
+```sh
+echo '
+(fdb.email/send
+  (fdb.call/arg)
+  {:to "them@email.com"
+   :subject "you got"
+   :text "mail"})
+' > repl.fdb.clj
+```
+
+If you want to sync a lot of mail, it's much faster to use a `.mbox` export.
+FileDB has a helper to split a `.mbox` into `.eml` files.
+GMail has export instructions [here](https://support.google.com/mail/answer/10016932?hl=en).
+
+```sh
+echo '
+(require \'[fdb.email :as email]
+         \'[babashka.fs :as fs])
+(email/split-mbox "/Users/filipesilva/work/fdb/resources/email/sample-crlf.mbox"
+                  (fs/file (fs/home) "fdb/user/email"))
+' > repl.fdb.clj
+```
+
+
+```clojure
+(require '[fdb.email :as email]
+         '[babashka.fs :as fs])
+(email/split-mbox "/Users/filipesilva/work/fdb/resources/email/sample-crlf.mbox"
+                  (fs/file (fs/home) "fdb/user/email"))
+
+;; 2024-05-27T21:33:40.166Z Filipes-MacBook-Pro.local INFO [fdb.email:182] - writing #1 /Users/filipesilva/work/fdb/resources/email/sample-crlf/1970-01-01T00.00.00Z 8d247ee6 Sample message 1.eml
+;; 2024-05-27T21:33:40.167Z Filipes-MacBook-Pro.local INFO [fdb.email:182] - writing #2 /Users/filipesilva/work/fdb/resources/email/sample-crlf/1970-01-01T00.00.00Z c2dfc80c Sample message 2.eml
+;; => nil
+```
 
 ## What are the main ideas in it?
 
@@ -847,6 +946,10 @@ Reactive triggers are on the `fdb.on` namespace.
  ;; Called on every db transaction via https://v1-docs.xtdb.com/clients/clojure/#_listen
  ;; This is how every other trigger is made, so you can make your own triggers.
  :fdb.on/tx       print-call-arg
+
+ ;; Prevents all reactive triggers from running when this file changes.
+ ;; Use when you you have triggers that their own file, like with email sync.
+ ;fdb.on/ignore   true
  }
 ```
 

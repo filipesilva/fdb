@@ -45,6 +45,19 @@
          ;; Defaults to {:port 80}.
          :opts   {:port 8081}}
 
+ ;; Mail configuration.
+ ;; Fetches through IMAP and sends through SMTP.
+ ;; To get a gmail app password see https://support.google.com/mail/answer/185833?hl=en
+ ;; IMAP and SMTP defaults to gmail, but you can configure it under the following keys:
+ ;;   {:imap {:host "imap.gmail.com"}
+ ;;    :smtp {:host "smtp.gmail.com" :port 587}}
+ :email {:email        "your@email.com"
+         :password     "password123"
+         ;; or if you prefer to fetch them from env vars
+         ;; :email-env    "FDB_GMAIL_EMAIL"
+         ;; :password-env "FDB_GMAIL_PASSWORD"
+         }
+
  ;; Files and folders to ignore when watching for changes.
  ;; default is [".DS_Store" ".git" ".gitignore" ".obsidian" ".vscode" "node_modules" "target" ".cpcache"]
  ;; You can add to the defaults with :extra-ignore, or overwrite it with :ignore.

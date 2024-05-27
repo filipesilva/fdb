@@ -20,10 +20,6 @@
   [node id data]
   (xt/submit-tx node [[::xt/put (merge {:xt/id id} data)]]))
 
-(defn pull
-  [node id]
-  (xt/pull (xt/db node) '[*] id))
-
 (defn all
   [node]
   (->> (xt/q (xt/db node)

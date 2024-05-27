@@ -14,6 +14,7 @@
    [clojure.string :as str]
    [fdb.call :as call]
    [fdb.db :as db]
+   fdb.email
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
    [fdb.triggers :as triggers]

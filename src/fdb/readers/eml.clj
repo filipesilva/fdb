@@ -10,14 +10,8 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [fdb.utils :as u]
-   [tick.core :as t]
    [fdb.readers.eml :as eml]
-   [babashka.fs :as fs]
-   [taoensso.timbre :as log])
-  (:import
-   [java.util Properties]
-   [javax.mail Session]
-   [javax.mail.internet MimeMessage]))
+   [babashka.fs :as fs]))
 
 (defn- try-msg->map
   [msg]
@@ -120,75 +114,6 @@
                          (update :labels #(when % (str/split % #","))))]
     (u/strip-nil-empty
      (merge from-message from-headers from-body from-gmail))))
-
-(defn str->message
-  "Like clojure-mail.core/file->message, but doesn't read the file from disk."
-  [str]
-  (let [props (Session/getDefaultInstance (Properties.))]
-    (MimeMessage. props (io/input-stream (.getBytes str)))))
-
-(defn filename
-  "Returns file name for a eml message in the following format:
-  timestamp-or-epoch message-id-or-random-uuid-8-char-hex-hash subject-up-to-80-chars.eml
-  The message-id hash is there to avoid overwriting emails with same timestamp and subject."
-  ([str-or-msg]
-   (let [msg (cond-> str-or-msg
-               (string? str-or-msg) str->message)]
-     (filename (or (message/date-sent msg)
-                   (message/date-received msg))
-               (message/subject msg)
-               (message/id msg))))
-  ([date subject message-id]
-   (str
-    (u/filename-inst (or date (t/epoch)))
-    " "
-    (->> (or message-id (str "<no-message-id-" (random-uuid) ">"))
-         hash
-         (format "%08x"))
-    " "
-    (u/filename-str (u/ellipsis (or subject "<no subject>") 80))
-    ".eml")))
-
-(defn write-message
-  [path message message-number]
-  (let [filename (->> message filename (fs/file path) str)]
-    (log/info "writing" (str "#" message-number) filename)
-    (spit filename message)))
-
-;; Permissive version of mime4j mbox regex
-;; org.apache.james.mime4j.mboxiterator.FromLinePatterns/DEFAULT2
-@(def line-re #"^From \S+.*\d{4}$")
-
-(defn from-line?
-    [line]
-    (->> line (re-matches line-re) boolean))
-
-;; MboxIterator from mime4j blows up on big mboxes, rolling my own
-(defn split-mbox
-  [mbox-path & {:keys [to-folder-path drop-n]
-                :or   {to-folder-path (u/sibling-path mbox-path (u/filename-without-extension mbox-path "mbox"))
-                       drop-n         0}}]
-  (when-not (fs/exists? to-folder-path)
-    (fs/create-dir to-folder-path))
-  (with-open [rdr (clojure.java.io/reader mbox-path)]
-    (let [counter (volatile! drop-n)]
-      (doseq [message (sequence
-                       ;; potentially big file, worth it to use transducer
-                       (comp
-                        (partition-by from-line?)
-                        (partition-all 2)
-                        (drop drop-n)
-                        (map second)
-                        (map (partial str/join "\n")))
-                       (line-seq rdr))]
-        (write-message to-folder-path message (vswap! counter inc))))))
-
-(comment
-  (let [mbox-path      (fs/file (io/resource "email/sample-crlf.mbox"))
-        to-folder-path (fs/file (fs/parent mbox-path) "sample-crlf")]
-    (fs/delete-tree to-folder-path)
-    (split-mbox mbox-path to-folder-path)))
-
 
 (comment
   (read {:self-path "./resources/eml/sample.eml"})
