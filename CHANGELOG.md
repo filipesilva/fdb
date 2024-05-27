@@ -6,6 +6,7 @@
 - added default `load-repl.fdb.clj` and `server-repl.fdb.clj` to load vec
   - felt it would be nice to have a place for loaded and server stuff
 - email send/sync/split-mbox
+- mac notification
 - removed mentions of first class `:fdb/tags`
   - nothing really used them, and you can add whatever key you want for it
 - shell triggers run on parent dir
