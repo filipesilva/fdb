@@ -184,15 +184,15 @@
   (reset! ignore-calls 0)
   (with-temp-fdb-config [config-path mount-path]
     (fdb/with-watch [config-path node]
-      (let [id  "/test/one"
-            f (fs/path mount-path "one.meta.edn")]
+      (let [f (fs/path mount-path "one.meta.edn")]
         (u/spit-edn f {:fdb.on/modify {:call  'fdb.core-test/ignore-log-call
                                        :count 1}})
         (is (u/eventually (= 1 @ignore-calls)))
 
-        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
-        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
-        (metadata/silent-swap! f id update-in [:fdb.on/modify :count] inc)
+        (metadata/swap! f assoc :fdb.on/ignore true)
+        (metadata/swap! f update-in [:fdb.on/modify :count] inc)
+        (metadata/swap! f update-in [:fdb.on/modify :count] inc)
+        (metadata/swap! f update-in [:fdb.on/modify :count] inc)
 
         ;; wait to see if it gets there
         (u/eventually (= 4 @ignore-calls))

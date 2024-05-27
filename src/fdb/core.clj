@@ -17,7 +17,6 @@
    [fdb.metadata :as metadata]
    [fdb.readers :as readers]
    [fdb.triggers :as triggers]
-   [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [fdb.watcher :as watcher]
    [muuntaja.middleware :as muuntaja]
@@ -115,11 +114,10 @@
              u/one-or-many
              not-empty
              (u/side-effect->> (fn [ids]
-                                 (when-some [ids' (remove tr.ignore/ignoring? ids)]
-                                   (log/info "updating" (str/join ", " (take 5 ids'))
-                                             (if (> (count ids') 5)
-                                               (str "and " (-> ids' count (- 5) str) " more")
-                                               "")))))
+                                 (log/info "updating" (str/join ", " (take 5 ids))
+                                           (if (> (count ids) 5)
+                                             (str "and " (-> ids count (- 5) str) " more")
+                                             ""))))
              (pmap (fn [id]
                      (let [path (metadata/id->path config-path config id)]
                        (if-some [metadata (metadata/read path)]
@@ -220,7 +218,6 @@
                                        watcher/watch-many
                                        u/closeable-seq))
                 _schedules      (u/closeable-atom triggers/*schedules {})
-                _ignores        (u/closeable-atom tr.ignore/*ids #{})
                 _arg-from-watch (u/closeable-atom call/*arg call/*arg* :back {})]
       (when-let [tx (second (update-stale! config-path config node))]
         (xt/await-tx node tx))

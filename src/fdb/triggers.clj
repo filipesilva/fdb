@@ -7,7 +7,6 @@
    [fdb.call :as call]
    [fdb.db :as db]
    [fdb.metadata :as metadata]
-   [fdb.triggers.ignore :as tr.ignore]
    [fdb.utils :as u]
    [taoensso.timbre :as log]
    [tick.core :as t]
@@ -339,7 +338,7 @@
              ops (->> tx
                       ::xt/tx-ops
                       (massage-ops node)
-                      (remove #(tr.ignore/ignore-and-remove? (second %))))]
+                      (remove (fn [[_ _ doc]] (:fdb.on/ignore doc))))]
          (call/with-arg (merge call-arg
                                {:db db
                                 :tx tx})
