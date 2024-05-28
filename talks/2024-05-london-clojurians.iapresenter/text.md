@@ -6,7 +6,12 @@ Hi everyone, thank you for having me.
 My name is Filipe and I'm here to talk about a passion project I've been working on, FileDB.
 
 ---
-## Let's start with "What"
+## Demo
+
+I feel what FileDB isn't very familiar so maybe the best way  to start is by showing some cool things I can do with it.
+
+---
+## The What
 
 So what is FileDB?
 I describe it as a "reactive database environment for your files".
@@ -14,12 +19,9 @@ I describe it as a "reactive database environment for your files".
 The main idea is that your files on disk are loaded into a database and you can do cool stuff with them.
 
 ---
-
 ### Watcher
 	data -> db
 	code -> process
-	updt -> trigger
-	http -> handler
 
 I think the most familiar way of looking at it is as a file watcher.
 
@@ -27,10 +29,8 @@ Specifically, the type of file watcher you find in most frontend build systems.
 You have some watched files, when one changes the code gets compiled, and your browser live reloads the code.
 Nice and ergonomic feedback loop.
 
-FileDB watches files, and if it's data then it's loaded into the database, if it's code then it's coded into the process.
+FileDB watches files, and if it's data then it's loaded into the database, if it's code then it's loaded into the process.
 And then you get to play with it.
-
-I expanded the pattern a bit: updates go to triggers, and http calls go to handlers as well.
 
 ---
 ### Data
@@ -39,7 +39,7 @@ I expanded the pattern a bit: updates go to triggers, and http calls go to handl
 	add your own
 	*query.fdb.edn
 
-Out of the box FileDB supports edn, json, md, and eml data.
+Out of the box FileDB supports loading edn, json, md, and eml data.
 
 Markdown data is yml front matter, at the start of the md file, fenced between three dashes.
 Obsidian (a markdown editor) uses this format and I find it pretty good.
@@ -71,9 +71,12 @@ Output is in repl-out.fdb.clj.
 You can add clj files to be loaded when the watcher starts, add dependencies without restarting the process, and connect a nrepl client.
 
 ---
-### Update
+### Triggers
 	modify, pattern, refs, query, schedule, startup, shutdown
 	tx aka add your own
+
+You can add code calls on database updates, called triggers.
+This is the reactive part.
 
 There's lots of built-in update triggers.
 You add them directly on metadata.
@@ -88,16 +91,32 @@ It's the sort of thing you'd never do on a "real" system, but it's fine to do on
 You also have the tx trigger, that lets you add whatever trigger you want.
 
 ---
-### HTTP
+### Server
 	standard ring stuff
 	go public with ngrok
 
-Mostly what you expect from a ring server.
-There's a request there, and you respond with a map.
+There's also an HTTP server, because it's a great way to make UIs and interop with other things.
+
+It's mostly what you expect from a ring server.
+There's a request there, and you respond with a map using a handler that you loaded into the process.
 No fuss.
 
 Put it online via ngrok or the sort.
 Doing some code and showing it to someone shouldn't be hard.
+
+---
+### Email
+	sync to disk as .eml
+	send
+
+FileDB has a email schedule trigger to sync email to disk as `.eml` files.
+
+These `.eml` files are loaded into the database as EDN through the default `.eml` reader, and then you can query across senders, receivers, dates, threads, labels, etc.
+
+I've loaded my 10gb gmail history into FileDB and it works pretty well.
+Was a bit worried it would get slow but hasn't yet.
+
+You can also send emails, which is handy for self notifications.
 
 ---
 ## But why?
@@ -153,7 +172,7 @@ It's just too hard.
 
 ---
 ### Simple things should be simple
-	lets go shopping instead
+	let's go shopping instead
 
 I feel it's too hard to do simple things with my data.
 
@@ -224,6 +243,7 @@ Delete the database and it just gets recreated from the files.
 FileDB is made to run in many different machines, each with their own set of files, syncing fully or partially, running code on their own process.
 
 You can even have machines that don't run FileDB, but because they sync with one that does, you can run queries and code remotely through file sync!
+I do this with my phone, where I write query and repl files in a note taking app, it syncs via iCloud to my laptop that's running FileDB, and then I get the result out files synced back.
 
 When I started using my data this way I wanted to do other things I thought were cool, like having a live system, reactive triggers, and easy http handlers.
 
@@ -250,7 +270,7 @@ Get your data and get what you want out of it.
 
 I hope I've given you an overall idea of what I'm trying to do, and why I'm trying to do it.
 
-Let's look at how it works in real life.
+Let's look at in more detail at some of things I demoed earlier.
 
 ---
 ### config
@@ -365,7 +385,7 @@ cool.txt will have an entry in the db with id/modified/parent regardless, but yo
 ### Code
 ```clojure
 ;; repl.fdb.clj
-(defn my-inc [x] (inc x))'
+(defn my-inc [x] (inc x))
 ```
 ```clojure
 ;; repl-out.fdb.clj
@@ -432,7 +452,7 @@ If you delete and recreate the DB the history is gone though.
 ---
 ### Triggers
 ```clojure
-;; file.txt
+;; file.txt.meta.edn
 {:fdb.on/modify 
   (fn [{:keys [self-path tx]}]
     (spit (str self-path ".audit")
@@ -477,14 +497,41 @@ Preferably one on the load vector though, like the default load-repl.fdb.clj, so
 
 There's another default repl file on the load vector, so you have an easy place to put some http handlers.
 Just reference the fn in fdbconfig routes and you're good to go.
-You could even code it directly in fdbconfig, like the triggers, but I think that might be a bit too gross.
+Route definitions are order independent thanks to Tonsky's clj-simple-router.
 
 Add in HTMX you have some super easy UIs over your data.
 Add in a tunnel like ngrok and you can give your friends that UI, then take it down just as easily.
 
 ---
+### Email
+```clojure
+;; email.meta.edn
+{:fdb.on/schedule
+  {:every  [5 :minutes]
+   :call   fdb.email/sync
+   :folder "INBOX"
+   :since  #inst "2024-05-15"}}
+```
+```clojure
+;; repl.fdb.clj
+(fdb.email/send
+  (fdb.call/arg)
+  {:to "them@email.com"
+   :subject "you got"
+   :text "mail"})
+```
+
+On top there's a schedule trigger.
+It syncs new emails from your inbox every 5 minutes to the `email` folder.
+
+Sending email is also pretty straightforward.
+That `fdb.call/arg` is how you get the same arguments triggers get, but from the repl files.
+It has lots of things, like the config, db node, file name you're on, etc.
+
+---
 ## https://github.com/filipesilva/fdb
- 
+	#filedb on clojurians slack
+
 So that's FileDB.
 I hope you found it interesting.
 
