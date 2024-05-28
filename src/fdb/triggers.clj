@@ -287,16 +287,19 @@
 
 (defn query-results-changed?
   "Returns {:results ...} if query results changed compared to file at path."
-  [db id {:keys [q path]}]
+  [db id {:keys [q path call]}]
   (let [target-path  (metadata/id->path id)
         results-path (u/sibling-path target-path path)]
     (if (= target-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
-      (let [new-results (u/catch-log (xt/q db q))
-            old-results (u/catch-log (u/slurp-edn results-path))]
+      (let [;; note: comparing these two as edn shows different dates?...
+            new-results (u/edn-str (u/catch-log (xt/q db q)))
+            old-results (u/catch-log (u/slurp results-path))]
         (when (not= new-results old-results)
-          (spit results-path (u/edn-str new-results))
-          {:results new-results})))))
+          (spit results-path new-results)
+          (when call
+            ;; don't return the results if there's nothing to call
+            {:results new-results}))))))
 
 (defn call-all-on-query
   "Call all existing :fdb.on/query triggers, updating their results if changed."
