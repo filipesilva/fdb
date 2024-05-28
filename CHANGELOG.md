@@ -1,5 +1,7 @@
 # unreleased
 
+# 1.1.0 - 2024-05-28
+
 - simpler first demo, moved current ones to more-demos
   - hopefully makes you feel like you're getting superpowers
   - thanks to @escherize for the feedback!
