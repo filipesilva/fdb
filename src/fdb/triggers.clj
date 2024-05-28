@@ -214,7 +214,7 @@
     (rep-ext-or-codeblock
      id "query" "edn"
      #(log/info "querying" id "to" %)
-     #(try (u/edn-str (xt/q (:db call/*arg*) (u/read-edn %)))
+     #(try (some->> % u/read-edn (xt/q (:db call/*arg*)) u/edn-str)
            (catch Exception e
              {:error (ex-message e)})))))
 
