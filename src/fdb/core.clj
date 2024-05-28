@@ -65,6 +65,10 @@
            handler (-> routes
                        (update-vals (fn [call-spec]
                                       (fn [req]
+                                        (log/info "calling"
+                                                  (-> req :request-method name str/upper-case)
+                                                  (:uri req)
+                                                  (u/ellipsis (str call-spec)))
                                         (call/with-arg {:req req}
                                           (call/apply call-spec)))))
                        router/router
