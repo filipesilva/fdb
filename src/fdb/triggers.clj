@@ -202,9 +202,9 @@
                                f
                                (wrap-md-codeblock lang))
                       (f content))]
-            (cond
-              ret (spit out-path ret)
-              codeblock? (log/info "no solo" lang "codeblock found in" id))))))))
+            (when (and codeblock? (not ret))
+              (log/info "no solo" lang "codeblock found in" id))
+            (spit out-path (or ret ""))))))))
 
 (defn call-on-query-file
   "If id matches in /*query.fdb.edn, query with content and output
