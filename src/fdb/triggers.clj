@@ -295,7 +295,7 @@
       (let [new-results (u/catch-log (xt/q db q))
             old-results (u/catch-log (u/slurp-edn results-path))]
         (when (not= new-results old-results)
-          (spit results-path (pr-str new-results))
+          (spit results-path (u/edn-str new-results))
           {:results new-results})))))
 
 (defn call-all-on-query
