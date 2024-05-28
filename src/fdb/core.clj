@@ -38,7 +38,7 @@
       (.setContextClassLoader (Thread/currentThread))))
 
 (defn ips
-    "Returns all ips for this machine.
+  "Returns all ips for this machine.
   From http://software-ninja-ninja.blogspot.com/2013/05/clojure-what-is-my-ip-address.html"
     []
     (->> (NetworkInterface/getNetworkInterfaces)
