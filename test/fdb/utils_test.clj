@@ -61,3 +61,47 @@
     (is (= ::sut/timeout (sut/maybe-timeout [0 :seconds] f)))
     (is (= nil (sut/maybe-timeout nil f)))
     (is (= nil (sut/maybe-timeout 200 f)))))
+
+(deftest without-random-uuid-test
+  (is (= [1 2 3] (sut/without-random-uuid [(random-uuid) (random-uuid) (random-uuid)]))))
+
+(deftest flatten-maps-test
+  (is (= {"root" {:a 1}} (sut/flatten-maps {:a 1})))
+  (is (= {"1"    {:e "e"
+                  :f "f"}
+          "2"    {:c "c"
+                  :d :1}
+          "root" {:a "a"
+                  :b :2}}
+         (sut/without-random-uuid
+           (sut/flatten-maps
+            {:a "a"
+             :b {:c "c"
+                 :d {:e "e"
+                     :f "f"}}}
+            :xform-uuid str
+            :xform-ref (comp keyword str))))))
+
+(deftest explode-id-test
+  (with-temp-dir [dir {}]
+    (let [id     "/user/foo.edn"
+          path   (fs/file dir "foo.edn")
+          path-k #(str path ".explode/" % ".edn")
+          id-k   #(str id ".explode/" % ".edn")]
+      (is (nil? (sut/explode-id id path 1)))
+      (is (nil? (sut/explode-id id path {:a "a"})))
+      (is (= {(path-k 1)      {:d "d"},
+              (path-k 2)      {:b "b" :c (id-k 1)},
+              (path-k "root") {:a (id-k 2)}}
+           (sut/without-random-uuid
+             (sut/explode-id id path {:a {:b "b" :c {:d "d"}}}))))
+      (is (= {(path-k 1)      {:a "a"},
+              (path-k 2)      {:b "b"}
+              (path-k "root") {:0 (id-k 1) :1 (id-k 2)}}
+           (sut/without-random-uuid
+             (sut/explode-id id path [{:a "a"} {:b "b"}]))))
+      (is (= {(path-k 4)      {:a "a"},
+              (path-k 3)      {:b "b"}
+              (path-k "root") {:1 (id-k 3) :2 (id-k 4)}}
+           (sut/without-random-uuid
+             (sut/explode-id id path #{{:a "a"} {:b "b"}})))))))

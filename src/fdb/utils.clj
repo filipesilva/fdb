@@ -7,7 +7,9 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
+   [clojure.set :as set]
    [clojure.string :as str]
+   [clojure.walk :as walk]
    [puget.printer :as puget]
    [taoensso.timbre :as log]
    [tick.core :as t])
@@ -305,6 +307,61 @@
        (as-comments (with-out-str (pprint/pprint @*val)) :prefix "=> ")))
     (catch Exception e
       (as-comments (with-out-str (pprint/pprint e))))))
+
+(defn do-without-random-uuid
+  "Call f when random-uuid returning increasing ints."
+  [f]
+  (let [counter (atom 0)]
+    (with-redefs [random-uuid #(swap! counter inc)]
+      (f))))
+
+(defmacro without-random-uuid
+  [& body]
+  `(do-without-random-uuid (fn [] ~@body)))
+
+(defn flatten-maps
+  "Flatten m into {uuid m'}, where every nested map in m' has been replaced
+  with a reference to its uuid. Root is under the \"root\" key instead of uuid.
+  Provide :xform-uuid or :xform-ref to transform them."
+  [m & {:keys [xform-uuid xform-ref] :or {xform-uuid identity xform-ref identity}}]
+  (let [maps (atom [])]
+    (walk/postwalk
+     (fn [x]
+       (if (map? x)
+         (let [k (random-uuid)]
+           (swap! maps conj [(xform-uuid k) x])
+           (xform-ref k))
+         x))
+     m)
+    (-> (into {} (butlast @maps))
+        (assoc (xform-uuid "root") (-> @maps last second))
+        )))
+
+(defn coerce-to-map
+  [x]
+  (cond
+    (map? x)        x
+    (set? x)        (into {} (map #(vector (-> (random-uuid) str keyword) %) x))
+    (sequential? x) (into {} (map-indexed #(vector (-> %1 str keyword) %2) x))
+    :else           (throw (ex-info "Can't coerce to map" {:type (type x)}))))
+
+(defn explode-id
+  "EXPERIMENTAL: Explode nested maps in edn into a new folder <self-path>.explode/<uid>.edn.
+  Root will be at <self-path>.explode/root.edn. Folder will be deleted if it already exists.
+  If edn is a set, it will be converted into a {uid v} map first.
+  If edn is sequential, it will be converted into a {idx v} map first.
+  Does nothing on non-colls or if there are no nested maps.
+  Returns map of written files."
+  [id path edn]
+  (when (coll? edn)
+    (let [explode-path (str path ".explode")
+          flattened    (flatten-maps (coerce-to-map edn)
+                                     :xform-ref #(str id ".explode/" % ".edn")
+                                     :xform-uuid #(str (fs/path explode-path (str % ".edn"))))]
+      (fs/delete-tree explode-path)
+      (when (> (count flattened) 1)
+        (run! (fn [[p m]] (spit-edn p m)) flattened)
+        flattened))))
 
 ;; TODO:
 ;; - str-path fn
