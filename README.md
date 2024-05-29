@@ -22,6 +22,11 @@ I like using markdown files on [Obsidian](https://obsidian.md) as my main readab
 FileDB should let you hack your own setup.
 
 
+## Videos
+
+- [London Clojurians on 2024-05-28](https://www.youtube.com/watch?v=EvAFEC6n7NI)
+
+
 ## Demo
 
 This is Clojure heavy so it's probably best if you're a [Clojure](https://clojure.org) dev with [Datalog](https://en.wikipedia.org/wiki/Datalog) chops.
