@@ -34,7 +34,7 @@
   [config-path debug]
   (log/merge-config! {:min-level (if debug :debug :info)})
   (log/info "starting fdb repl process")
-  (let [deps {:deps {'org.clojure/clojure {:mvn/version "1.12.0-alpha5"}
+  (let [deps {:deps {'org.clojure/clojure {:mvn/version "1.12.0-beta1"}
                      'filipesilva/fdb     {:local/root (u/fdb-root)}}}
         opts {:config-path config-path
               :debug       debug}

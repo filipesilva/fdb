@@ -1,12 +1,11 @@
 {:paths ["src" "test" "resources"]
- :deps  {;; alpha6 and up suffer from https://github.com/xtdb/xtdb/issues/3169
-         ;; keep in sync with the clojure version in fdb.bb.cli
-         org.clojure/clojure         {:mvn/version "1.12.0-alpha5"}
+ :deps  {;; keep in sync with the clojure version in fdb.bb.cli
+         org.clojure/clojure         {:mvn/version "1.12.0-beta1"}
          org.clojure/core.async      {:mvn/version "1.6.681"}
          hashp/hashp                 {:mvn/version "0.2.2"}
-         com.xtdb/xtdb-core          {:mvn/version "1.24.0"}
-         com.xtdb/xtdb-rocksdb       {:mvn/version "1.24.0"}
-         com.xtdb/xtdb-lucene        {:mvn/version "1.24.0"}
+         com.xtdb/xtdb-core          {:mvn/version "1.24.4"}
+         com.xtdb/xtdb-rocksdb       {:mvn/version "1.24.4"}
+         com.xtdb/xtdb-lucene        {:mvn/version "1.24.4"}
          com.nextjournal/beholder    {;; https://github.com/nextjournal/beholder/pull/8
                                       :git/url "https://github.com/filipesilva/beholder.git"
                                       :git/sha "b0ca87540a28aac823791782d9f12d098ca71ed3"}
