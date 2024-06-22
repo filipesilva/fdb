@@ -375,3 +375,4 @@
 ;;   - e.g. printing call-arg in a repl file
 ;;   - figure out how and if I can just use one of them
 ;; - use https://github.com/borkdude/rewrite-edn for swap-edn-file!
+;; - *last-error, for catch-nil

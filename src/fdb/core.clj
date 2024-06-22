@@ -374,3 +374,7 @@
 ;;   - store all imported stuff and add to fdbconfig.edn if watching
 ;;   - https://github.com/phronmophobic/dewey might help
 ;; - can I connect to the repl server if exposed via ngrok?
+;; - WARC support would be pretty cool
+;;   - https://archive-it.org/post/the-stack-warc-file/
+;;   - https://github.com/ArchiveBox/ArchiveBox/wiki/Web-Archiving-Community#other-archivebox-alternatives
+;;   - https://news.ycombinator.com/item?id=39183670

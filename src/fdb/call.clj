@@ -131,3 +131,7 @@
 ;;     - no ambiguity
 ;; - should arg just be state?
 ;;   - do it backwards compat if you wanna change it
+;;   - call/state is actually pretty decent
+;;     - snapshot of current fdb state
+;;     - including self-path on state is not wrong
+;;     - it's the current state for fdb, and your file matters

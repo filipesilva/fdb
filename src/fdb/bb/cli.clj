@@ -149,3 +149,24 @@ All commands take the following options:
 ;;   - maybe I can do something fancy with deps alias and config merging from fdbconfig.edn
 ;;   - actually, global clojure deps should work for defining aliases
 ;;   - so just a way to chose an alias for the project, I guess --aliases flag on all args
+;; - fdb alias
+;;   - map of name -> call-spec in fdbconfig
+;;     - or maybe not even call-spec?
+;;   - parse cli args with bb cli
+;;     - schema def in call-spec
+;;   - cool way of interacting with your process
+;; - fdb explode
+;;   - unnest maps and toplevel colls for nice datalog queries, write edn
+;;   - maybe fdb read --explode instead?
+;;   - maybe don't do it yet, just have a good alias?
+;;     - even fdb read could be just an alias tbh
+;;   - explode doesn't actually make sense for either mbox or CSV
+;;     - they aren't nested maps
+;;     - mbox wants to work at the plaintext level, not edn level
+;;       - a CSV reader can return edn
+;;       - mbox will always want to return txt
+;;     - maybe explode can just cater for stuff that has readers
+;;     - then what should take care of mbox and CSV?
+;;       - CSV explode should output edn
+;;       - mbox explode should explose .eml
+;;       - maybe stuff that has readers uses the readers, and there's a second exploder config vec?
