@@ -1,0 +1,10 @@
+#{[{:cool true
+    :tags ["demo"]
+    :fdb/modified #inst "2024-05-28T17:50:21.497526968Z"
+    :fdb/parent "/user"
+    :xt/id "/user/file.json"}]
+  [{:cool true
+    :tags #{"demo"}
+    :fdb/modified #inst "2024-05-28T17:49:47.617850649Z"
+    :fdb/parent "/user"
+    :xt/id "/user/file.edn"}]}

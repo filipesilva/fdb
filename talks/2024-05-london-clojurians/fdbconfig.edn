@@ -1,0 +1,10 @@
+{:db-path "./xtdb"
+ :extra-deps {}
+ :extra-readers {}
+ :load ["/user/load-repl.fdb.clj" "/user/server-repl.fdb.clj"]
+ :mounts {:user "/Users/filipesilva/fdb/user"}
+ :serve {:routes {"GET /" user/clicker
+                  "POST /clicked" user/clicked}}
+ :email {:email-env "FDB_GMAIL_DEMO_EMAIL"
+         :password-env "FDB_GMAIL_DEMO_PASSWORD"}
+ }

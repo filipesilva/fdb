@@ -1,0 +1,5 @@
+#_{:find [(pull ?e [*])]
+ :where [[?e :from "filedb.demo@gmail.com"]]}
+
+{:find [?subj]
+ :where [[?e :subject ?subj]]}

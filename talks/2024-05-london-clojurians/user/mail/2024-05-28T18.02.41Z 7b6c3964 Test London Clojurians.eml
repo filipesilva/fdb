@@ -1,0 +1,89 @@
+Delivered-To: filedb.demo@gmail.com
+Received: by 2002:a05:6200:15c3:b0:54f:55d1:3420 with SMTP id m3csp3165qnx;
+        Tue, 28 May 2024 11:02:55 -0700 (PDT)
+X-Received: by 2002:a50:cb8d:0:b0:579:c8f7:567f with SMTP id 4fb4d7f45d1cf-579c8f75730mr7087977a12.42.1716919375577;
+        Tue, 28 May 2024 11:02:55 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1716919375; cv=none;
+        d=google.com; s=arc-20160816;
+        b=h4jKx3OKRA8Zm29Xhrm5JYrWEGIgghumwFV24wAbhdtWPwxm9l6MRFSKZtruv2PqTz
+         ipnuHtS1M3CBEdb6fSJoiEZSvi+teodynRWWQalcJcXjicscSif8vcBqv3SgZ1rzuMQf
+         kqLoSkgnObc6U5trU2Uoq7Q35RL+biYb33fDmOW4/R9othgZghHIsX+mbIJQ6XxzKxkD
+         sDfZ3ql+G2DZhxshiB2XEKYg01zvM0NiYBZckPl3TKRY16L+RH39Bt0h2ptdg8yp8peU
+         GWxXECkNBRF1E8iF1EoQbj3oqdcE8ZKyPGXcNBCoJXoiVovuCt95+AP5FXFIF1KB3OLB
+         uW7A==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=XZ3HZOfPIK5kfwCRZdf313z43RSyt3LaT0fXqqgmKHw=;
+        fh=dRt+g7BZnun26Y85vLaJvxFE4OUgrUthDwRHtnUpaE0=;
+        b=quLXpaAhN864dIXenncOvDpsptg8ltgl8NfcCuZ7v3PV9QofpirP0966MKSrbkLAZb
+         /vEumMjJr143uCnFWIjOt6flnBIbQ4XRuA5CuFcd/04OmVTEQ9F3Ck2NVw+4rKeQej7T
+         //qTZPf2EBluiR957P7KXJvPQRJUi6dO7CWNoPqIQZ2ctmzBflUP5JLJ7x8AD0pEEAT/
+         1y4ZU871ZfpXNszcYd/r4/2eUdX0Z85ezN4XSX+ECWJCFcxknL636I3QHlexE/plAMzn
+         c2SDlCvw0Z9m5+MlxaigHXTAJ+fp6YAgvQVGuT536o+CTJnk/QAFnqZPyBFctKeXGzgr
+         uEtg==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=QxgrhIxH;
+       spf=pass (google.com: domain of bruno.bonacci@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=bruno.bonacci@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+Return-Path: <bruno.bonacci@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 4fb4d7f45d1cf-579cf9b4432sor1602158a12.3.2024.05.28.11.02.55
+        for <filedb.demo@gmail.com>
+        (Google Transport Security);
+        Tue, 28 May 2024 11:02:55 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bruno.bonacci@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=QxgrhIxH;
+       spf=pass (google.com: domain of bruno.bonacci@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=bruno.bonacci@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1716919375; x=1717524175; dara=google.com;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=XZ3HZOfPIK5kfwCRZdf313z43RSyt3LaT0fXqqgmKHw=;
+        b=QxgrhIxH2FMnoNvb4Y0CyvWAayBYLAChuujWWm6XVgwSKUIV9ydUDbwKRnrUe/IZrV
+         TtmwCKLCsE2MsBppLdnwp4rcOTXTYGdP0pKb04/fevpUkf/MJGbu/G7Gw2ac1kHwtQGO
+         paOBKqDsVNNfkO0pF0vV9AeELuL5VFgmzJy22yA91WKelQeVuaISUkzDs0jr8oCHCPyr
+         +87xCWcbtJOf0abyBKN18hCgOKa2tB3zHRvHrYwkxeQsG0wrXkepYFXljwEiQkpX1OHx
+         ePJtzR2lBj+5SXHo3FQZTom4UjL1dD+CSEy4q0D3sASDi4EHebwmHRqTAX26gYVh1MaI
+         Zq0g==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1716919375; x=1717524175;
+        h=to:subject:message-id:date:from:mime-version:x-gm-message-state
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=XZ3HZOfPIK5kfwCRZdf313z43RSyt3LaT0fXqqgmKHw=;
+        b=Fm0/aW97z8qgtyUyjZJ/AZ/3XI7yizFHw3wZKW8u/OjiBL2m1mAhyFg8gL1vsm14ZF
+         yANubBzFpOo01Y72sEdd9pgeCVERNAV082MHbUqHY7f3a9CI7tQcG7UstXJTLeNL9vUl
+         V5KqTCWB1AfEBFRP+DSG4Xx5290Cp0yzsGmPKg8xFmhRluCCjRT17zzBGda/atDmgAK+
+         00QoN3Vjb9It5wdsvHEkNlAJuwpKWhyFUUm3flx/JW/hrnAultv8s6RSGivrP3dR/VJS
+         A22Krvq+4jnRNkw2+/foTrExjDOY4rlMwIHRbe2FDySgARXkjXCrHM/RGpbmxfNlf1Dh
+         sjSg==
+X-Gm-Message-State: AOJu0Yxg2/q0MnKpj+Y9oFFR97DWTD9jtjsLdAPJsOP1GppHPsOgM2+4
+	4aub70Q3f5jqhBprhhlQB1TrG0R7UX3yiJeBm0/FPOzQ91YU9Fxlw/A17EFWbawN4AkhvYxxOX4
+	GxXUhsZM85hWsDnVrb/UvlpNb62lHp7wSb2mxmA==
+X-Google-Smtp-Source: AGHT+IFD7/b6MgmAC49lOgO8O4OqT/2+o1p+Bo2yZ1e+xKGqB8RMf+tge0VJMo0Rf5Iky5mAY40wOkQk1lYs+POewCY=
+X-Received: by 2002:a50:f694:0:b0:579:bfa6:9276 with SMTP id
+ 4fb4d7f45d1cf-579bfa6a333mr9518509a12.1.1716919374707; Tue, 28 May 2024
+ 11:02:54 -0700 (PDT)
+MIME-Version: 1.0
+From: Bruno Bonacci <bruno.bonacci@gmail.com>
+Date: Tue, 28 May 2024 19:02:41 +0100
+Message-ID: <CAPY-UJijdq9jMz4LNN-qya4F27h543c6KsjPCe1rpDT=s_zwcw@mail.gmail.com>
+Subject: Test London Clojurians
+To: filedb.demo@gmail.com
+Content-Type: multipart/alternative; boundary="0000000000007001a706198771dc"
+X-GM-THRID: 1800320451026065052
+X-Gmail-Labels: Unread,Inbox
+
+--0000000000007001a706198771dc
+Content-Type: text/plain; charset="UTF-8"
+
+Hi from London Clojurians!!
+
+--0000000000007001a706198771dc
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr"><div class="gmail_default" style="font-family:verdana,sans-serif;font-size:small">Hi from London Clojurians!!</div></div>
+
+--0000000000007001a706198771dc--

@@ -1,0 +1,4 @@
+;; XTDB queries added here will be evaluated, output will show up in ./query-out.fdb.edn
+;; Quick help: https://v1-docs.xtdb.com/language-reference/datalog-queries/ https://www.learndatalogtoday.org
+{:find [(pull ?e [*])]
+ :where [[?e :tags "demo"]]}

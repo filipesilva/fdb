@@ -1,0 +1,3 @@
+{:fdb.on/query {:q    {:find  [(pull ?e [*])]
+                       :where [[?e :cool true]]}
+                :path "./tagged.results.edn"}}
