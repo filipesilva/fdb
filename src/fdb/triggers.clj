@@ -292,14 +292,15 @@
         results-path (u/sibling-path target-path path)]
     (if (= target-path results-path)
       (log/warn "skipping query on" id "because path is the same as file, which would cause an infinite loop")
-      (let [;; note: comparing these two as edn shows different dates?...
-            new-results (u/edn-str (u/catch-log (xt/q db q)))
-            old-results (u/catch-log (u/slurp results-path))]
-        (when (not= new-results old-results)
-          (spit results-path new-results)
+      (let [results (u/catch-log (xt/q db q))
+            ;; note: comparing these two as edn shows different dates?...
+            new-results-str (u/edn-str results)
+            old-results-str (u/catch-log (u/slurp results-path))]
+        (when (not= new-results-str old-results-str)
+          (spit results-path new-results-str)
           (when call
             ;; don't return the results if there's nothing to call
-            {:results new-results}))))))
+            {:results results}))))))
 
 (defn call-all-on-query
   "Call all existing :fdb.on/query triggers, updating their results if changed."

@@ -97,22 +97,21 @@
 
 (deftest query-results-changed?-test
   (let [id "/test/folder/foo.txt"]
-    (with-redefs [xt/q        (spy/spy (fn [_ q] (if (= q :gimme-new)
-                                                   {:v 2}
-                                                   {:v 1})))
-                  u/slurp-edn (spy/stub {:v 1})
-                  spit        (spy/spy)]
+    (with-redefs [xt/q (spy/spy (fn [_ _] {:v 2}))
+                  spit (spy/spy)]
       (call/with-arg {:config-path "/root/one/two/config.edn"
                       :config      {:mounts {:test "test"}}}
-        (is (= {:results {:v 2}}
-               (sut/query-results-changed? nil id
-                                           {:q    :gimme-new
-                                            :path "results.edn"})))
-        (is (nil? (sut/query-results-changed? nil id
-                                              {:q    :foo
-                                               :path "results.edn"})))
+        (with-redefs [u/slurp (spy/stub "{:v 1}\n")]
+          (is (= {:results {:v 2}}
+                 (sut/query-results-changed? nil id
+                                             {:path "results.edn"
+                                              :call {}}))))
+        (with-redefs [u/slurp (spy/stub "{:v 2}\n")]
+          (is (nil? (sut/query-results-changed? nil id
+                                                {:path "results.edn"
+                                                 :call {}}))))
 
-        (is (= [["/root/one/two/test/folder/results.edn" "{:v 2}"]]
+        (is (= [["/root/one/two/test/folder/results.edn" "{:v 2}\n"]]
                (spy/calls spit)))))))
 
 (deftest massage-ops-test

@@ -9,7 +9,7 @@
   {:clj-kondo/ignore [:unresolved-symbol]}
   [[node] & body]
   `(with-temp-dir [db-path# {}]
-     (with-open [~node (sut/node db-path#)]
+     (with-open [~node (sut/start-node db-path#)]
        ~@body)))
 
 (deftest make-me-a-db
@@ -17,4 +17,4 @@
     (sut/put node :foo {:bar "bar"})
     (xt/sync node)
     (is (= {:xt/id :foo :bar "bar"}
-           (sut/pull node :foo)))))
+           (xt/pull (xt/db node) '[*] :foo)))))
