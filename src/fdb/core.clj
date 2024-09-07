@@ -316,7 +316,6 @@
 
 ;; TODO:
 ;; - consider java-time.api instead of tick
-;; - preload clj libs on config and use them in edn call sexprs (waiting for clojure 1.12 release)
 ;; - validate mounts, don't allow slashes on mount-id, nor empty
 ;; - allow config to auto-evict based on age, but start with forever
 ;; - just doing a doc with file listings for the month would already help with taxes

@@ -1,6 +1,6 @@
 {:paths ["src" "test" "resources"]
  :deps  {;; keep in sync with the clojure version in fdb.bb.cli
-         org.clojure/clojure         {:mvn/version "1.12.0-beta1"}
+         org.clojure/clojure         {:mvn/version "1.12.0"}
          org.clojure/core.async      {:mvn/version "1.6.681"}
          hashp/hashp                 {:mvn/version "0.2.2"}
          com.xtdb/xtdb-core          {:mvn/version "1.24.4"}
