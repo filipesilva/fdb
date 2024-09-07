@@ -89,16 +89,10 @@
   [f]
   f)
 
-;; Set by fdb during triggered calls. Nil during repl sessions, but that's what (arg) below is for.
+;; Set by fdb during triggered calls. Nil during repl sessions and route handlers, but that's what (arg) below is for.
 (def ^:dynamic *arg* nil)
 ;; Set by watch so repl sessions can also get a call-arg, and for restarts after code reload.
 (defonce *arg (atom nil))
-
-(defmacro with-arg
-  "Run body with m merged into current *arg*."
-  [m & body]
-  `(binding [*arg* (merge *arg* ~m)]
-     ~@body))
 
 (defmacro arg
   "The argument sent into trigger and reader calls.
@@ -108,10 +102,16 @@
   `(or
     ;; Calls from triggers, readers, and repl files should have this set.
     *arg*
-    ;; If it's not set, it must be a nrepl session.
+    ;; If it's not set, it must be a nrepl session or route handler.
     ;; Watch should be running so we can get state from there.
     ;; *file* should work from a repl session when it evals a file.
     (merge {:self-path *file*} @*arg)))
+
+(defmacro with-arg
+  "Run body with m merged into current *arg*."
+  [m & body]
+  `(binding [*arg* (merge (arg) ~m)]
+     ~@body))
 
 (defn apply
   "Applies call-spec fn to call-arg, defaulting to current *call*. "
