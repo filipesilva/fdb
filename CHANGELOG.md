@@ -1,5 +1,11 @@
 # unreleased
 
+# 1.1.1 - 2024-09-07
+
+- use clojure 1.12.0 final
+- add fdb.core/reload
+- fix a bug where http handlers didn't get call arg
+
 # 1.1.0 - 2024-05-28
 
 - simpler first demo, moved current ones to more-demos
