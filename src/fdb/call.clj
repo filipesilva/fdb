@@ -77,7 +77,7 @@
   [[_ & shell-args]]
   (fn [call-arg]
     (let [[opts & rest :as all] (eval-under-call-arg call-arg (vec shell-args))
-          shell-opts            {:dir (-> call-arg :self-path fs/parent str)
+          shell-opts            {:dir (some-> call-arg :self-path fs/parent str)
                                  :out *out*
                                  :err *err*}
           shell-args'           (if (map? opts)
