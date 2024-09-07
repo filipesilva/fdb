@@ -267,6 +267,11 @@
     (reset! *config-watcher (u/closeable process-ch stop!))
     (<!! process-ch)))
 
+(defn reload
+  "Reloads all code."
+  []
+  (reload/reload))
+
 (defn after-ns-reload
   "Restarts watch-config! with current config-path after (clj-reload/reload)."
   []
